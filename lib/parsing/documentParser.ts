@@ -1,10 +1,12 @@
 // Document parsing pipeline: OCR text → LLM extraction → normalization
 
+import * as FileSystem from "expo-file-system";
 import { normalizeTestName } from "./testNormalizer";
 import { standardizeResult, determineOverallStatus } from "./resultStandardizer";
 import type { STIResult, TestStatus } from "../types";
 
 const OPENROUTER_API = "https://openrouter.ai/api/v1/chat/completions";
+const VISION_API = "https://vision.googleapis.com/v1/images:annotate";
 
 // Free model - swap for paid if needed
 const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
@@ -158,5 +160,37 @@ export function extractWithRegex(text: string): Partial<ParsedDocument> | null {
     stiResults: results,
     overallStatus: determineOverallStatus(results.map(r => r.status)),
   };
+}
+
+// OCR via Google Cloud Vision API
+export async function extractTextFromImage(imageUri: string): Promise<string> {
+  const apiKey = process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY;
+  if (!apiKey) {
+    console.warn("No EXPO_PUBLIC_GOOGLE_VISION_API_KEY - skipping OCR");
+    return "";
+  }
+
+  try {
+    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const response = await fetch(`${VISION_API}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requests: [{
+          image: { content: base64 },
+          features: [{ type: "TEXT_DETECTION", maxResults: 1 }],
+        }],
+      }),
+    });
+
+    const data = await response.json();
+    return data.responses?.[0]?.fullTextAnnotation?.text || "";
+  } catch (error) {
+    console.error("OCR error:", error);
+    return "";
+  }
 }
 

@@ -31,7 +31,7 @@ import {
 } from "lucide-react-native";
 import { uploadTestDocument } from "../../lib/storage";
 import { useTestResults } from "../../lib/hooks";
-import { parseDocument, extractWithRegex } from "../../lib/parsing";
+import { parseDocument, extractWithRegex, extractTextFromImage } from "../../lib/parsing";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult } from "../../lib/types";
@@ -112,6 +112,11 @@ export default function Upload() {
           type: "image" as const,
         }));
         setSelectedFiles((prev) => [...prev, ...newFiles]);
+        
+        // Auto-run OCR on first image
+        const text = await extractTextFromImage(result.assets[0].uri);
+        if (text) setOcrText(text);
+        
         setStep("preview");
       }
     } catch (error) {
