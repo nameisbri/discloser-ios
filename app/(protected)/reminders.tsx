@@ -1,13 +1,161 @@
-import { View, Text, SafeAreaView, Pressable, ScrollView } from "react-native";
-import { Bell, Calendar, Plus, Clock, CheckCircle2 } from "lucide-react-native";
+import { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  SafeAreaView,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput,
+  RefreshControl,
+} from "react-native";
+import { useRouter } from "expo-router";
+import {
+  Bell,
+  Calendar,
+  Plus,
+  Clock,
+  CheckCircle2,
+  ChevronLeft,
+  X,
+  Trash2,
+} from "lucide-react-native";
+import { useReminders } from "../../lib/hooks";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
+import { Button } from "../../components/Button";
+import type { Reminder, ReminderFrequency } from "../../lib/types";
+
+const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Every 3 months" },
+  { value: "biannual", label: "Every 6 months" },
+  { value: "annual", label: "Yearly" },
+];
 
 export default function Reminders() {
+  const router = useRouter();
+  const {
+    reminders,
+    activeReminders,
+    loading,
+    refetch,
+    createReminder,
+    updateReminder,
+    deleteReminder,
+  } = useReminders();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState("Routine Checkup");
+  const [newFrequency, setNewFrequency] =
+    useState<ReminderFrequency>("quarterly");
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getNextDate = (frequency: ReminderFrequency): string => {
+    const date = new Date();
+    switch (frequency) {
+      case "monthly":
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case "quarterly":
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case "biannual":
+        date.setMonth(date.getMonth() + 6);
+        break;
+      case "annual":
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+    }
+    return date.toISOString().split("T")[0];
+  };
+
+  const handleCreateReminder = async () => {
+    if (!newTitle.trim()) {
+      Alert.alert("Error", "Please enter a title for the reminder");
+      return;
+    }
+
+    const result = await createReminder({
+      title: newTitle,
+      frequency: newFrequency,
+      next_date: getNextDate(newFrequency),
+      is_active: true,
+    });
+
+    if (result) {
+      setShowModal(false);
+      setNewTitle("Routine Checkup");
+      setNewFrequency("quarterly");
+    } else {
+      Alert.alert("Error", "Failed to create reminder");
+    }
+  };
+
+  const handleToggleActive = async (reminder: Reminder) => {
+    await updateReminder(reminder.id, { is_active: !reminder.is_active });
+  };
+
+  const handleDelete = (reminder: Reminder) => {
+    Alert.alert(
+      "Delete Reminder",
+      `Are you sure you want to delete "${reminder.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteReminder(reminder.id),
+        },
+      ]
+    );
+  };
+
+  const inactiveReminders = reminders.filter((r) => !r.is_active);
+  const pastReminders = reminders.filter(
+    (r) => new Date(r.next_date) < new Date() && r.is_active
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1 px-6 pt-4">
-        <View className="items-center mb-10 mt-6">
+      <View className="flex-row items-center justify-between px-6 py-4">
+        <Pressable onPress={() => router.back()} className="p-2 -ml-2">
+          <ChevronLeft size={24} color="#374151" />
+        </Pressable>
+        <Text className="text-lg font-inter-semibold text-secondary-dark">
+          Reminders
+        </Text>
+        <View className="w-10" />
+      </View>
+
+      <ScrollView
+        className="flex-1 px-6"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#923D5C"
+          />
+        }
+      >
+        <View className="items-center mb-10 mt-2">
           <View className="w-20 h-20 bg-warning-light rounded-full items-center justify-center mb-6">
             <Bell size={40} color="#FFC107" />
           </View>
@@ -19,80 +167,219 @@ export default function Reminders() {
           </Text>
         </View>
 
-        <Card className="mb-8">
-          <View className="flex-row items-center justify-between mb-6">
-            <Text className="text-xl font-inter-bold text-secondary-dark">
-              Active Reminders
-            </Text>
-            <Pressable className="bg-primary-light/50 p-2 rounded-xl active:bg-primary-light">
-              <Plus size={20} color="#923D5C" />
-            </Pressable>
+        {loading ? (
+          <View className="py-12 items-center">
+            <ActivityIndicator size="large" color="#923D5C" />
           </View>
+        ) : (
+          <>
+            <Card className="mb-8">
+              <View className="flex-row items-center justify-between mb-6">
+                <Text className="text-xl font-inter-bold text-secondary-dark">
+                  Active Reminders
+                </Text>
+                <Pressable
+                  onPress={() => setShowModal(true)}
+                  className="bg-primary-light/50 p-2 rounded-xl active:bg-primary-light"
+                >
+                  <Plus size={20} color="#923D5C" />
+                </Pressable>
+              </View>
 
-          <ReminderItem
-            title="3-Month Routine Checkup"
-            date="March 15, 2026"
-            frequency="Every 3 months"
-            active
-          />
-          <View className="h-[1px] bg-border my-4" />
-          <ReminderItem
-            title="Annual Full Panel"
-            date="Dec 12, 2026"
-            frequency="Yearly"
-            active
-          />
-        </Card>
+              {activeReminders.length === 0 ? (
+                <View className="items-center py-6">
+                  <Text className="text-text-light font-inter-regular mb-4">
+                    No active reminders
+                  </Text>
+                  <Button
+                    label="Create Reminder"
+                    variant="secondary"
+                    size="sm"
+                    onPress={() => setShowModal(true)}
+                  />
+                </View>
+              ) : (
+                activeReminders.map((reminder, index) => (
+                  <View key={reminder.id}>
+                    {index > 0 && <View className="h-[1px] bg-border my-4" />}
+                    <ReminderItem
+                      reminder={reminder}
+                      onToggle={() => handleToggleActive(reminder)}
+                      onDelete={() => handleDelete(reminder)}
+                    />
+                  </View>
+                ))
+              )}
+            </Card>
 
-        <Text className="text-xl font-inter-bold text-secondary-dark mb-4">
-          Past Reminders
-        </Text>
-        <Card className="mb-12 opacity-60">
-          <View className="flex-row items-center">
-            <View className="bg-success-light p-3 rounded-2xl mr-4">
-              <CheckCircle2 size={24} color="#28A745" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-text font-inter-semibold">
-                Dec 12, 2025 Checkup
-              </Text>
-              <Text className="text-text-light text-sm font-inter-regular">
-                Completed on Dec 15, 2025
-              </Text>
-            </View>
-          </View>
-        </Card>
+            {inactiveReminders.length > 0 && (
+              <>
+                <Text className="text-xl font-inter-bold text-secondary-dark mb-4">
+                  Paused Reminders
+                </Text>
+                <Card className="mb-8 opacity-60">
+                  {inactiveReminders.map((reminder, index) => (
+                    <View key={reminder.id}>
+                      {index > 0 && <View className="h-[1px] bg-border my-4" />}
+                      <ReminderItem
+                        reminder={reminder}
+                        onToggle={() => handleToggleActive(reminder)}
+                        onDelete={() => handleDelete(reminder)}
+                      />
+                    </View>
+                  ))}
+                </Card>
+              </>
+            )}
+          </>
+        )}
       </ScrollView>
+
+      {/* Create Reminder Modal */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <SafeAreaView className="flex-1 bg-background">
+          <View className="flex-row items-center justify-between px-6 py-4 border-b border-border">
+            <Pressable
+              onPress={() => setShowModal(false)}
+              className="p-2 -ml-2"
+            >
+              <X size={24} color="#374151" />
+            </Pressable>
+            <Text className="text-lg font-inter-semibold text-secondary-dark">
+              New Reminder
+            </Text>
+            <View className="w-10" />
+          </View>
+
+          <View className="flex-1 px-6 py-6">
+            <View className="mb-6">
+              <Text className="text-text font-inter-semibold mb-2">Title</Text>
+              <TextInput
+                value={newTitle}
+                onChangeText={setNewTitle}
+                placeholder="e.g., 3-Month Checkup"
+                className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
+              />
+            </View>
+
+            <View className="mb-8">
+              <Text className="text-text font-inter-semibold mb-3">
+                Frequency
+              </Text>
+              <View className="gap-3">
+                {FREQUENCY_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => setNewFrequency(option.value)}
+                    className={`p-4 rounded-2xl border flex-row items-center justify-between ${
+                      newFrequency === option.value
+                        ? "bg-primary-light/30 border-primary"
+                        : "bg-white border-border"
+                    }`}
+                  >
+                    <Text
+                      className={`font-inter-medium ${
+                        newFrequency === option.value
+                          ? "text-primary"
+                          : "text-text"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                    {newFrequency === option.value && (
+                      <CheckCircle2 size={20} color="#923D5C" />
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View className="bg-primary-light/20 p-5 rounded-3xl mb-8">
+              <Text className="text-primary-dark font-inter-medium text-sm">
+                Next reminder will be set for:{" "}
+                <Text className="font-inter-bold">
+                  {formatDate(getNextDate(newFrequency))}
+                </Text>
+              </Text>
+            </View>
+
+            <Button label="Create Reminder" onPress={handleCreateReminder} />
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 function ReminderItem({
-  title,
-  date,
-  frequency,
-  active,
+  reminder,
+  onToggle,
+  onDelete,
 }: {
-  title: string;
-  date: string;
-  frequency: string;
-  active: boolean;
+  reminder: Reminder;
+  onToggle: () => void;
+  onDelete: () => void;
 }) {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const frequencyLabels: Record<ReminderFrequency, string> = {
+    monthly: "Monthly",
+    quarterly: "Every 3 months",
+    biannual: "Every 6 months",
+    annual: "Yearly",
+  };
+
+  const isPast = new Date(reminder.next_date) < new Date();
+
   return (
     <View className="flex-row items-center">
-      <View className="bg-primary-light p-3 rounded-2xl mr-4">
-        <Calendar size={24} color="#923D5C" />
+      <View
+        className={`p-3 rounded-2xl mr-4 ${
+          reminder.is_active ? "bg-primary-light" : "bg-gray-100"
+        }`}
+      >
+        <Calendar
+          size={24}
+          color={reminder.is_active ? "#923D5C" : "#9CA3AF"}
+        />
       </View>
       <View className="flex-1">
-        <Text className="text-text font-inter-semibold mb-1">{title}</Text>
+        <Text className="text-text font-inter-semibold mb-1">
+          {reminder.title}
+        </Text>
         <View className="flex-row items-center">
           <Clock size={12} color="#6B7280" />
           <Text className="text-text-light text-xs font-inter-regular ml-1">
-            {frequency} • Next: {date}
+            {frequencyLabels[reminder.frequency]} • Next:{" "}
+            {formatDate(reminder.next_date)}
           </Text>
         </View>
       </View>
-      <Badge label="Active" variant="success" />
+      <View className="flex-row items-center gap-2">
+        <Badge
+          label={
+            reminder.is_active ? (isPast ? "Overdue" : "Active") : "Paused"
+          }
+          variant={
+            reminder.is_active ? (isPast ? "warning" : "success") : "outline"
+          }
+        />
+        <Pressable onPress={onDelete} className="p-2">
+          <Trash2 size={16} color="#DC3545" />
+        </Pressable>
+      </View>
     </View>
   );
 }
