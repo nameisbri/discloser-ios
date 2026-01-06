@@ -27,16 +27,14 @@ import {
   Plus,
   File,
   Image as ImageIcon,
-  Sparkles,
 } from "lucide-react-native";
 import { uploadTestDocument } from "../../lib/storage";
 import { useTestResults } from "../../lib/hooks";
-import { parseDocument, extractWithRegex, extractTextFromImage } from "../../lib/parsing";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult } from "../../lib/types";
 
-type Step = "select" | "preview" | "analyzing" | "details";
+type Step = "select" | "preview" | "details";
 
 type SelectedFile = {
   uri: string;
@@ -61,8 +59,6 @@ export default function Upload() {
   const [step, setStep] = useState<Step>("select");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [ocrText, setOcrText] = useState("");
 
   // Form state
   const [testDate, setTestDate] = useState(
@@ -112,11 +108,6 @@ export default function Upload() {
           type: "image" as const,
         }));
         setSelectedFiles((prev) => [...prev, ...newFiles]);
-        
-        // Auto-run OCR on first image
-        const text = await extractTextFromImage(result.assets[0].uri);
-        if (text) setOcrText(text);
-        
         setStep("preview");
       }
     } catch (error) {
@@ -223,68 +214,6 @@ export default function Upload() {
     setSelectedTests((prev) =>
       prev.includes(test) ? prev.filter((t) => t !== test) : [...prev, test]
     );
-  };
-
-  const analyzeDocument = async (textToAnalyze?: string) => {
-    setStep("analyzing");
-    setAnalyzing(true);
-    
-    try {
-      const text = textToAnalyze || ocrText;
-      if (!text.trim()) {
-        // No OCR text available, skip to manual entry
-        setStep("details");
-        return;
-      }
-
-      // Try LLM extraction first
-      let parsed = await parseDocument(text);
-      
-      // Fallback to regex if LLM fails
-      if (!parsed || parsed.stiResults.length === 0) {
-        const regexResult = extractWithRegex(text);
-        if (regexResult?.stiResults) {
-          parsed = {
-            testDate: regexResult.testDate || new Date().toISOString().split("T")[0],
-            testType: regexResult.stiResults.length > 3 ? "Full STI Panel" : "STI Test",
-            overallStatus: regexResult.overallStatus || "pending",
-            stiResults: regexResult.stiResults,
-            confidence: 0.7,
-          };
-        }
-      }
-
-      if (parsed && parsed.stiResults.length > 0) {
-        // Pre-fill form with extracted data
-        setTestDate(parsed.testDate);
-        setTestType(parsed.testType);
-        setOverallStatus(parsed.overallStatus);
-        setSelectedTests(parsed.stiResults.map((r) => r.name));
-        
-        // Build STI results
-        const extractedResults = parsed.stiResults.map((r) => r.name);
-        setSelectedTests(extractedResults);
-        
-        Alert.alert(
-          "Analysis Complete",
-          `Found ${parsed.stiResults.length} test results. Please review and confirm.`,
-          [{ text: "OK", onPress: () => setStep("details") }]
-        );
-      } else {
-        Alert.alert(
-          "Could Not Extract",
-          "Unable to automatically extract results. Please enter manually.",
-          [{ text: "OK", onPress: () => setStep("details") }]
-        );
-      }
-    } catch (error) {
-      console.error("Analysis error:", error);
-      Alert.alert("Analysis Failed", "Please enter results manually.", [
-        { text: "OK", onPress: () => setStep("details") },
-      ]);
-    } finally {
-      setAnalyzing(false);
-    }
   };
 
   if (step === "select") {
@@ -415,54 +344,11 @@ export default function Upload() {
             </Text>
           </Pressable>
 
-          {/* OCR Text Input for AI parsing */}
-          <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-2">
-              Paste Document Text (Optional)
-            </Text>
-            <TextInput
-              value={ocrText}
-              onChangeText={setOcrText}
-              placeholder="Paste the text from your lab report here for AI analysis..."
-              multiline
-              numberOfLines={4}
-              className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text min-h-[100px]"
-              textAlignVertical="top"
-            />
-          </View>
-
           <Button
-            label="✨ Analyze with AI"
-            onPress={() => analyzeDocument()}
-            disabled={!ocrText.trim()}
-            variant={ocrText.trim() ? "primary" : "secondary"}
-            className="mb-3"
-          />
-          
-          <Button
-            label="Skip to Manual Entry"
-            variant="outline"
+            label="Continue to Details"
             onPress={() => setStep("details")}
           />
         </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // Analyzing step
-  if (step === "analyzing") {
-    return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center px-8">
-        <View className="w-24 h-24 bg-primary-light/30 rounded-full items-center justify-center mb-6">
-          <Sparkles size={48} color="#923D5C" />
-        </View>
-        <Text className="text-2xl font-inter-bold text-secondary-dark mb-3 text-center">
-          Analyzing Document
-        </Text>
-        <Text className="text-text-light font-inter-regular text-center mb-8">
-          AI is extracting your test results...
-        </Text>
-        <ActivityIndicator size="large" color="#923D5C" />
       </SafeAreaView>
     );
   }
