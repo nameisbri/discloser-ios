@@ -33,6 +33,7 @@ import { useTestResults } from "../../lib/hooks";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult } from "../../lib/types";
+import { parseDocument } from "../../lib/parsing";
 
 type Step = "select" | "preview" | "details";
 
@@ -59,6 +60,7 @@ export default function Upload() {
   const [step, setStep] = useState<Step>("select");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [parsing, setParsing] = useState(false);
 
   // Form state
   const [testDate, setTestDate] = useState(
@@ -141,6 +143,66 @@ export default function Upload() {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     if (selectedFiles.length <= 1) {
       setStep("select");
+    }
+  };
+
+  const parseFirstDocument = async () => {
+    if (selectedFiles.length === 0) return;
+
+    try {
+      setParsing(true);
+
+      const firstFile = selectedFiles[0];
+      const mimeType = firstFile.type === "pdf" ? "application/pdf" : "image/jpeg";
+
+      const parsed = await parseDocument(firstFile.uri, mimeType);
+
+      // Auto-fill form with parsed data
+      if (parsed.collectionDate) {
+        setTestDate(parsed.collectionDate);
+      }
+      if (parsed.testType) {
+        setTestType(parsed.testType);
+      }
+      if (parsed.tests.length > 0) {
+        // Extract test names
+        const testNames = parsed.tests.map((t) => t.name);
+        setSelectedTests(testNames);
+
+        // Determine overall status (if all negative -> negative, otherwise pending)
+        const allNegative = parsed.tests.every((t) => t.status === "negative");
+        const anyPositive = parsed.tests.some((t) => t.status === "positive");
+
+        if (anyPositive) {
+          setOverallStatus("positive");
+        } else if (allNegative) {
+          setOverallStatus("negative");
+        } else {
+          setOverallStatus("pending");
+        }
+
+        // Add parsing note
+        setNotes(
+          `Auto-extracted: ${parsed.tests.length} test(s) found. Please review and adjust if needed.`
+        );
+      }
+
+      Alert.alert(
+        "Success",
+        `Found ${parsed.tests.length} test(s) in document. Please review the details.`,
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error("Parsing error:", error);
+      Alert.alert(
+        "Auto-extraction Failed",
+        error instanceof Error
+          ? error.message
+          : "Could not extract test data automatically. Please enter manually.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setParsing(false);
     }
   };
 
@@ -381,19 +443,30 @@ export default function Upload() {
         >
           {/* Show attached files summary */}
           {selectedFiles.length > 0 && (
-            <Pressable
-              onPress={() => setStep("preview")}
-              className="bg-success-light/50 p-4 rounded-2xl flex-row items-center mb-6"
-            >
-              <Check size={20} color="#28A745" />
-              <Text className="text-success font-inter-medium ml-2 flex-1">
-                {selectedFiles.length} file
-                {selectedFiles.length !== 1 ? "s" : ""} attached
-              </Text>
-              <Text className="text-success/70 text-sm font-inter-regular">
-                Tap to edit
-              </Text>
-            </Pressable>
+            <>
+              <Pressable
+                onPress={() => setStep("preview")}
+                className="bg-success-light/50 p-4 rounded-2xl flex-row items-center mb-3"
+              >
+                <Check size={20} color="#28A745" />
+                <Text className="text-success font-inter-medium ml-2 flex-1">
+                  {selectedFiles.length} file
+                  {selectedFiles.length !== 1 ? "s" : ""} attached
+                </Text>
+                <Text className="text-success/70 text-sm font-inter-regular">
+                  Tap to edit
+                </Text>
+              </Pressable>
+
+              {/* Auto-extract button */}
+              <Button
+                label={parsing ? "Extracting..." : "Auto-Extract Data"}
+                onPress={parseFirstDocument}
+                disabled={parsing}
+                variant="secondary"
+                className="mb-6"
+              />
+            </>
           )}
 
           {/* Test Date */}
