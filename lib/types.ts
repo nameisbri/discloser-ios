@@ -14,7 +14,7 @@ export interface Profile {
 export interface STIResult {
   name: string;
   result: string;
-  status: "negative" | "positive" | "pending";
+  status: TestStatus;
 }
 
 export interface TestResult {

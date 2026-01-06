@@ -3,7 +3,7 @@
 export interface ParsedTest {
   name: string;
   result: string;
-  status: 'negative' | 'positive' | 'pending';
+  status: 'negative' | 'positive' | 'pending' | 'inconclusive';
   notes?: string;
 }
 

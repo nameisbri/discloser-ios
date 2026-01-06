@@ -1,9 +1,9 @@
 // Maps lab result text to standardized status
 
-export type TestStatus = 'negative' | 'positive' | 'pending';
+export type TestStatus = 'negative' | 'positive' | 'pending' | 'inconclusive';
 
 export function standardizeResult(result: string): TestStatus {
-  if (!result) return 'pending';
+  if (!result) return 'inconclusive';
 
   const cleanResult = result.toLowerCase().trim();
 
@@ -35,11 +35,11 @@ export function standardizeResult(result: string): TestStatus {
     return 'pending';
   }
 
-  // Indeterminate patterns = pending (needs review)
+  // Indeterminate patterns
   if (/borderline|unclear|equivocal|indeterminate/i.test(cleanResult)) {
-    return 'pending';
+    return 'inconclusive';
   }
 
-  // Default to pending for unknown results
-  return 'pending';
+  // Default to inconclusive for unknown results
+  return 'inconclusive';
 }
