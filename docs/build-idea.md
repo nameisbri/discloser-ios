@@ -314,15 +314,23 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 ## Known Issues / TODO
 
 ### Storage & Files
+
 - [ ] Fix Supabase Storage bucket permissions for file viewing/downloading
 - [ ] Implement signed URLs for private file access
 - [ ] Add file preview in-app (images) instead of opening in browser
 
 ### Features to Complete
-- [ ] Share functionality (Phase 3)
+
+- [x] Share functionality (Phase 3) - In-app share modal complete
 - [ ] Push notifications for reminders (Phase 4)
 - [ ] Document parsing/OCR (Phase 5)
 - [ ] Settings page functionality (profile edit, data export/delete)
+
+### Sharing (Post-Launch)
+
+- [ ] Build web share page at `discloser.app/share/[token]` to display shared results
+- [ ] Configure deep linking so share URLs open in-app for users who have Discloser installed (iOS Universal Links)
+- [ ] Set `EXPO_PUBLIC_SHARE_BASE_URL` env var to production domain
 
 ---
 

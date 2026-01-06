@@ -3,12 +3,13 @@ import {
   View,
   Text,
   Modal,
-  SafeAreaView,
   Pressable,
   ScrollView,
   ActivityIndicator,
   Alert,
+  StyleSheet,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
 import {
@@ -22,13 +23,31 @@ import {
   Trash2,
   QrCode,
   Plus,
-  ChevronRight,
+  Smartphone,
 } from "lucide-react-native";
 import { useShareLinks, getShareUrl } from "../lib/hooks/useShareLinks";
 import { Button } from "./Button";
-import { Card } from "./Card";
-import { Badge } from "./Badge";
+import { SharedResultPreview } from "./SharedResultPreview";
 import type { ShareLink } from "../lib/types";
+
+// Colors from tailwind config
+const colors = {
+  primary: "#923D5C",
+  primaryLight: "#EAC4CE",
+  primaryDark: "#6B2D45",
+  secondaryDark: "#2D2438",
+  success: "#10B981",
+  successLight: "#D1FAE5",
+  danger: "#EF4444",
+  dangerLight: "#FEE2E2",
+  background: "#FAFAFA",
+  cardBg: "#FFFFFF",
+  text: "#1F2937",
+  textLight: "#6B7280",
+  border: "#E5E7EB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+};
 
 type ExpiryOption = {
   label: string;
@@ -59,7 +78,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   const { links, loading, fetchLinks, createShareLink, deleteShareLink } =
     useShareLinks(testResultId);
 
-  const [view, setView] = useState<"list" | "create" | "qr">("list");
+  const [view, setView] = useState<"list" | "create" | "qr" | "preview">("list");
   const [selectedExpiry, setSelectedExpiry] = useState(EXPIRY_OPTIONS[1]);
   const [selectedViewLimit, setSelectedViewLimit] = useState(VIEW_LIMIT_OPTIONS[0]);
   const [showName, setShowName] = useState(false);
@@ -89,7 +108,6 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
     setCreating(false);
     if (link) {
       setView("list");
-      // Reset form
       setSelectedExpiry(EXPIRY_OPTIONS[1]);
       setSelectedViewLimit(VIEW_LIMIT_OPTIONS[0]);
       setShowName(false);
@@ -135,7 +153,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   };
 
   const activeLinks = links.filter(
-    (l) => new Date(l.expires_at) > new Date() &&
+    (l) =>
+      new Date(l.expires_at) > new Date() &&
       (l.max_views === null || l.view_count < l.max_views)
   );
 
@@ -146,40 +165,43 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View className="flex-row items-center justify-between px-6 py-4 border-b border-border">
+        <View style={styles.header}>
           <Pressable
             onPress={() => {
-              if (view === "create" || view === "qr") setView("list");
+              if (view === "create" || view === "qr" || view === "preview")
+                setView("list");
               else onClose();
             }}
-            className="p-2 -ml-2"
+            style={styles.headerButton}
           >
             {view === "list" ? (
-              <X size={24} color="#374151" />
+              <X size={24} color={colors.text} />
             ) : (
-              <Text className="text-primary font-inter-medium">Back</Text>
+              <Text style={styles.backText}>Back</Text>
             )}
           </Pressable>
-          <Text className="text-lg font-inter-semibold text-secondary-dark">
+          <Text style={styles.headerTitle}>
             {view === "create"
               ? "New Share Link"
               : view === "qr"
               ? "QR Code"
+              : view === "preview"
+              ? "Recipient View"
               : "Share Result"}
           </Text>
-          <View className="w-10" />
+          <View style={{ width: 40 }} />
         </View>
 
         {/* List View */}
         {view === "list" && (
-          <ScrollView className="flex-1 px-6 py-6">
-            <View className="items-center mb-8">
-              <View className="w-16 h-16 bg-primary-light/30 rounded-full items-center justify-center mb-4">
-                <LinkIcon size={32} color="#923D5C" />
+          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
+            <View style={styles.heroSection}>
+              <View style={styles.iconCircle}>
+                <LinkIcon size={32} color={colors.primary} />
               </View>
-              <Text className="text-text-light font-inter-regular text-center">
+              <Text style={styles.heroText}>
                 Create secure, time-limited links to share your test result.
               </Text>
             </View>
@@ -192,19 +214,21 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
             />
 
             {loading ? (
-              <ActivityIndicator size="large" color="#923D5C" className="mt-8" />
+              <ActivityIndicator
+                size="large"
+                color={colors.primary}
+                style={{ marginTop: 32 }}
+              />
             ) : activeLinks.length === 0 ? (
-              <View className="items-center py-8">
-                <Text className="text-text-light font-inter-regular">
-                  No active share links
-                </Text>
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No active share links</Text>
               </View>
             ) : (
               <>
-                <Text className="text-lg font-inter-bold text-secondary-dark mb-4">
+                <Text style={styles.sectionTitle}>
                   Active Links ({activeLinks.length})
                 </Text>
-                <View className="gap-3">
+                <View style={{ gap: 12 }}>
                   {activeLinks.map((link) => (
                     <ShareLinkCard
                       key={link.id}
@@ -212,6 +236,10 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                       onCopy={() => handleCopy(link)}
                       onDelete={() => handleDelete(link)}
                       onShowQR={() => handleShowQR(link)}
+                      onPreview={() => {
+                        setQrLink(link);
+                        setView("preview");
+                      }}
                       copied={copiedId === link.id}
                       formatExpiry={formatExpiry}
                     />
@@ -224,29 +252,25 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
         {/* Create View */}
         {view === "create" && (
-          <ScrollView className="flex-1 px-6 py-6">
+          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
             {/* Expiry */}
-            <View className="mb-6">
-              <Text className="text-text font-inter-semibold mb-3">
-                Link Expires After
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Link Expires After</Text>
+              <View style={styles.optionsRow}>
                 {EXPIRY_OPTIONS.map((opt) => (
                   <Pressable
                     key={opt.hours}
                     onPress={() => setSelectedExpiry(opt)}
-                    className={`px-4 py-3 rounded-2xl border ${
-                      selectedExpiry.hours === opt.hours
-                        ? "bg-primary border-primary"
-                        : "bg-white border-border"
-                    }`}
+                    style={[
+                      styles.optionChip,
+                      selectedExpiry.hours === opt.hours && styles.optionChipSelected,
+                    ]}
                   >
                     <Text
-                      className={`font-inter-medium ${
-                        selectedExpiry.hours === opt.hours
-                          ? "text-white"
-                          : "text-text"
-                      }`}
+                      style={[
+                        styles.optionChipText,
+                        selectedExpiry.hours === opt.hours && styles.optionChipTextSelected,
+                      ]}
                     >
                       {opt.label}
                     </Text>
@@ -256,27 +280,23 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
             </View>
 
             {/* View Limit */}
-            <View className="mb-6">
-              <Text className="text-text font-inter-semibold mb-3">
-                Maximum Views
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Maximum Views</Text>
+              <View style={styles.optionsRow}>
                 {VIEW_LIMIT_OPTIONS.map((opt) => (
                   <Pressable
                     key={opt.label}
                     onPress={() => setSelectedViewLimit(opt)}
-                    className={`px-4 py-3 rounded-2xl border ${
-                      selectedViewLimit.value === opt.value
-                        ? "bg-primary border-primary"
-                        : "bg-white border-border"
-                    }`}
+                    style={[
+                      styles.optionChip,
+                      selectedViewLimit.value === opt.value && styles.optionChipSelected,
+                    ]}
                   >
                     <Text
-                      className={`font-inter-medium ${
-                        selectedViewLimit.value === opt.value
-                          ? "text-white"
-                          : "text-text"
-                      }`}
+                      style={[
+                        styles.optionChipText,
+                        selectedViewLimit.value === opt.value && styles.optionChipTextSelected,
+                      ]}
                     >
                       {opt.label}
                     </Text>
@@ -288,27 +308,26 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
             {/* Show Name Toggle */}
             <Pressable
               onPress={() => setShowName(!showName)}
-              className="flex-row items-center justify-between p-4 bg-white rounded-2xl border border-border mb-8"
+              style={styles.toggleRow}
             >
-              <View className="flex-row items-center flex-1">
-                <View className="bg-gray-100 p-2 rounded-xl mr-3">
-                  <User size={20} color="#374151" />
+              <View style={styles.toggleContent}>
+                <View style={styles.toggleIcon}>
+                  <User size={20} color={colors.text} />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-text font-inter-medium">
-                    Show Your Name
-                  </Text>
-                  <Text className="text-text-light text-sm font-inter-regular">
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleTitle}>Show Your Name</Text>
+                  <Text style={styles.toggleSubtitle}>
                     Display your name on shared result
                   </Text>
                 </View>
               </View>
               <View
-                className={`w-12 h-7 rounded-full justify-center ${
-                  showName ? "bg-primary items-end" : "bg-gray-200 items-start"
-                }`}
+                style={[
+                  styles.toggle,
+                  showName ? styles.toggleOn : styles.toggleOff,
+                ]}
               >
-                <View className="w-5 h-5 bg-white rounded-full m-1 shadow-sm" />
+                <View style={styles.toggleKnob} />
               </View>
             </Pressable>
 
@@ -327,40 +346,53 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
         {/* QR View */}
         {view === "qr" && qrLink && (
-          <View className="flex-1 px-6 py-6 items-center justify-center">
-            <Card className="p-8 items-center">
+          <View style={styles.qrContainer}>
+            <View style={styles.qrCard}>
               <QRCode
                 value={getShareUrl(qrLink.token)}
                 size={220}
-                color="#374151"
+                color={colors.text}
                 backgroundColor="white"
               />
-              <Text className="text-text-light font-inter-medium mt-6 text-center">
-                Scan to view shared result
-              </Text>
-              <View className="flex-row items-center mt-2">
-                <Clock size={14} color="#6B7280" />
-                <Text className="text-text-light text-sm ml-1">
+              <Text style={styles.qrLabel}>Scan to view shared result</Text>
+              <View style={styles.qrExpiry}>
+                <Clock size={14} color={colors.textLight} />
+                <Text style={styles.qrExpiryText}>
                   {formatExpiry(qrLink.expires_at)}
                 </Text>
               </View>
-            </Card>
+            </View>
 
-            <Button
-              label={copiedId === qrLink.id ? "Copied!" : "Copy Link"}
-              variant="secondary"
-              icon={
-                copiedId === qrLink.id ? (
-                  <Check size={20} color="#923D5C" />
-                ) : (
-                  <Copy size={20} color="#923D5C" />
-                )
-              }
-              onPress={() => handleCopy(qrLink)}
-              className="mt-6"
-              textClassName="text-primary"
-            />
+            <View style={styles.qrButtons}>
+              <Button
+                label={copiedId === qrLink.id ? "Copied!" : "Copy Link"}
+                variant="secondary"
+                icon={
+                  copiedId === qrLink.id ? (
+                    <Check size={20} color={colors.primary} />
+                  ) : (
+                    <Copy size={20} color={colors.primary} />
+                  )
+                }
+                onPress={() => handleCopy(qrLink)}
+                className="flex-1"
+                textClassName="text-primary"
+              />
+              <Button
+                label="Preview"
+                variant="outline"
+                icon={<Smartphone size={20} color={colors.primary} />}
+                onPress={() => setView("preview")}
+                className="flex-1"
+                textClassName="text-primary"
+              />
+            </View>
           </View>
+        )}
+
+        {/* Preview View */}
+        {view === "preview" && qrLink && (
+          <SharedResultPreview token={qrLink.token} />
         )}
       </SafeAreaView>
     </Modal>
@@ -372,6 +404,7 @@ function ShareLinkCard({
   onCopy,
   onDelete,
   onShowQR,
+  onPreview,
   copied,
   formatExpiry,
 }: {
@@ -379,22 +412,27 @@ function ShareLinkCard({
   onCopy: () => void;
   onDelete: () => void;
   onShowQR: () => void;
+  onPreview: () => void;
   copied: boolean;
   formatExpiry: (exp: string) => string;
 }) {
   return (
-    <Card className="p-4">
-      <View className="flex-row items-start justify-between mb-3">
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2 mb-1">
-            <Badge label={formatExpiry(link.expires_at)} variant="outline" />
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={{ flex: 1 }}>
+          <View style={styles.badgeRow}>
+            <View style={styles.badgeOutline}>
+              <Text style={styles.badgeOutlineText}>{formatExpiry(link.expires_at)}</Text>
+            </View>
             {link.show_name && (
-              <Badge label="Name visible" variant="secondary" />
+              <View style={styles.badgeSecondary}>
+                <Text style={styles.badgeSecondaryText}>Name visible</Text>
+              </View>
             )}
           </View>
-          <View className="flex-row items-center mt-2">
-            <Eye size={14} color="#6B7280" />
-            <Text className="text-text-light text-sm ml-1">
+          <View style={styles.viewCount}>
+            <Eye size={14} color={colors.textLight} />
+            <Text style={styles.viewCountText}>
               {link.view_count} view{link.view_count !== 1 ? "s" : ""}
               {link.max_views && ` / ${link.max_views} max`}
             </Text>
@@ -402,42 +440,325 @@ function ShareLinkCard({
         </View>
       </View>
 
-      <View className="flex-row gap-2">
+      <View style={styles.cardActions}>
         <Pressable
           onPress={onCopy}
-          className={`flex-1 flex-row items-center justify-center py-3 rounded-xl ${
-            copied ? "bg-success-light" : "bg-primary-light/50"
-          }`}
+          style={[styles.actionButton, styles.actionButtonPrimary, copied && styles.actionButtonSuccess]}
         >
           {copied ? (
-            <Check size={18} color="#28A745" />
+            <Check size={18} color={colors.success} />
           ) : (
-            <Copy size={18} color="#923D5C" />
+            <Copy size={18} color={colors.primary} />
           )}
-          <Text
-            className={`font-inter-medium ml-2 ${
-              copied ? "text-success" : "text-primary"
-            }`}
-          >
+          <Text style={[styles.actionButtonText, copied && styles.actionButtonTextSuccess]}>
             {copied ? "Copied" : "Copy"}
           </Text>
         </Pressable>
 
-        <Pressable
-          onPress={onShowQR}
-          className="flex-row items-center justify-center py-3 px-4 rounded-xl bg-gray-100"
-        >
-          <QrCode size={18} color="#374151" />
+        <Pressable onPress={onPreview} style={styles.iconButton}>
+          <Smartphone size={18} color={colors.text} />
         </Pressable>
 
-        <Pressable
-          onPress={onDelete}
-          className="flex-row items-center justify-center py-3 px-4 rounded-xl bg-danger-light"
-        >
-          <Trash2 size={18} color="#DC3545" />
+        <Pressable onPress={onShowQR} style={styles.iconButton}>
+          <QrCode size={18} color={colors.text} />
+        </Pressable>
+
+        <Pressable onPress={onDelete} style={[styles.iconButton, styles.iconButtonDanger]}>
+          <Trash2 size={18} color={colors.danger} />
         </Pressable>
       </View>
-    </Card>
+    </View>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.cardBg,
+  },
+  headerButton: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.secondaryDark,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: colors.primary,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    padding: 24,
+  },
+  heroSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: `${colors.primaryLight}50`,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  heroText: {
+    fontSize: 15,
+    color: colors.textLight,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: colors.textLight,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.secondaryDark,
+    marginBottom: 16,
+  },
+  formSection: {
+    marginBottom: 24,
+  },
+  formLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 12,
+  },
+  optionsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  optionChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.cardBg,
+  },
+  optionChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  optionChipText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.text,
+  },
+  optionChipTextSelected: {
+    color: "white",
+  },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    backgroundColor: colors.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 32,
+  },
+  toggleContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  toggleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.gray100,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  toggleTitle: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.text,
+  },
+  toggleSubtitle: {
+    fontSize: 13,
+    color: colors.textLight,
+    marginTop: 2,
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    padding: 2,
+  },
+  toggleOn: {
+    backgroundColor: colors.primary,
+    alignItems: "flex-end",
+  },
+  toggleOff: {
+    backgroundColor: colors.gray200,
+    alignItems: "flex-start",
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "white",
+  },
+  qrContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  qrCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  qrLabel: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.textLight,
+    marginTop: 24,
+    textAlign: "center",
+  },
+  qrExpiry: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  qrExpiryText: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginLeft: 4,
+  },
+  qrButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+    width: "100%",
+  },
+  card: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  badgeOutline: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  badgeOutlineText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: colors.textLight,
+  },
+  badgeSecondary: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: colors.primaryLight,
+  },
+  badgeSecondaryText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: colors.primary,
+  },
+  viewCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  viewCountText: {
+    fontSize: 13,
+    color: colors.textLight,
+    marginLeft: 4,
+  },
+  cardActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  actionButtonPrimary: {
+    backgroundColor: `${colors.primaryLight}80`,
+  },
+  actionButtonSuccess: {
+    backgroundColor: colors.successLight,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.primary,
+    marginLeft: 8,
+  },
+  actionButtonTextSuccess: {
+    color: colors.success,
+  },
+  iconButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: colors.gray100,
+  },
+  iconButtonDanger: {
+    backgroundColor: colors.dangerLight,
+  },
+});
