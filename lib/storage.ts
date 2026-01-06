@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 
@@ -22,7 +22,7 @@ export async function uploadTestDocument(
 
   // Read file as base64
   const base64 = await FileSystem.readAsStringAsync(fileUri, {
-    encoding: FileSystem.EncodingType.Base64,
+    encoding: "base64",
   });
 
   // Determine content type from extension

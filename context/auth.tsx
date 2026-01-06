@@ -10,7 +10,7 @@ type AuthContextType = {
   loading: boolean;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
-  devBypass: () => void;
+  devBypass: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -69,9 +69,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const devBypass = () => {
+  const devBypass = async () => {
     if (__DEV__) {
-      setSession({ user: { id: "dev-user", email: "dev@test.com" } } as Session);
+      // Use Supabase anonymous auth for dev testing
+      // Enable "Allow anonymous sign-ins" in Supabase Auth settings
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error("Dev bypass failed:", error.message);
+        // Fallback: try to show what went wrong
+        if (error.message.includes("Anonymous sign-ins are disabled")) {
+          console.error("Enable anonymous sign-ins in Supabase Dashboard > Auth > Providers");
+        }
+      }
     }
   };
 

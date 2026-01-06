@@ -10,9 +10,11 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import {
   Upload as UploadIcon,
   Camera,
@@ -22,6 +24,9 @@ import {
   Check,
   X,
   Calendar,
+  Plus,
+  File,
+  Image as ImageIcon,
 } from "lucide-react-native";
 import { uploadTestDocument } from "../../lib/storage";
 import { useTestResults } from "../../lib/hooks";
@@ -30,6 +35,12 @@ import { Card } from "../../components/Card";
 import type { TestStatus, STIResult } from "../../lib/types";
 
 type Step = "select" | "preview" | "details";
+
+type SelectedFile = {
+  uri: string;
+  name: string;
+  type: "image" | "pdf";
+};
 
 const DEFAULT_STI_TESTS = [
   "HIV-1/2",
@@ -46,10 +57,7 @@ export default function Upload() {
   const { createResult } = useTestResults();
 
   const [step, setStep] = useState<Step>("select");
-  const [selectedFile, setSelectedFile] = useState<{
-    uri: string;
-    name: string;
-  } | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
 
   // Form state
@@ -80,24 +88,59 @@ export default function Upload() {
       const result = useCamera
         ? await ImagePicker.launchCameraAsync({
             mediaTypes: ["images"],
-            allowsEditing: true,
+            allowsEditing: false,
             quality: 0.8,
+            allowsMultipleSelection: false,
           })
         : await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ["images"],
-            allowsEditing: true,
+            allowsEditing: false,
             quality: 0.8,
+            allowsMultipleSelection: true,
           });
 
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        const fileName =
-          asset.fileName || `test_result_${Date.now()}.${asset.uri.split(".").pop() || "jpg"}`;
-        setSelectedFile({ uri: asset.uri, name: fileName });
+      if (!result.canceled && result.assets.length > 0) {
+        const newFiles: SelectedFile[] = result.assets.map((asset) => ({
+          uri: asset.uri,
+          name:
+            asset.fileName ||
+            `test_result_${Date.now()}.${asset.uri.split(".").pop() || "jpg"}`,
+          type: "image" as const,
+        }));
+        setSelectedFiles((prev) => [...prev, ...newFiles]);
         setStep("preview");
       }
     } catch (error) {
       Alert.alert("Error", "Failed to select image. Please try again.");
+    }
+  };
+
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/*"],
+        multiple: true,
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const newFiles: SelectedFile[] = result.assets.map((asset) => ({
+          uri: asset.uri,
+          name: asset.name || `document_${Date.now()}`,
+          type: asset.mimeType?.includes("pdf") ? "pdf" : "image",
+        }));
+        setSelectedFiles((prev) => [...prev, ...newFiles]);
+        setStep("preview");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to select document. Please try again.");
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    if (selectedFiles.length <= 1) {
+      setStep("select");
     }
   };
 
@@ -108,14 +151,21 @@ export default function Upload() {
       let fileUrl: string | undefined;
       let fileName: string | undefined;
 
-      // Upload file if selected
-      if (selectedFile) {
+      // Upload first file (for now, we store the first file URL)
+      // TODO: Support multiple file URLs in the future
+      if (selectedFiles.length > 0) {
+        const firstFile = selectedFiles[0];
         const uploadResult = await uploadTestDocument(
-          selectedFile.uri,
-          selectedFile.name
+          firstFile.uri,
+          firstFile.name
         );
         fileUrl = uploadResult.url;
-        fileName = selectedFile.name;
+        fileName = firstFile.name;
+
+        // Upload additional files (they're stored but not linked to result yet)
+        for (let i = 1; i < selectedFiles.length; i++) {
+          await uploadTestDocument(selectedFiles[i].uri, selectedFiles[i].name);
+        }
       }
 
       // Build STI results array
@@ -138,8 +188,14 @@ export default function Upload() {
 
       if (result) {
         Alert.alert("Success", "Test result saved successfully!", [
-          { text: "View Result", onPress: () => router.replace(`/results/${result.id}`) },
-          { text: "Go to Dashboard", onPress: () => router.replace("/dashboard") },
+          {
+            text: "View Result",
+            onPress: () => router.replace(`/results/${result.id}`),
+          },
+          {
+            text: "Go to Dashboard",
+            onPress: () => router.replace("/dashboard"),
+          },
         ]);
       } else {
         Alert.alert("Error", "Failed to save test result. Please try again.");
@@ -169,8 +225,8 @@ export default function Upload() {
           </Pressable>
         </View>
 
-        <View className="flex-1 px-8 py-6">
-          <View className="items-center mb-12">
+        <ScrollView className="flex-1 px-8 py-6" contentContainerStyle={{ paddingBottom: 40 }}>
+          <View className="items-center mb-10">
             <View className="w-20 h-20 bg-primary-light/30 rounded-full items-center justify-center mb-6">
               <UploadIcon size={40} color="#923D5C" />
             </View>
@@ -190,10 +246,16 @@ export default function Upload() {
               onPress={() => pickImage(true)}
             />
             <UploadOption
-              icon={<FileText size={28} color="#923D5C" />}
-              title="Upload from Gallery"
-              description="Select an image from your photo library"
+              icon={<ImageIcon size={28} color="#923D5C" />}
+              title="Choose from Gallery"
+              description="Select images from your photo library"
               onPress={() => pickImage(false)}
+            />
+            <UploadOption
+              icon={<FileText size={28} color="#923D5C" />}
+              title="Upload PDF or File"
+              description="Select a PDF or image from your files"
+              onPress={pickDocument}
             />
             <UploadOption
               icon={<Calendar size={28} color="#923D5C" />}
@@ -203,14 +265,14 @@ export default function Upload() {
             />
           </View>
 
-          <View className="mt-auto bg-primary-light/20 p-5 rounded-3xl flex-row items-start">
+          <View className="bg-primary-light/20 p-5 rounded-3xl flex-row items-start mt-6">
             <Info size={20} color="#923D5C" />
             <Text className="ml-3 flex-1 text-primary-dark font-inter-medium text-sm leading-5">
               Your documents are encrypted and stored securely. Only you control
               who can see them.
             </Text>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -219,50 +281,74 @@ export default function Upload() {
     return (
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-row items-center justify-between px-6 py-4">
-          <Pressable onPress={() => setStep("select")} className="p-2 -ml-2">
+          <Pressable
+            onPress={() => {
+              setSelectedFiles([]);
+              setStep("select");
+            }}
+            className="p-2 -ml-2"
+          >
             <ChevronLeft size={24} color="#374151" />
           </Pressable>
           <Text className="text-lg font-inter-semibold text-secondary-dark">
-            Document Selected
+            Documents Selected
           </Text>
           <View className="w-10" />
         </View>
 
-        <View className="flex-1 px-6 py-4">
-          <Card className="mb-6">
-            <View className="flex-row items-center">
-              <View className="bg-success-light p-3 rounded-2xl mr-4">
-                <Check size={24} color="#28A745" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-text font-inter-semibold mb-1">
-                  File Ready
-                </Text>
-                <Text
-                  className="text-text-light text-sm font-inter-regular"
-                  numberOfLines={1}
-                >
-                  {selectedFile?.name}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => {
-                  setSelectedFile(null);
-                  setStep("select");
-                }}
-                className="p-2"
-              >
-                <X size={20} color="#DC3545" />
-              </Pressable>
-            </View>
-          </Card>
-
-          <Text className="text-text-light font-inter-medium text-center mb-6">
-            Now let's add the details about this test result.
+        <ScrollView className="flex-1 px-6 py-4">
+          <Text className="text-text-light font-inter-medium mb-4">
+            {selectedFiles.length} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
+            selected
           </Text>
 
-          <Button label="Continue to Details" onPress={() => setStep("details")} />
-        </View>
+          <View className="gap-3 mb-6">
+            {selectedFiles.map((file, index) => (
+              <Card key={index} className="flex-row items-center p-4">
+                <View className="bg-gray-50 p-3 rounded-xl mr-4">
+                  {file.type === "pdf" ? (
+                    <File size={24} color="#923D5C" />
+                  ) : (
+                    <ImageIcon size={24} color="#923D5C" />
+                  )}
+                </View>
+                <View className="flex-1">
+                  <Text
+                    className="text-text font-inter-semibold mb-1"
+                    numberOfLines={1}
+                  >
+                    {file.name}
+                  </Text>
+                  <Text className="text-text-light text-xs font-inter-regular uppercase">
+                    {file.type}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => removeFile(index)}
+                  className="p-2 bg-danger-light rounded-xl"
+                >
+                  <X size={18} color="#DC3545" />
+                </Pressable>
+              </Card>
+            ))}
+          </View>
+
+          {/* Add more files */}
+          <Pressable
+            onPress={() => setStep("select")}
+            className="flex-row items-center justify-center py-4 border-2 border-dashed border-border rounded-2xl mb-6"
+          >
+            <Plus size={20} color="#923D5C" />
+            <Text className="text-primary font-inter-semibold ml-2">
+              Add More Files
+            </Text>
+          </Pressable>
+
+          <Button
+            label="Continue to Details"
+            onPress={() => setStep("details")}
+          />
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -276,7 +362,9 @@ export default function Upload() {
       >
         <View className="flex-row items-center justify-between px-6 py-4">
           <Pressable
-            onPress={() => setStep(selectedFile ? "preview" : "select")}
+            onPress={() =>
+              setStep(selectedFiles.length > 0 ? "preview" : "select")
+            }
             className="p-2 -ml-2"
           >
             <ChevronLeft size={24} color="#374151" />
@@ -287,10 +375,32 @@ export default function Upload() {
           <View className="w-10" />
         </View>
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="flex-1 px-6"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Show attached files summary */}
+          {selectedFiles.length > 0 && (
+            <Pressable
+              onPress={() => setStep("preview")}
+              className="bg-success-light/50 p-4 rounded-2xl flex-row items-center mb-6"
+            >
+              <Check size={20} color="#28A745" />
+              <Text className="text-success font-inter-medium ml-2 flex-1">
+                {selectedFiles.length} file
+                {selectedFiles.length !== 1 ? "s" : ""} attached
+              </Text>
+              <Text className="text-success/70 text-sm font-inter-regular">
+                Tap to edit
+              </Text>
+            </Pressable>
+          )}
+
           {/* Test Date */}
           <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-2">Test Date</Text>
+            <Text className="text-text font-inter-semibold mb-2">
+              Test Date
+            </Text>
             <TextInput
               value={testDate}
               onChangeText={setTestDate}
@@ -301,7 +411,9 @@ export default function Upload() {
 
           {/* Test Type */}
           <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-2">Test Type</Text>
+            <Text className="text-text font-inter-semibold mb-2">
+              Test Type
+            </Text>
             <TextInput
               value={testType}
               onChangeText={setTestType}

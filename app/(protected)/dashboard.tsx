@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/auth";
 import { useTestResults } from "../../lib/hooks";
 import { useReminders } from "../../lib/hooks";
@@ -31,14 +31,22 @@ export default function Dashboard() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { results, loading, refetch } = useTestResults();
-  const { nextReminder } = useReminders();
+  const { nextReminder, refetch: refetchReminders } = useReminders();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Refetch data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      refetchReminders();
+    }, [refetch, refetchReminders])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), refetchReminders()]);
     setRefreshing(false);
-  }, [refetch]);
+  }, [refetch, refetchReminders]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "../supabase";
 import type { ShareLink, CreateShareLinkInput, SharedResult } from "../types";
 
@@ -133,6 +133,10 @@ export function useSharedResult(token: string | undefined) {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchSharedResult();
+  }, [fetchSharedResult]);
 
   return { result, loading, error, refetch: fetchSharedResult };
 }

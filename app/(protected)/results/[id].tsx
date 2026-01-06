@@ -175,22 +175,15 @@ export default function ResultDetail() {
           </View>
 
           {result.file_name && (
-            <Pressable className="bg-gray-50 rounded-2xl p-4 flex-row items-center justify-between active:bg-gray-100">
-              <View className="flex-row items-center flex-1">
-                <Download size={18} color="#923D5C" />
-                <Text
-                  className="text-primary font-inter-medium ml-2 flex-1"
-                  numberOfLines={1}
-                >
-                  {result.file_name}
-                </Text>
-              </View>
-              <ChevronLeft
-                size={16}
-                color="#E0E0E0"
-                style={{ transform: [{ rotate: "180deg" }] }}
-              />
-            </Pressable>
+            <View className="bg-gray-50 rounded-2xl p-4 flex-row items-center">
+              <Download size={18} color="#923D5C" />
+              <Text
+                className="text-primary font-inter-medium ml-2 flex-1"
+                numberOfLines={1}
+              >
+                {result.file_name}
+              </Text>
+            </View>
           )}
         </Card>
 
