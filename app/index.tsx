@@ -1,15 +1,15 @@
 import { Redirect } from "expo-router";
 import { useAuth } from "../context/auth";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, SafeAreaView } from "react-native";
 
 export default function Index() {
   const { session, loading } = useAuth();
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" />
-      </View>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color="#923D5C" />
+      </SafeAreaView>
     );
   }
 
