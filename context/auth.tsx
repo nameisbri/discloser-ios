@@ -10,6 +10,7 @@ type AuthContextType = {
   loading: boolean;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
+  devBypass: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -68,8 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const devBypass = () => {
+    if (__DEV__) {
+      setSession({ user: { id: "dev-user", email: "dev@test.com" } } as Session);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut }}>
+    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut, devBypass }}>
       {children}
     </AuthContext.Provider>
   );

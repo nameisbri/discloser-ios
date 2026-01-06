@@ -1,9 +1,9 @@
 import * as AppleAuthentication from "expo-apple-authentication";
-import { View, Text, Platform } from "react-native";
+import { View, Text, Platform, Pressable } from "react-native";
 import { useAuth } from "../../context/auth";
 
 export default function Login() {
-  const { signInWithApple } = useAuth();
+  const { signInWithApple, devBypass } = useAuth();
 
   return (
     <View className="flex-1 items-center justify-center bg-white px-6">
@@ -24,6 +24,12 @@ export default function Login() {
 
       {Platform.OS !== "ios" && (
         <Text className="text-gray-400">Apple Sign-In requires iOS</Text>
+      )}
+
+      {__DEV__ && (
+        <Pressable onPress={devBypass} className="mt-8 py-3 px-6 border border-gray-300 rounded-lg">
+          <Text className="text-gray-500">Skip Login (Dev Only)</Text>
+        </Pressable>
       )}
     </View>
   );

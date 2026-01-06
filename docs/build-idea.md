@@ -142,6 +142,175 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 
 ---
 
+---
+
+## Styling Guide
+
+### Design Direction
+
+Modern, clean, and approachable. The app should feel trustworthy and calming—not clinical or intimidating. Prioritize whitespace, soft corners, and subtle animations.
+
+### Brand Colors
+
+| Name           | Hex       | Usage                               |
+| -------------- | --------- | ----------------------------------- |
+| Primary        | `#923D5C` | Main brand color, CTAs, key actions |
+| Primary Light  | `#EAC4CE` | Backgrounds, highlights, badges     |
+| Primary Dark   | `#7A3350` | Pressed states, emphasis            |
+| Secondary      | `#757575` | Muted text, icons                   |
+| Secondary Dark | `#43344F` | Deep accent, headers                |
+| Success        | `#28A745` | Negative results, confirmations     |
+| Success Light  | `#E8F5E9` | Success badges background           |
+| Danger         | `#DC3545` | Positive results, alerts            |
+| Danger Light   | `#F8D7DA` | Danger badges background            |
+| Warning        | `#FFC107` | Pending states                      |
+| Warning Light  | `#FFF3CD` | Warning badges background           |
+| Background     | `#FFFFFF` | Main background                     |
+| Text           | `#374151` | Body text                           |
+| Text Light     | `#6B7280` | Secondary text, labels              |
+| Border         | `#E0E0E0` | Dividers, card borders              |
+
+### Typography
+
+**Font Family:** Inter (available via Google Fonts / Expo)
+
+| Weight    | Value | Usage                   |
+| --------- | ----- | ----------------------- |
+| Regular   | 400   | Body text               |
+| Medium    | 500   | Labels, subtle emphasis |
+| Semi-Bold | 600   | Subheadings, buttons    |
+| Bold      | 700   | Headings, key info      |
+
+### Spacing Scale (Tailwind)
+
+Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px), `8` (32px), `10` (40px), `12` (48px)
+
+### Border Radius
+
+- Small elements (badges, chips): `rounded-lg` (8px)
+- Cards, inputs: `rounded-xl` (12px)
+- Buttons: `rounded-2xl` (16px) or `rounded-full` for pill shapes
+
+### Component Patterns
+
+**Status Badges:**
+
+- Negative (good): Success green bg + text
+- Positive (alert): Danger red bg + text
+- Pending: Warning yellow bg + text
+- Verified: Success green with checkmark
+
+**Cards:**
+
+- White background
+- Subtle shadow (`shadow-sm`)
+- Rounded corners (`rounded-xl`)
+- Comfortable padding (`p-4` or `p-6`)
+
+**Buttons:**
+
+- Primary: Solid primary color, white text
+- Secondary: Primary light bg, primary text
+- Ghost: Transparent bg, primary text
+
+**Icons:**
+
+- Use Lucide React Native for consistency
+- Size: 20-24px for inline, 32px for feature highlights
+
+### Visual Principles
+
+- Generous whitespace
+- Soft, rounded corners throughout
+- Subtle shadows over hard borders
+- Smooth transitions/animations (300ms ease)
+- Accessible contrast ratios
+
+---
+
+## Styling Guide
+
+### Design Direction
+
+Modern, clean, and approachable. The app should feel trustworthy and calming—not clinical or intimidating. Prioritize whitespace, soft corners, and subtle animations.
+
+### Brand Colors
+
+| Name           | Hex       | Usage                               |
+| -------------- | --------- | ----------------------------------- |
+| Primary        | `#923D5C` | Main brand color, CTAs, key actions |
+| Primary Light  | `#EAC4CE` | Backgrounds, highlights, badges     |
+| Primary Dark   | `#7A3350` | Pressed states, emphasis            |
+| Secondary      | `#757575` | Muted text, icons                   |
+| Secondary Dark | `#43344F` | Deep accent, headers                |
+| Success        | `#28A745` | Negative results, confirmations     |
+| Success Light  | `#E8F5E9` | Success badges background           |
+| Danger         | `#DC3545` | Positive results, alerts            |
+| Danger Light   | `#F8D7DA` | Danger badges background            |
+| Warning        | `#FFC107` | Pending states                      |
+| Warning Light  | `#FFF3CD` | Warning badges background           |
+| Background     | `#FFFFFF` | Main background                     |
+| Text           | `#374151` | Body text                           |
+| Text Light     | `#6B7280` | Secondary text, labels              |
+| Border         | `#E0E0E0` | Dividers, card borders              |
+
+### Typography
+
+**Font Family:** Inter (available via Google Fonts / Expo)
+
+| Weight    | Value | Usage                   |
+| --------- | ----- | ----------------------- |
+| Regular   | 400   | Body text               |
+| Medium    | 500   | Labels, subtle emphasis |
+| Semi-Bold | 600   | Subheadings, buttons    |
+| Bold      | 700   | Headings, key info      |
+
+### Spacing Scale
+
+Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px), `8` (32px), `10` (40px), `12` (48px)
+
+### Border Radius
+
+- Small elements (badges, chips): `rounded-lg` (8px)
+- Cards, inputs: `rounded-xl` (12px)
+- Buttons: `rounded-2xl` (16px) or `rounded-full` for pill shapes
+
+### Component Patterns
+
+**Status Badges:**
+
+- Negative (good): Success green bg + text
+- Positive (alert): Danger red bg + text
+- Pending: Warning yellow bg + text
+
+**Cards:**
+
+- White background
+- Subtle shadow (`shadow-sm`)
+- Rounded corners (`rounded-xl`)
+- Comfortable padding (`p-4` or `p-6`)
+
+**Buttons:**
+
+- Primary: Solid primary color, white text
+- Secondary: Primary light bg, primary text
+- Ghost: Transparent bg, primary text
+
+**Icons:**
+
+- Use Lucide React Native for consistency
+- Size: 20-24px for inline, 32px for feature highlights
+
+### Visual Principles
+
+- Generous whitespace
+- Soft, rounded corners throughout
+- Subtle shadows over hard borders
+- Smooth transitions/animations (300ms ease)
+- Accessible contrast ratios
+
+---
+
 ## Notes for Agent
 
 - Keep components small and focused
