@@ -8,30 +8,40 @@ module.exports = {
         primary: {
           DEFAULT: "#923D5C",
           light: "#EAC4CE",
-          dark: "#7A3350",
+          dark: "#6B2D45",
+          muted: "#F9F0F3",
         },
         secondary: {
           DEFAULT: "#757575",
-          dark: "#43344F",
+          dark: "#2D2438",
+        },
+        accent: {
+          DEFAULT: "#FF6B8A",
+          soft: "#FFE4EA",
         },
         success: {
-          DEFAULT: "#28A745",
-          light: "#E8F5E9",
+          DEFAULT: "#10B981",
+          light: "#D1FAE5",
+          dark: "#059669",
         },
         danger: {
-          DEFAULT: "#DC3545",
-          light: "#F8D7DA",
+          DEFAULT: "#EF4444",
+          light: "#FEE2E2",
         },
         warning: {
-          DEFAULT: "#FFC107",
-          light: "#FFF3CD",
+          DEFAULT: "#F59E0B",
+          light: "#FEF3C7",
         },
-        background: "#FFFFFF",
+        background: {
+          DEFAULT: "#FAFAFA",
+          card: "#FFFFFF",
+        },
         text: {
-          DEFAULT: "#374151",
+          DEFAULT: "#1F2937",
           light: "#6B7280",
+          muted: "#9CA3AF",
         },
-        border: "#E0E0E0",
+        border: "#E5E7EB",
       },
       fontFamily: {
         inter: ["Inter_400Regular"],

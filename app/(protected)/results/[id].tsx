@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { useTestResult, useTestResults } from "../../../lib/hooks";
 import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
+import { ShareModal } from "../../../components/ShareModal";
 import type { STIResult } from "../../../lib/types";
 
 export default function ResultDetail() {
@@ -28,6 +30,7 @@ export default function ResultDetail() {
   const router = useRouter();
   const { result, loading, error } = useTestResult(id);
   const { deleteResult } = useTestResults();
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -63,8 +66,7 @@ export default function ResultDetail() {
   };
 
   const handleShare = () => {
-    // TODO: Implement share link creation modal
-    Alert.alert("Coming Soon", "Share functionality will be available soon!");
+    setShowShareModal(true);
   };
 
   if (loading) {
@@ -241,6 +243,14 @@ export default function ResultDetail() {
       <View className="p-6 bg-white border-t border-border">
         <Button label="Share This Result" onPress={handleShare} />
       </View>
+
+      {id && (
+        <ShareModal
+          visible={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          testResultId={id}
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -3,20 +3,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 
 const buttonVariants = cva(
-  "flex-row items-center justify-center rounded-2xl py-4 px-6 shadow-sm active:opacity-80",
+  "flex-row items-center justify-center rounded-2xl py-4 px-6 active:scale-[0.98]",
   {
     variants: {
       variant: {
         primary: "bg-primary",
-        secondary: "bg-primary-light/50 border border-primary-light",
-        outline: "bg-transparent border border-border",
+        secondary: "bg-primary-muted border-2 border-primary/20",
+        outline: "bg-background-card border-2 border-border",
         ghost: "bg-transparent",
         danger: "bg-danger",
+        accent: "bg-accent",
       },
       size: {
         default: "h-14",
-        sm: "h-10 px-4 py-2 rounded-xl",
-        lg: "h-16 px-8 rounded-3xl",
+        sm: "h-11 px-4 py-2 rounded-xl",
+        lg: "h-16 px-8 rounded-2xl",
       },
     },
     defaultVariants: {
@@ -26,7 +27,7 @@ const buttonVariants = cva(
   }
 );
 
-const buttonTextVariants = cva("font-inter-semibold text-center", {
+const buttonTextVariants = cva("font-inter-bold text-center", {
   variants: {
     variant: {
       primary: "text-white",
@@ -34,6 +35,7 @@ const buttonTextVariants = cva("font-inter-semibold text-center", {
       outline: "text-text",
       ghost: "text-primary",
       danger: "text-white",
+      accent: "text-white",
     },
     size: {
       default: "text-base",

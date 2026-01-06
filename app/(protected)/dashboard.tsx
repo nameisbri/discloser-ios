@@ -20,10 +20,13 @@ import {
   LogOut,
   Calendar,
   ShieldCheck,
+  Heart,
+  Sparkles,
 } from "lucide-react-native";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
+import { LinearGradient } from "expo-linear-gradient";
 import type { TestResult } from "../../lib/types";
 import { useState, useCallback } from "react";
 
@@ -57,10 +60,17 @@ export default function Dashboard() {
     });
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView
-        className="flex-1 px-6 pt-4"
+        className="flex-1"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -69,132 +79,178 @@ export default function Dashboard() {
           />
         }
       >
-        <View className="flex-row justify-between items-center mb-8">
-          <View>
-            <Text className="text-text-light font-inter-medium mb-1">
-              Welcome back,
-            </Text>
-            <Text className="text-3xl font-inter-bold text-secondary-dark">
-              Dashboard
-            </Text>
-          </View>
-          <View className="flex-row gap-3">
+        {/* Header with gradient accent */}
+        <LinearGradient
+          colors={["#923D5C", "#6B2D45"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 64, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+        >
+          <View className="flex-row justify-between items-center mb-6">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center mr-3">
+                <Heart size={20} color="#FF6B8A" fill="#FF6B8A" />
+              </View>
+              <Text className="text-white/90 font-inter-bold text-lg">Discloser</Text>
+            </View>
             <Link href="/settings" asChild>
-              <Pressable className="bg-white p-3 rounded-2xl shadow-sm border border-border active:bg-gray-50">
-                <Settings size={20} color="#374151" />
+              <Pressable className="bg-white/20 p-3 rounded-xl active:bg-white/30">
+                <Settings size={20} color="white" />
               </Pressable>
             </Link>
           </View>
-        </View>
 
-        {/* Next Test Reminder Card */}
-        <Card className="bg-primary-light border-0 mb-8 flex-row items-center justify-between">
-          <View className="flex-1">
-            <Text className="text-primary-dark font-inter-semibold mb-1">
-              Next Recommended Test
-            </Text>
-            <Text className="text-primary text-xl font-inter-bold">
-              {nextReminder
-                ? formatDate(nextReminder.next_date)
-                : "No reminder set"}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => router.push("/reminders")}
-            className="bg-white p-3 rounded-2xl"
-          >
-            <Bell size={24} color="#923D5C" />
-          </Pressable>
-        </Card>
+          <Text className="text-white/70 font-inter-medium mb-1">
+            {getGreeting()} 👋
+          </Text>
+          <Text className="text-3xl font-inter-bold text-white mb-4">
+            You're looking healthy
+          </Text>
 
-        {/* Quick Actions */}
-        <View className="flex-row gap-4 mb-8">
-          <Link href="/upload" asChild>
-            <Button
-              label="Add Result"
-              icon={<Plus size={20} color="white" />}
-              className="flex-1"
-            />
-          </Link>
-          <Link href="/reminders" asChild>
-            <Button
-              label="Reminders"
-              variant="outline"
-              icon={<Bell size={20} color="#923D5C" />}
-              className="flex-1"
-              textClassName="text-primary"
-            />
-          </Link>
-        </View>
-
-        <Text className="text-xl font-inter-bold text-secondary-dark mb-4">
-          Recent Results
-        </Text>
-
-        {loading ? (
-          <View className="py-12 items-center">
-            <ActivityIndicator size="large" color="#923D5C" />
-          </View>
-        ) : results.length === 0 ? (
-          <Card className="p-8 items-center justify-center border-dashed mb-8">
-            <View className="bg-gray-50 p-4 rounded-full mb-4">
-              <FileText size={32} color="#9CA3AF" />
+          {/* Status pill */}
+          {results.length > 0 && results[0].status === "negative" && (
+            <View className="flex-row items-center bg-white/20 self-start px-4 py-2 rounded-full">
+              <ShieldCheck size={16} color="#10B981" />
+              <Text className="text-white font-inter-semibold ml-2 text-sm">
+                All clear on your last test
+              </Text>
             </View>
-            <Text className="text-text font-inter-semibold mb-2">
-              No results yet
-            </Text>
-            <Text className="text-text-light font-inter-regular text-center mb-6">
-              Upload your first test result to securely manage and share it.
-            </Text>
-            <Link href="/upload" asChild>
-              <Button
-                label="Upload Now"
-                variant="secondary"
-                size="sm"
-                className="px-8"
-              />
-            </Link>
-          </Card>
-        ) : (
-          <View className="gap-4 mb-8">
-            {results.slice(0, 5).map((result) => (
-              <ResultCard key={result.id} result={result} />
-            ))}
-            {results.length > 5 && (
-              <Pressable className="py-3 items-center">
-                <Text className="text-primary font-inter-semibold">
-                  View All Results ({results.length})
+          )}
+        </LinearGradient>
+
+        <View className="px-6 -mt-8">
+          {/* Next Test Reminder Card */}
+          <Card className="bg-background-card mb-6 shadow-lg">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center flex-1">
+                <View className="w-12 h-12 bg-accent-soft rounded-2xl items-center justify-center mr-4">
+                  <Bell size={24} color="#FF6B8A" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-text-light font-inter-medium text-sm mb-1">
+                    Next checkup
+                  </Text>
+                  <Text className="text-text text-lg font-inter-bold">
+                    {nextReminder
+                      ? formatDate(nextReminder.next_date)
+                      : "Set a reminder"}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={() => router.push("/reminders")}
+                className="bg-primary-muted px-4 py-2 rounded-xl"
+              >
+                <Text className="text-primary font-inter-semibold text-sm">
+                  {nextReminder ? "Edit" : "Add"}
                 </Text>
               </Pressable>
+            </View>
+          </Card>
+
+          {/* Quick Actions */}
+          <View className="flex-row gap-3 mb-8">
+            <Link href="/upload" asChild>
+              <Pressable className="flex-1 bg-primary py-5 rounded-2xl items-center active:opacity-90">
+                <Plus size={24} color="white" />
+                <Text className="text-white font-inter-bold mt-2">Add Result</Text>
+              </Pressable>
+            </Link>
+            <Link href="/reminders" asChild>
+              <Pressable className="flex-1 bg-background-card border-2 border-border py-5 rounded-2xl items-center active:bg-gray-50">
+                <Sparkles size={24} color="#923D5C" />
+                <Text className="text-primary font-inter-bold mt-2">Reminders</Text>
+              </Pressable>
+            </Link>
+          </View>
+
+          {/* Results Section */}
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-xl font-inter-bold text-text">
+              Your Results
+            </Text>
+            {results.length > 0 && (
+              <Text className="text-text-muted font-inter-medium">
+                {results.length} total
+              </Text>
             )}
           </View>
-        )}
 
-        <Button
-          label="Sign Out"
-          variant="ghost"
-          icon={<LogOut size={18} color="#DC3545" />}
-          onPress={signOut}
-          className="mb-12 border border-danger/10"
-          textClassName="text-danger"
-        />
+          {loading ? (
+            <View className="py-12 items-center">
+              <ActivityIndicator size="large" color="#923D5C" />
+            </View>
+          ) : results.length === 0 ? (
+            <Card className="p-8 items-center justify-center border-2 border-dashed border-border bg-primary-muted/30 mb-8">
+              <View className="w-16 h-16 bg-primary-light rounded-full items-center justify-center mb-4">
+                <FileText size={32} color="#923D5C" />
+              </View>
+              <Text className="text-xl font-inter-bold text-text mb-2">
+                No results yet
+              </Text>
+              <Text className="text-text-light font-inter-regular text-center mb-6 leading-5">
+                Upload your first test result and take{"\n"}control of your sexual health 💪
+              </Text>
+              <Link href="/upload" asChild>
+                <Pressable className="bg-primary px-8 py-3 rounded-full">
+                  <Text className="text-white font-inter-bold">Get Started</Text>
+                </Pressable>
+              </Link>
+            </Card>
+          ) : (
+            <View className="gap-3 mb-8">
+              {results.slice(0, 5).map((result, index) => (
+                <ResultCard key={result.id} result={result} index={index} />
+              ))}
+              {results.length > 5 && (
+                <Pressable className="py-4 items-center bg-primary-muted rounded-2xl">
+                  <Text className="text-primary font-inter-bold">
+                    View All Results ({results.length})
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          <Pressable
+            onPress={signOut}
+            className="mb-12 py-4 items-center"
+          >
+            <Text className="text-text-muted font-inter-medium">
+              Sign Out
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function ResultCard({ result }: { result: TestResult }) {
+function ResultCard({ result, index }: { result: TestResult; index: number }) {
   const router = useRouter();
 
-  const statusVariant =
-    result.status === "negative"
-      ? "success"
-      : result.status === "positive"
-      ? "danger"
-      : "warning";
+  const statusConfig = {
+    negative: {
+      bg: "bg-success-light",
+      text: "text-success-dark",
+      label: "All Clear ✓",
+      icon: "#10B981",
+    },
+    positive: {
+      bg: "bg-danger-light",
+      text: "text-danger",
+      label: "Positive",
+      icon: "#EF4444",
+    },
+    pending: {
+      bg: "bg-warning-light",
+      text: "text-warning",
+      label: "Pending",
+      icon: "#F59E0B",
+    },
+  };
 
-  const statusLabel =
-    result.status.charAt(0).toUpperCase() + result.status.slice(1);
+  const status = statusConfig[result.status];
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -206,31 +262,36 @@ function ResultCard({ result }: { result: TestResult }) {
   };
 
   return (
-    <Pressable onPress={() => router.push(`/results/${result.id}`)}>
-      <Card className="flex-row items-center">
+    <Pressable
+      onPress={() => router.push(`/results/${result.id}`)}
+      className="active:scale-[0.98]"
+      style={{ transform: [{ scale: 1 }] }}
+    >
+      <Card className="flex-row items-center bg-background-card">
+        <View className={`w-12 h-12 ${status.bg} rounded-2xl items-center justify-center mr-4`}>
+          <FileText size={22} color={status.icon} />
+        </View>
         <View className="flex-1">
-          <Text className="text-text font-inter-semibold mb-1">
+          <Text className="text-text font-inter-bold mb-1">
             {result.test_type}
           </Text>
-          <View className="flex-row items-center gap-3">
-            <View className="flex-row items-center">
-              <Calendar size={14} color="#6B7280" />
-              <Text className="text-text-light text-sm font-inter-regular ml-1">
-                {formatDate(result.test_date)}
-              </Text>
-            </View>
+          <View className="flex-row items-center">
+            <Text className="text-text-light text-sm font-inter-regular">
+              {formatDate(result.test_date)}
+            </Text>
             {result.is_verified && (
-              <View className="flex-row items-center">
-                <ShieldCheck size={14} color="#28A745" />
-                <Text className="text-success text-sm font-inter-medium ml-1">
-                  Verified
-                </Text>
-              </View>
+              <>
+                <Text className="text-text-muted mx-2">•</Text>
+                <ShieldCheck size={14} color="#10B981" />
+              </>
             )}
           </View>
         </View>
-        <Badge label={statusLabel} variant={statusVariant} />
-        <ChevronRight size={20} color="#E0E0E0" className="ml-3" />
+        <View className={`${status.bg} px-3 py-1.5 rounded-full`}>
+          <Text className={`${status.text} font-inter-bold text-xs`}>
+            {status.label}
+          </Text>
+        </View>
       </Card>
     </Pressable>
   );

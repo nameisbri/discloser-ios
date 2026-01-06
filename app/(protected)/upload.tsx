@@ -524,17 +524,20 @@ function UploadOption({
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white p-6 rounded-3xl border border-border shadow-sm flex-row items-center active:bg-gray-50"
+      className="bg-background-card p-5 rounded-2xl border-2 border-border flex-row items-center active:border-primary active:bg-primary-muted"
     >
-      <View className="bg-gray-50 p-4 rounded-2xl mr-5">{icon}</View>
+      <View className="bg-primary-muted w-14 h-14 rounded-xl items-center justify-center mr-4">
+        {icon}
+      </View>
       <View className="flex-1">
-        <Text className="text-lg font-inter-semibold text-text mb-1">
+        <Text className="text-base font-inter-bold text-text mb-0.5">
           {title}
         </Text>
         <Text className="text-text-light font-inter-regular text-sm">
           {description}
         </Text>
       </View>
+      <ChevronLeft size={20} color="#E5E7EB" style={{ transform: [{ rotate: '180deg' }] }} />
     </Pressable>
   );
 }
@@ -550,34 +553,46 @@ function StatusButton({
   onPress: () => void;
   variant: "success" | "danger" | "warning";
 }) {
-  const colors = {
+  const config = {
     success: {
-      bg: selected ? "bg-success" : "bg-success-light",
-      text: selected ? "text-white" : "text-success",
-      border: "border-success",
+      selectedBg: "bg-success",
+      emoji: "✓",
+      unselectedBorder: "border-success/30",
     },
     danger: {
-      bg: selected ? "bg-danger" : "bg-danger-light",
-      text: selected ? "text-white" : "text-danger",
-      border: "border-danger",
+      selectedBg: "bg-danger",
+      emoji: "!",
+      unselectedBorder: "border-danger/30",
     },
     warning: {
-      bg: selected ? "bg-warning" : "bg-warning-light",
-      text: selected ? "text-white" : "text-warning",
-      border: "border-warning",
+      selectedBg: "bg-warning",
+      emoji: "?",
+      unselectedBorder: "border-warning/30",
     },
   };
+
+  const style = config[variant];
+
+  if (selected) {
+    return (
+      <Pressable
+        onPress={onPress}
+        className={`flex-1 py-4 rounded-2xl ${style.selectedBg} flex-row items-center justify-center`}
+      >
+        <View className="w-5 h-5 bg-white/30 rounded-full items-center justify-center mr-2">
+          <Check size={12} color="white" strokeWidth={3} />
+        </View>
+        <Text className="text-white font-inter-bold">{label}</Text>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-1 py-3 rounded-2xl border ${colors[variant].bg} ${
-        selected ? colors[variant].border : "border-transparent"
-      }`}
+      className={`flex-1 py-4 rounded-2xl bg-background-card border-2 ${style.unselectedBorder}`}
     >
-      <Text
-        className={`text-center font-inter-semibold ${colors[variant].text}`}
-      >
+      <Text className="text-center font-inter-medium text-text-light">
         {label}
       </Text>
     </Pressable>
