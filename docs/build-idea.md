@@ -20,8 +20,10 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 
 ### 1. Test Result Management
 
-- Upload test results (photo/PDF) or manual entry
-- Automatic document parsing to extract key info (dates, results, STIs tested)
+- Upload test results (photo from camera/gallery) or manual entry
+- AI-powered automatic extraction of test data (dates, results, STIs tested)
+- Support for multi-image uploads (e.g., 3-page test results)
+- Review and edit extracted results before saving
 - View test history with clear status indicators (Negative/Positive/Pending)
 
 ### 2. Secure Sharing
@@ -52,6 +54,8 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 | Database      | Supabase (Postgres)          |
 | Auth          | Apple Sign-In via Supabase   |
 | File Storage  | Supabase Storage             |
+| OCR           | Google Cloud Vision API      |
+| AI Parsing    | OpenRouter (Llama 3.3 70B)   |
 | Notifications | Expo Notifications           |
 
 ---
@@ -136,9 +140,9 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 
 ### Phase 5: Polish
 
-- Document parsing/OCR
 - Educational content
 - Testing & bug fixes
+- PDF upload support (post-MVP)
 
 ---
 
@@ -322,9 +326,14 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 ### Features to Complete
 
 - [x] Share functionality (Phase 3) - In-app share modal complete
+- [x] Document parsing/OCR - Google Vision + OpenRouter LLM integration complete
 - [ ] Push notifications for reminders (Phase 4)
-- [ ] Document parsing/OCR (Phase 5)
 - [ ] Settings page functionality (profile edit, data export/delete)
+
+### Post-MVP Features
+
+- [ ] PDF upload support (requires PDF-to-image conversion)
+- [ ] Multi-page PDF processing (extract all pages, not just first)
 
 ### Sharing (Post-Launch)
 
