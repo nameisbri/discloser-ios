@@ -52,6 +52,12 @@ NOTES EXTRACTION:
 - Include follow-up recommendations, clinical interpretations, or warnings
 - Do NOT include boilerplate text like "results should be interpreted in context of clinical history"
 
+VERIFICATION FIELDS (for document authenticity):
+- lab_name: Name of the laboratory (e.g., "LifeLabs", "Public Health Ontario", "Dynacare", "BC CDC", "Alberta Precision Labs")
+- patient_name: Patient's full name as shown on document
+- health_card_present: true if a Canadian health card number is visible (OHIP, MSP, Alberta Health, RAMQ, etc.)
+- accession_number: Lab specimen/requisition/accession number if present
+
 Example output:
 {
   "collection_date": "2024-09-18",
@@ -63,12 +69,14 @@ Example output:
     {"name": "Hepatitis B", "result": "Immune"},
     {"name": "Hepatitis C", "result": "Negative"},
     {"name": "Syphilis", "result": "Negative"},
-    {"name": "HSV-1", "result": "Positive"},
-    {"name": "HSV-2", "result": "Negative"},
     {"name": "Chlamydia", "result": "Negative"},
     {"name": "Gonorrhea", "result": "Negative"}
   ],
-  "notes": "HSV-1 antibodies detected indicating past or current infection."
+  "notes": null,
+  "lab_name": "LifeLabs",
+  "patient_name": "John Smith",
+  "health_card_present": true,
+  "accession_number": "L12345678"
 }`;
 
 export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {

@@ -48,7 +48,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
               <p className="font-semibold text-gray-900">{sti.name}</p>
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span>{formatDate(sti.testDate)}</span>
-                {sti.isVerified && <span className="text-success">✓ Verified</span>}
+                {sti.isVerified && <span className="text-success" title="From a recognized Canadian lab">✓ Verified</span>}
               </div>
             </div>
             <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusBg(sti.status)} ${statusColor(sti.status)}`}>
@@ -59,6 +59,9 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
       </div>
 
       <p className="text-center text-gray-400 text-xs mt-6">
+        <span className="text-success">✓ Verified</span> = from a recognized Canadian lab with valid identifiers
+      </p>
+      <p className="text-center text-gray-400 text-xs mt-2">
         Get Discloser to manage your own status
       </p>
     </div>

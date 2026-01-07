@@ -4,7 +4,14 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { parseDocumentWithLLM } from './llmParser';
 import { normalizeTestName } from './testNormalizer';
 import { standardizeResult } from './resultStandardizer';
-import { ParsedDocument, ParsedTest } from './types';
+import { ParsedDocument, ParsedTest, LLMResponse } from './types';
+
+// Recognized Canadian labs
+const CANADIAN_LABS = [
+  'lifelabs', 'public health ontario', 'dynacare', 'bc cdc',
+  'alberta precision labs', 'gamma-dynacare', 'medlabs',
+  'bio-test', 'idexx', 'hassle free clinic', 'mapletree medical',
+];
 
 /**
  * Extracts text from an image using Google Cloud Vision OCR
@@ -83,12 +90,17 @@ export async function parseDocument(
     // Step 5: Format collection date
     const collectionDate = formatDate(llmResponse.collection_date);
 
+    // Step 6: Verify document authenticity
+    const verification = verifyDocument(llmResponse);
+
     return {
       collectionDate,
       testType,
       tests,
       notes: llmResponse.notes,
-      rawText: extractedText.substring(0, 500), // Store first 500 chars for debugging
+      rawText: extractedText.substring(0, 500),
+      isVerified: verification.isVerified,
+      verificationDetails: verification.details,
     };
   } catch (error) {
     console.error('Document parsing error:', error);
@@ -154,4 +166,28 @@ function formatDate(dateString: string | null): string | null {
     console.error('Date formatting error:', error);
     return null;
   }
+}
+
+/**
+ * Verifies document authenticity based on extracted fields
+ * Requires: recognized lab + (health card OR accession number)
+ */
+function verifyDocument(llm: LLMResponse) {
+  const labName = llm.lab_name?.toLowerCase() || '';
+  const isRecognizedLab = CANADIAN_LABS.some(lab => labName.includes(lab));
+  const hasHealthCard = llm.health_card_present === true;
+  const hasAccession = !!llm.accession_number;
+
+  // Verified if from recognized lab AND has at least one identifier
+  const isVerified = isRecognizedLab && (hasHealthCard || hasAccession);
+
+  return {
+    isVerified,
+    details: {
+      labName: llm.lab_name,
+      patientName: llm.patient_name,
+      hasHealthCard,
+      hasAccessionNumber: hasAccession,
+    },
+  };
 }

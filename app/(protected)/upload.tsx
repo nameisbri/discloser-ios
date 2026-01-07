@@ -70,6 +70,7 @@ export default function Upload() {
     DEFAULT_STI_TESTS.slice(0, 5)
   );
   const [notes, setNotes] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -134,12 +135,14 @@ export default function Upload() {
       let extractedNotes: string[] = [];
 
       // Parse all selected files
+      let verified = false;
       for (const file of selectedFiles) {
         const parsed = await parseDocument(file.uri, "image/jpeg");
 
         if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
         if (!testType && parsed.testType) testType = parsed.testType;
         if (parsed.notes) extractedNotes.push(parsed.notes);
+        if (parsed.isVerified) verified = true;
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -150,6 +153,7 @@ export default function Upload() {
           allResults = [...allResults, ...results];
         }
       }
+      setIsVerified(verified);
 
       if (collectionDate) setTestDate(collectionDate);
       if (testType) setTestType(testType);
@@ -211,6 +215,7 @@ export default function Upload() {
         file_url: fileUrl,
         file_name: fileName,
         notes: notes || undefined,
+        is_verified: isVerified,
       });
 
       if (result) {
@@ -401,21 +406,34 @@ export default function Upload() {
         >
           {/* Show attached files summary */}
           {selectedFiles.length > 0 && (
-            <>
-              <Pressable
-                onPress={() => setStep("preview")}
-                className="bg-success-light/50 p-4 rounded-2xl flex-row items-center mb-3"
-              >
-                <Check size={20} color="#28A745" />
-                <Text className="text-success font-inter-medium ml-2 flex-1">
-                  {selectedFiles.length} file
-                  {selectedFiles.length !== 1 ? "s" : ""} attached
+            <Pressable
+              onPress={() => setStep("preview")}
+              className="bg-success-light/50 p-4 rounded-2xl flex-row items-center mb-3"
+            >
+              <Check size={20} color="#28A745" />
+              <Text className="text-success font-inter-medium ml-2 flex-1">
+                {selectedFiles.length} file
+                {selectedFiles.length !== 1 ? "s" : ""} attached
+              </Text>
+              <Text className="text-success/70 text-sm font-inter-regular">
+                Tap to edit
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Show verification status */}
+          {isVerified && (
+            <View className="bg-primary-light/50 p-4 rounded-2xl mb-3">
+              <View className="flex-row items-center mb-1">
+                <Check size={20} color="#923D5C" />
+                <Text className="text-primary font-inter-semibold ml-2">
+                  Document verified
                 </Text>
-                <Text className="text-success/70 text-sm font-inter-regular">
-                  Tap to edit
-                </Text>
-              </Pressable>
-            </>
+              </View>
+              <Text className="text-primary/70 text-xs font-inter-regular ml-7">
+                From a recognized Canadian lab with valid identifiers
+              </Text>
+            </View>
           )}
 
           {parsing && (
