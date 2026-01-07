@@ -5,6 +5,7 @@ A mobile app for managing and sharing STI test results securely.
 ## Features
 
 - **Upload Test Results** - Scan documents with AI-powered extraction (Google Cloud Vision OCR + LLM parsing)
+- **Document Verification** - Automatic verification for recognized Canadian labs (LifeLabs, Public Health Ontario, etc.)
 - **Track History** - View all your test results in one place
 - **Share Securely** - Generate time-limited links or QR codes to share results
 - **Share Status** - Share your aggregated STI status across all tests

@@ -245,18 +245,22 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 - [x] Document parsing/OCR - Google Vision + OpenRouter LLM integration complete
 - [x] Push notifications for reminders (Phase 4)
 - [x] Settings page functionality (profile edit, data delete)
+- [x] Web share pages (`/share/[token]` and `/status/[token]`)
+- [x] Document verification (Canadian labs, health card, accession number)
+- [x] Share aggregated STI status across all tests
 
 ### Post-MVP Features
 
 - [ ] PDF upload support (requires PDF-to-image conversion)
-- [ ] Multi-page PDF processing (extract all pages, not just first)
 - [ ] Development build for push notifications (Expo Go doesn't support remote notifications)
+- [ ] Educational resources (testing locations, health info)
 
-### Sharing (Post-Launch)
+### Deployment & Production
 
-- [ ] Build web share page at `discloser.app/share/[token]` to display shared results
-- [ ] Configure deep linking so share URLs open in-app for users who have Discloser installed (iOS Universal Links)
+- [ ] Deploy web share pages to Vercel/similar
+- [ ] Configure deep linking / iOS Universal Links
 - [ ] Set `EXPO_PUBLIC_SHARE_BASE_URL` env var to production domain
+- [ ] App Store submission
 
 ---
 
