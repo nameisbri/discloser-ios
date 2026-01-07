@@ -7,7 +7,7 @@ export function standardizeResult(result: string): TestStatus {
 
   const cleanResult = result.toLowerCase().trim();
 
-  // Negative patterns
+  // Negative patterns (no current infection)
   if (
     /^negative$|^non-reactive$|^not detected$|^absent$|no evidence|no antibodies detected|no hiv.*detected/i.test(
       cleanResult
@@ -16,8 +16,8 @@ export function standardizeResult(result: string): TestStatus {
     return 'negative';
   }
 
-  // Evidence of immunity = negative (good)
-  if (/evidence of immunity/i.test(cleanResult)) {
+  // Immune = protected (vaccine or past infection) - treat as negative (good outcome)
+  if (/^immune$|evidence of immunity|immunity/i.test(cleanResult)) {
     return 'negative';
   }
 
@@ -28,6 +28,11 @@ export function standardizeResult(result: string): TestStatus {
     )
   ) {
     return 'positive';
+  }
+
+  // Pending patterns
+  if (/^pending$|referred to phl|awaiting/i.test(cleanResult)) {
+    return 'pending';
   }
 
   // Numeric values = pending (needs review)

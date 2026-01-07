@@ -172,22 +172,100 @@ create policy "Users can delete their own reminders"
 create index if not exists reminders_user_id_idx on public.reminders(user_id);
 
 -- ============================================
+-- STATUS SHARE LINKS TABLE
+-- Share aggregated STI status (snapshot of all latest results)
+-- ============================================
+create table if not exists public.status_share_links (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  token text unique not null default encode(gen_random_bytes(32), 'hex'),
+  expires_at timestamptz not null,
+  view_count integer default 0,
+  max_views integer,
+  show_name boolean default false,
+  display_name text,
+  status_snapshot jsonb not null, -- Array of {name, status, result, testDate, isVerified}
+  created_at timestamptz default now() not null
+);
+
+-- Enable RLS
+alter table public.status_share_links enable row level security;
+
+-- Status share links policies
+create policy "Users can view their own status share links"
+  on public.status_share_links for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own status share links"
+  on public.status_share_links for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete their own status share links"
+  on public.status_share_links for delete
+  using (auth.uid() = user_id);
+
+-- Index for token lookups
+create index if not exists status_share_links_token_idx on public.status_share_links(token);
+
+-- Function to get shared status (public access)
+create or replace function public.get_shared_status(share_token text)
+returns table (
+  status_snapshot jsonb,
+  show_name boolean,
+  display_name text,
+  is_valid boolean
+) as $$
+begin
+  -- Increment view count
+  update public.status_share_links
+  set view_count = view_count + 1
+  where token = share_token
+    and expires_at > now()
+    and (max_views is null or view_count < max_views);
+
+  return query
+  select
+    ssl.status_snapshot,
+    ssl.show_name,
+    ssl.display_name,
+    true as is_valid
+  from public.status_share_links ssl
+  where ssl.token = share_token
+    and ssl.expires_at > now()
+    and (ssl.max_views is null or ssl.view_count <= ssl.max_views);
+end;
+$$ language plpgsql security definer;
+
+-- ============================================
 -- STORAGE BUCKET
 -- For test result documents (PDFs, images)
 -- ============================================
--- Run these in Supabase Dashboard > Storage or via API:
---
--- 1. Create bucket named 'test-documents' (private)
--- 2. Add policies:
---    - Allow authenticated users to upload to their own folder
---    - Allow users to read their own files
---    - Allow public read for shared files via share token
+-- Create bucket (run once in SQL editor):
+insert into storage.buckets (id, name, public)
+values ('test-documents', 'test-documents', false)
+on conflict (id) do nothing;
 
--- Storage policies (add via Supabase Dashboard):
--- 
--- INSERT policy: ((bucket_id = 'test-documents') AND (auth.uid()::text = (storage.foldername(name))[1]))
--- SELECT policy: ((bucket_id = 'test-documents') AND (auth.uid()::text = (storage.foldername(name))[1]))
--- DELETE policy: ((bucket_id = 'test-documents') AND (auth.uid()::text = (storage.foldername(name))[1]))
+-- Storage RLS policies
+create policy "Users can upload to own folder"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'test-documents'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can read own files"
+  on storage.objects for select
+  using (
+    bucket_id = 'test-documents'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can delete own files"
+  on storage.objects for delete
+  using (
+    bucket_id = 'test-documents'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 -- ============================================
 -- HELPER FUNCTIONS

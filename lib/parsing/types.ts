@@ -11,15 +11,18 @@ export interface ParsedDocument {
   collectionDate: string | null;
   testType: string;
   tests: ParsedTest[];
+  notes?: string;
   rawText?: string;
 }
 
 export interface LLMResponse {
   collection_date: string | null;
   specimen_source?: string;
+  test_type?: string;
   tests: Array<{
     name: string;
     result: string;
     notes?: string;
   }>;
+  notes?: string;
 }

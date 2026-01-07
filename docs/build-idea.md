@@ -235,21 +235,22 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 
 ### Storage & Files
 
-- [ ] Fix Supabase Storage bucket permissions for file viewing/downloading
-- [ ] Implement signed URLs for private file access
-- [ ] Add file preview in-app (images) instead of opening in browser
+- [x] Fix Supabase Storage bucket permissions for file viewing/downloading
+- [x] Implement signed URLs for private file access
+- [x] Add file preview in-app (images) instead of opening in browser
 
 ### Features to Complete
 
 - [x] Share functionality (Phase 3) - In-app share modal complete
 - [x] Document parsing/OCR - Google Vision + OpenRouter LLM integration complete
-- [ ] Push notifications for reminders (Phase 4)
-- [ ] Settings page functionality (profile edit, data export/delete)
+- [x] Push notifications for reminders (Phase 4)
+- [x] Settings page functionality (profile edit, data delete)
 
 ### Post-MVP Features
 
 - [ ] PDF upload support (requires PDF-to-image conversion)
 - [ ] Multi-page PDF processing (extract all pages, not just first)
+- [ ] Development build for push notifications (Expo Go doesn't support remote notifications)
 
 ### Sharing (Post-Launch)
 

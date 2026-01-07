@@ -131,6 +131,7 @@ export default function Upload() {
       let allResults: STIResult[] = [];
       let collectionDate: string | null = null;
       let testType: string | null = null;
+      let extractedNotes: string[] = [];
 
       // Parse all selected files
       for (const file of selectedFiles) {
@@ -138,6 +139,7 @@ export default function Upload() {
 
         if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
         if (!testType && parsed.testType) testType = parsed.testType;
+        if (parsed.notes) extractedNotes.push(parsed.notes);
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -156,7 +158,7 @@ export default function Upload() {
         const allNegative = allResults.every((t) => t.status === "negative");
         const anyPositive = allResults.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
-        setNotes(`Auto-extracted from ${selectedFiles.length} image(s): ${allResults.length} test(s). Please review.`);
+        setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
       }
 
       Alert.alert("Success", `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`, [{ text: "OK" }]);
@@ -182,7 +184,7 @@ export default function Upload() {
           firstFile.uri,
           firstFile.name
         );
-        fileUrl = uploadResult.url;
+        fileUrl = uploadResult.path;
         fileName = firstFile.name;
 
         // Upload additional files (they're stored but not linked to result yet)
@@ -459,32 +461,34 @@ export default function Upload() {
                 />
               </View>
 
-              {/* Overall Status */}
-              <View className="mb-6">
-                <Text className="text-text font-inter-semibold mb-3">
-                  Overall Result
-                </Text>
-                <View className="flex-row gap-3">
-                  <StatusButton
-                    label="Negative"
-                    selected={overallStatus === "negative"}
-                    onPress={() => setOverallStatus("negative")}
-                    variant="success"
-                  />
-                  <StatusButton
-                    label="Positive"
-                    selected={overallStatus === "positive"}
-                    onPress={() => setOverallStatus("positive")}
-                    variant="danger"
-                  />
-                  <StatusButton
-                    label="Pending"
-                    selected={overallStatus === "pending"}
-                    onPress={() => setOverallStatus("pending")}
-                    variant="warning"
-                  />
+              {/* Overall Status - only show for manual entry */}
+              {extractedResults.length === 0 && (
+                <View className="mb-6">
+                  <Text className="text-text font-inter-semibold mb-3">
+                    Overall Result
+                  </Text>
+                  <View className="flex-row gap-3">
+                    <StatusButton
+                      label="Negative"
+                      selected={overallStatus === "negative"}
+                      onPress={() => setOverallStatus("negative")}
+                      variant="success"
+                    />
+                    <StatusButton
+                      label="Positive"
+                      selected={overallStatus === "positive"}
+                      onPress={() => setOverallStatus("positive")}
+                      variant="danger"
+                    />
+                    <StatusButton
+                      label="Pending"
+                      selected={overallStatus === "pending"}
+                      onPress={() => setOverallStatus("pending")}
+                      variant="warning"
+                    />
+                  </View>
                 </View>
-              </View>
+              )}
             </>
           )}
 

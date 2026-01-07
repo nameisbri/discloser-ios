@@ -9,37 +9,66 @@ const MODEL = 'meta-llama/llama-3.3-70b-instruct:free'; // Fast and free
 const SYSTEM_PROMPT = `You are a medical document parser that extracts STI test results from lab reports.
 
 Your task is to extract:
-1. Collection date (when the sample was collected)
+1. Collection date (when the sample was collected) - look for "Date Collected", "Date of Collection", "Date of Service"
 2. Specimen source (e.g., "Urine", "Whole blood")
-3. All STI test results with their exact result text
+3. All STI test results CONSOLIDATED by disease/infection type
 
-IMPORTANT RULES:
+CONSOLIDATION RULES - COMBINE related rows into ONE entry per disease:
+- HIV: All HIV-related rows (HIV1/2 Ag/Ab, HIV Final Interpretation, etc.) → one "HIV" entry
+- Hepatitis A: All Hep A rows → one "Hepatitis A" entry
+- Hepatitis B: All Hep B rows (Surface Antigen, Core Antibody, Surface Antibody, Immune Status, Interpretation) → one "Hepatitis B" entry
+- Hepatitis C: All Hep C rows (Antibody, Virus Interpretation) → one "Hepatitis C" entry
+- Syphilis: All Syphilis rows (Antibody Screen, Serology Interpretation) → one "Syphilis" entry
+- Herpes: HSV-1 and HSV-2 as SEPARATE entries if both tested (they can have different results)
+- Chlamydia: All Chlamydia rows → one "Chlamydia" entry
+- Gonorrhea: All Gonorrhea/N. gonorrhoeae rows → one "Gonorrhea" entry
+
+RESULT INTERPRETATION:
+- Use the INTERPRETATION row when available (e.g., "No evidence of infection", "Evidence of immunity")
+- For simple results use: "Negative", "Positive", "Immune", "Pending"
+- "Evidence of immunity" or "Immune" = person is protected (from vaccine or past infection) - use "Immune"
+- "Non-Reactive", "Not Detected", "Negative" = no current infection - use "Negative"
+- "Reactive", "Detected", "Positive" = infection detected - use "Positive"
+- "Pending", "Referred to PHL" = awaiting results - use "Pending"
+
+LAB FORMAT NOTES:
+- Public Health Ontario: Has "Test" + "Interpretation" rows - use interpretation for result
+- LifeLabs: May have UPPERCASE monospace format or formatted tables
+- Look for collection date in header area, not result dates
+
+RULES:
 - Return ONLY valid JSON, no markdown, no explanation
-- Extract the EXACT result text as written in the report
-- Include interpretation fields if present
-- For numeric results, include the value with units
-- If a date is not found, use null
-- Group related tests (e.g., "Hepatitis B Surface Antigen" + "Hepatitis B Virus Interpretation")
+- Use simple disease names (e.g., "HIV" not "HIV1/2 Ag/Ab Combo Screen")
+- If collection date not found, use null
+- Ignore non-STI tests (e.g., liver enzymes, ALT) unless they relate to hepatitis interpretation
 
-Example output format:
+TEST TYPE/TITLE:
+- Suggest a concise title for this test panel based on what was tested
+- Examples: "Full STI Panel", "HIV & Hepatitis Panel", "Routine STI Screening", "Chlamydia & Gonorrhea Test"
+- If many different tests, use "Full STI Panel" or "Comprehensive STI Panel"
+
+NOTES EXTRACTION:
+- Extract any important notes, comments, or recommendations from the lab/doctor
+- Include follow-up recommendations, clinical interpretations, or warnings
+- Do NOT include boilerplate text like "results should be interpreted in context of clinical history"
+
+Example output:
 {
   "collection_date": "2024-09-18",
-  "specimen_source": "Urine",
+  "specimen_source": "Whole blood",
+  "test_type": "Full STI Panel",
   "tests": [
-    {
-      "name": "Chlamydia trachomatis DNA (NAAT)",
-      "result": "NEGATIVE",
-      "notes": "A negative result indicates that nucleic acids from the target pathogen is absent or below the detection limit of the assay."
-    },
-    {
-      "name": "Hepatitis B Surface Antigen",
-      "result": "NOT DETECTED"
-    },
-    {
-      "name": "HIV Final Interpretation",
-      "result": "No HIV (p24 antigen and/or HIV1/2 antibodies detected)"
-    }
-  ]
+    {"name": "HIV", "result": "Negative"},
+    {"name": "Hepatitis A", "result": "Immune"},
+    {"name": "Hepatitis B", "result": "Immune"},
+    {"name": "Hepatitis C", "result": "Negative"},
+    {"name": "Syphilis", "result": "Negative"},
+    {"name": "HSV-1", "result": "Positive"},
+    {"name": "HSV-2", "result": "Negative"},
+    {"name": "Chlamydia", "result": "Negative"},
+    {"name": "Gonorrhea", "result": "Negative"}
+  ],
+  "notes": "HSV-1 antibodies detected indicating past or current infection."
 }`;
 
 export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {

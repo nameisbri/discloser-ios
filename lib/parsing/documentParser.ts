@@ -77,8 +77,8 @@ export async function parseDocument(
       };
     });
 
-    // Step 4: Determine overall test type
-    const testType = determineTestType(tests);
+    // Step 4: Use LLM's suggested test type or fall back to determined type
+    const testType = llmResponse.test_type || determineTestType(tests);
 
     // Step 5: Format collection date
     const collectionDate = formatDate(llmResponse.collection_date);
@@ -87,6 +87,7 @@ export async function parseDocument(
       collectionDate,
       testType,
       tests,
+      notes: llmResponse.notes,
       rawText: extractedText.substring(0, 500), // Store first 500 chars for debugging
     };
   } catch (error) {
@@ -99,25 +100,37 @@ export async function parseDocument(
  * Determines the overall test type based on tests found
  */
 function determineTestType(tests: ParsedTest[]): string {
-  const categories = tests.map((test) => {
-    if (test.name.includes('HIV')) return 'HIV';
-    if (test.name.includes('Hepatitis')) return 'Hepatitis';
-    if (test.name.includes('Syphilis')) return 'Syphilis';
-    if (test.name.includes('Gonorrhea') || test.name.includes('Chlamydia')) return 'STI';
-    if (test.name.includes('Herpes')) return 'Herpes';
-    return 'Other';
-  });
+  const categories = new Set<string>();
 
-  const uniqueCategories = [...new Set(categories)];
+  for (const test of tests) {
+    const name = test.name.toLowerCase();
+    if (name.includes('hiv')) categories.add('HIV');
+    if (name.includes('hepatitis a')) categories.add('Hepatitis A');
+    if (name.includes('hepatitis b')) categories.add('Hepatitis B');
+    if (name.includes('hepatitis c')) categories.add('Hepatitis C');
+    if (name.includes('syphilis')) categories.add('Syphilis');
+    if (name.includes('gonorrhea')) categories.add('Gonorrhea');
+    if (name.includes('chlamydia')) categories.add('Chlamydia');
+    if (name.includes('herpes') || name.includes('hsv')) categories.add('Herpes');
+  }
 
-  // If multiple categories, call it a "Full Panel"
-  if (uniqueCategories.length > 2) {
+  // 4+ categories = full panel
+  if (categories.size >= 4) {
     return 'Full STI Panel';
   }
 
-  // If mostly one category, use that
-  const mostCommon = uniqueCategories[0] || 'STI Panel';
-  return `${mostCommon} Test`;
+  // 2-3 categories = combined name
+  if (categories.size >= 2) {
+    const cats = [...categories].slice(0, 3);
+    return cats.join(' & ') + ' Panel';
+  }
+
+  // Single category
+  if (categories.size === 1) {
+    return [...categories][0] + ' Test';
+  }
+
+  return 'STI Panel';
 }
 
 /**

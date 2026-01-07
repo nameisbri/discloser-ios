@@ -7,6 +7,8 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Image,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -14,15 +16,17 @@ import {
   Share2,
   Calendar,
   ShieldCheck,
-  Download,
+  FileText,
   AlertCircle,
   Trash2,
+  X,
 } from "lucide-react-native";
 import { useTestResult, useTestResults } from "../../../lib/hooks";
 import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { ShareModal } from "../../../components/ShareModal";
+import { getSignedUrl } from "../../../lib/storage";
 import type { STIResult } from "../../../lib/types";
 
 export default function ResultDetail() {
@@ -31,6 +35,23 @@ export default function ResultDetail() {
   const { result, loading, error } = useTestResult(id);
   const { deleteResult } = useTestResults();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loadingImage, setLoadingImage] = useState(false);
+
+  const handleViewFile = async () => {
+    if (!result?.file_url) return;
+    setLoadingImage(true);
+    try {
+      const url = await getSignedUrl(result.file_url, 3600);
+      setImageUrl(url);
+      setShowImagePreview(true);
+    } catch {
+      Alert.alert("Error", "Could not load file");
+    } finally {
+      setLoadingImage(false);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -177,15 +198,24 @@ export default function ResultDetail() {
           </View>
 
           {result.file_name && (
-            <View className="bg-gray-50 rounded-2xl p-4 flex-row items-center">
-              <Download size={18} color="#923D5C" />
+            <Pressable
+              onPress={handleViewFile}
+              disabled={loadingImage}
+              className="bg-gray-50 rounded-2xl p-4 flex-row items-center active:bg-gray-100"
+            >
+              {loadingImage ? (
+                <ActivityIndicator size="small" color="#923D5C" />
+              ) : (
+                <FileText size={18} color="#923D5C" />
+              )}
               <Text
                 className="text-primary font-inter-medium ml-2 flex-1"
                 numberOfLines={1}
               >
                 {result.file_name}
               </Text>
-            </View>
+              <Text className="text-text-light text-xs">Tap to view</Text>
+            </Pressable>
           )}
         </Card>
 
@@ -251,6 +281,24 @@ export default function ResultDetail() {
           testResultId={id}
         />
       )}
+
+      <Modal visible={showImagePreview} animationType="fade" transparent>
+        <View className="flex-1 bg-black/90 justify-center items-center">
+          <Pressable
+            onPress={() => setShowImagePreview(false)}
+            className="absolute top-12 right-4 p-2 bg-white/20 rounded-full z-10"
+          >
+            <X size={24} color="#fff" />
+          </Pressable>
+          {imageUrl && (
+            <Image
+              source={{ uri: imageUrl }}
+              className="w-full h-4/5"
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

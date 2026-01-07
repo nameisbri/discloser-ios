@@ -9,20 +9,19 @@ import {
 } from "react-native";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/auth";
-import { useTestResults } from "../../lib/hooks";
+import { useTestResults, useSTIStatus } from "../../lib/hooks";
 import { useReminders } from "../../lib/hooks";
 import {
   Plus,
   Bell,
   Settings,
   FileText,
-  ChevronRight,
-  LogOut,
-  Calendar,
+  Share2,
   ShieldCheck,
   Heart,
   Sparkles,
 } from "lucide-react-native";
+import { StatusShareModal } from "../../components/StatusShareModal";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
@@ -35,7 +34,9 @@ export default function Dashboard() {
   const { signOut } = useAuth();
   const { results, loading, refetch } = useTestResults();
   const { nextReminder, refetch: refetchReminders } = useReminders();
+  const { aggregatedStatus } = useSTIStatus();
   const [refreshing, setRefreshing] = useState(false);
+  const [showStatusShare, setShowStatusShare] = useState(false);
 
   // Refetch data when screen comes into focus
   useFocusEffect(
@@ -149,7 +150,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <View className="flex-row gap-3 mb-8">
+          <View className="flex-row gap-3 mb-4">
             <Link href="/upload" asChild>
               <Pressable className="flex-1 bg-primary py-5 rounded-2xl items-center active:opacity-90">
                 <Plus size={24} color="white" />
@@ -163,6 +164,17 @@ export default function Dashboard() {
               </Pressable>
             </Link>
           </View>
+
+          {/* Share Status Button */}
+          {aggregatedStatus.length > 0 && (
+            <Pressable
+              onPress={() => setShowStatusShare(true)}
+              className="bg-primary-light/50 border-2 border-primary/20 py-4 rounded-2xl flex-row items-center justify-center mb-8 active:bg-primary-light"
+            >
+              <Share2 size={20} color="#923D5C" />
+              <Text className="text-primary font-inter-bold ml-2">Share My Status</Text>
+            </Pressable>
+          )}
 
           {/* Results Section */}
           <View className="flex-row items-center justify-between mb-4">
@@ -222,6 +234,11 @@ export default function Dashboard() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <StatusShareModal
+        visible={showStatusShare}
+        onClose={() => setShowStatusShare(false)}
+      />
     </SafeAreaView>
   );
 }

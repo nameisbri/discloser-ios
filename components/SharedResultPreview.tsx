@@ -179,7 +179,7 @@ export function SharedResultPreview({ token }: SharedResultPreviewProps) {
 
             <View style={styles.breakdownCard}>
               {result.sti_results.map((sti: STIResult, index: number) => (
-                <View key={sti.name}>
+                <View key={index}>
                   {index > 0 && <View style={styles.divider} />}
                   <View style={styles.stiRow}>
                     <Text style={styles.stiName}>{sti.name}</Text>
