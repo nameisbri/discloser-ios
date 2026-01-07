@@ -47,6 +47,9 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     throw new Error('EXPO_PUBLIC_OPENROUTER_API_KEY is not configured');
   }
 
+  // Limit text to ~100k chars (roughly 25k tokens) to avoid context limits
+  const truncatedText = text.length > 100000 ? text.substring(0, 100000) : text;
+
   try {
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
@@ -65,7 +68,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
           },
           {
             role: 'user',
-            content: `Extract STI test results from this lab report:\n\n${text}`,
+            content: `Extract STI test results from this lab report:\n\n${truncatedText}`,
           },
         ],
         temperature: 0.1, // Low temperature for consistent extraction
@@ -85,8 +88,14 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
       throw new Error('No content in LLM response');
     }
 
+    // Strip markdown code blocks if present
+    let jsonText = content.trim();
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    }
+
     // Parse the JSON response
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(jsonText);
 
     // Validate response structure
     if (!parsed.tests || !Array.isArray(parsed.tests)) {

@@ -197,7 +197,7 @@ export default function ResultDetail() {
 
             <View className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden mb-8">
               {result.sti_results.map((sti, index) => (
-                <View key={sti.name}>
+                <View key={index}>
                   {index > 0 && <View className="h-[1px] bg-border mx-4" />}
                   <STILineItem
                     name={sti.name}

@@ -14,18 +14,15 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import * as DocumentPicker from "expo-document-picker";
 import {
   Upload as UploadIcon,
   Camera,
-  FileText,
   Info,
   ChevronLeft,
   Check,
   X,
   Calendar,
   Plus,
-  File,
   Image as ImageIcon,
 } from "lucide-react-native";
 import { uploadTestDocument } from "../../lib/storage";
@@ -33,13 +30,14 @@ import { useTestResults } from "../../lib/hooks";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult } from "../../lib/types";
+import { parseDocument } from "../../lib/parsing";
 
 type Step = "select" | "preview" | "details";
 
 type SelectedFile = {
   uri: string;
   name: string;
-  type: "image" | "pdf";
+  type: "image";
 };
 
 const DEFAULT_STI_TESTS = [
@@ -59,6 +57,7 @@ export default function Upload() {
   const [step, setStep] = useState<Step>("select");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [parsing, setParsing] = useState(false);
 
   // Form state
   const [testDate, setTestDate] = useState(
@@ -66,6 +65,7 @@ export default function Upload() {
   );
   const [testType, setTestType] = useState("Full STI Panel");
   const [overallStatus, setOverallStatus] = useState<TestStatus>("negative");
+  const [extractedResults, setExtractedResults] = useState<STIResult[]>([]);
   const [selectedTests, setSelectedTests] = useState<string[]>(
     DEFAULT_STI_TESTS.slice(0, 5)
   );
@@ -115,27 +115,6 @@ export default function Upload() {
     }
   };
 
-  const pickDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/*"],
-        multiple: true,
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const newFiles: SelectedFile[] = result.assets.map((asset) => ({
-          uri: asset.uri,
-          name: asset.name || `document_${Date.now()}`,
-          type: asset.mimeType?.includes("pdf") ? "pdf" : "image",
-        }));
-        setSelectedFiles((prev) => [...prev, ...newFiles]);
-        setStep("preview");
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to select document. Please try again.");
-    }
-  };
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
@@ -144,9 +123,49 @@ export default function Upload() {
     }
   };
 
-  // const parseFirstDocument = async () => {
-  //   Disabled until parsing module is restored
-  // };
+  const parseFirstDocument = async () => {
+    if (selectedFiles.length === 0) return;
+
+    try {
+      setParsing(true);
+      let allResults: STIResult[] = [];
+      let collectionDate: string | null = null;
+      let testType: string | null = null;
+
+      // Parse all selected files
+      for (const file of selectedFiles) {
+        const parsed = await parseDocument(file.uri, "image/jpeg");
+
+        if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
+        if (!testType && parsed.testType) testType = parsed.testType;
+
+        if (parsed.tests.length > 0) {
+          const results: STIResult[] = parsed.tests.map((t) => ({
+            name: t.name,
+            result: t.result,
+            status: t.status,
+          }));
+          allResults = [...allResults, ...results];
+        }
+      }
+
+      if (collectionDate) setTestDate(collectionDate);
+      if (testType) setTestType(testType);
+      if (allResults.length > 0) {
+        setExtractedResults(allResults);
+        const allNegative = allResults.every((t) => t.status === "negative");
+        const anyPositive = allResults.some((t) => t.status === "positive");
+        setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
+        setNotes(`Auto-extracted from ${selectedFiles.length} image(s): ${allResults.length} test(s). Please review.`);
+      }
+
+      Alert.alert("Success", `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`, [{ text: "OK" }]);
+    } catch (error) {
+      Alert.alert("Auto-extraction Failed", error instanceof Error ? error.message : "Please enter manually.", [{ text: "OK" }]);
+    } finally {
+      setParsing(false);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -172,12 +191,14 @@ export default function Upload() {
         }
       }
 
-      // Build STI results array
-      const stiResults: STIResult[] = selectedTests.map((name) => ({
-        name,
-        result: overallStatus === "negative" ? "Non-reactive" : "Reactive",
-        status: overallStatus === "pending" ? "pending" : overallStatus,
-      }));
+      // Build STI results array - use extracted results if available, otherwise create from selected tests
+      const stiResults: STIResult[] = extractedResults.length > 0
+        ? extractedResults
+        : selectedTests.map((name) => ({
+            name,
+            result: overallStatus === "negative" ? "Non-reactive" : "Reactive",
+            status: overallStatus === "pending" ? "pending" : overallStatus,
+          }));
 
       // Create test result
       const result = await createResult({
@@ -256,12 +277,6 @@ export default function Upload() {
               onPress={() => pickImage(false)}
             />
             <UploadOption
-              icon={<FileText size={28} color="#923D5C" />}
-              title="Upload PDF or File"
-              description="Select a PDF or image from your files"
-              onPress={pickDocument}
-            />
-            <UploadOption
               icon={<Calendar size={28} color="#923D5C" />}
               title="Manual Entry"
               description="Enter your test results manually"
@@ -310,11 +325,7 @@ export default function Upload() {
             {selectedFiles.map((file, index) => (
               <Card key={index} className="flex-row items-center p-4">
                 <View className="bg-gray-50 p-3 rounded-xl mr-4">
-                  {file.type === "pdf" ? (
-                    <File size={24} color="#923D5C" />
-                  ) : (
-                    <ImageIcon size={24} color="#923D5C" />
-                  )}
+                  <ImageIcon size={24} color="#923D5C" />
                 </View>
                 <View className="flex-1">
                   <Text
@@ -324,7 +335,7 @@ export default function Upload() {
                     {file.name}
                   </Text>
                   <Text className="text-text-light text-xs font-inter-regular uppercase">
-                    {file.type}
+                    Image
                   </Text>
                 </View>
                 <Pressable
@@ -350,7 +361,10 @@ export default function Upload() {
 
           <Button
             label="Continue to Details"
-            onPress={() => setStep("details")}
+            onPress={async () => {
+              setStep("details");
+              await parseFirstDocument();
+            }}
           />
         </ScrollView>
       </SafeAreaView>
@@ -402,114 +416,195 @@ export default function Upload() {
             </>
           )}
 
-          {/* Test Date */}
-          <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-2">
-              Test Date
-            </Text>
-            <TextInput
-              value={testDate}
-              onChangeText={setTestDate}
-              placeholder="YYYY-MM-DD"
-              className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
-            />
-          </View>
-
-          {/* Test Type */}
-          <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-2">
-              Test Type
-            </Text>
-            <TextInput
-              value={testType}
-              onChangeText={setTestType}
-              placeholder="e.g., Full STI Panel"
-              className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
-            />
-          </View>
-
-          {/* Overall Status */}
-          <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-3">
-              Overall Result
-            </Text>
-            <View className="flex-row gap-3">
-              <StatusButton
-                label="Negative"
-                selected={overallStatus === "negative"}
-                onPress={() => setOverallStatus("negative")}
-                variant="success"
-              />
-              <StatusButton
-                label="Positive"
-                selected={overallStatus === "positive"}
-                onPress={() => setOverallStatus("positive")}
-                variant="danger"
-              />
-              <StatusButton
-                label="Pending"
-                selected={overallStatus === "pending"}
-                onPress={() => setOverallStatus("pending")}
-                variant="warning"
-              />
+          {parsing && (
+            <View className="bg-primary-light/20 p-6 rounded-3xl items-center mb-6">
+              <ActivityIndicator size="large" color="#923D5C" />
+              <Text className="mt-4 text-xl font-inter-bold text-primary-dark text-center">
+                Reading your test results...
+              </Text>
+              <Text className="mt-2 text-sm font-inter-regular text-primary text-center">
+                Analyzing {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''} with AI
+              </Text>
+              <Text className="mt-3 text-xs font-inter-regular text-text-light text-center">
+                This may take 15-30 seconds
+              </Text>
             </View>
-          </View>
+          )}
+
+          {!parsing && (
+            <>
+              {/* Test Date */}
+              <View className="mb-6">
+                <Text className="text-text font-inter-semibold mb-2">
+                  Test Date
+                </Text>
+                <TextInput
+                  value={testDate}
+                  onChangeText={setTestDate}
+                  placeholder="YYYY-MM-DD"
+                  className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
+                />
+              </View>
+
+              {/* Test Type */}
+              <View className="mb-6">
+                <Text className="text-text font-inter-semibold mb-2">
+                  Test Type
+                </Text>
+                <TextInput
+                  value={testType}
+                  onChangeText={setTestType}
+                  placeholder="e.g., Full STI Panel"
+                  className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
+                />
+              </View>
+
+              {/* Overall Status */}
+              <View className="mb-6">
+                <Text className="text-text font-inter-semibold mb-3">
+                  Overall Result
+                </Text>
+                <View className="flex-row gap-3">
+                  <StatusButton
+                    label="Negative"
+                    selected={overallStatus === "negative"}
+                    onPress={() => setOverallStatus("negative")}
+                    variant="success"
+                  />
+                  <StatusButton
+                    label="Positive"
+                    selected={overallStatus === "positive"}
+                    onPress={() => setOverallStatus("positive")}
+                    variant="danger"
+                  />
+                  <StatusButton
+                    label="Pending"
+                    selected={overallStatus === "pending"}
+                    onPress={() => setOverallStatus("pending")}
+                    variant="warning"
+                  />
+                </View>
+              </View>
+            </>
+          )}
 
           {/* Tests Included */}
-          <View className="mb-6">
-            <Text className="text-text font-inter-semibold mb-3">
-              Tests Included
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {DEFAULT_STI_TESTS.map((test) => (
-                <Pressable
-                  key={test}
-                  onPress={() => toggleTest(test)}
-                  className={`px-4 py-2 rounded-full border ${
-                    selectedTests.includes(test)
-                      ? "bg-primary border-primary"
-                      : "bg-white border-border"
-                  }`}
-                >
-                  <Text
-                    className={`font-inter-medium text-sm ${
-                      selectedTests.includes(test) ? "text-white" : "text-text"
-                    }`}
-                  >
-                    {test}
-                  </Text>
-                </Pressable>
+          {parsing ? null : extractedResults.length > 0 ? (
+            <View className="mb-6">
+              <Text className="text-text font-inter-semibold mb-3">
+                Extracted Test Results ({extractedResults.length})
+              </Text>
+              {extractedResults.map((sti, index) => (
+                <View key={index} className="bg-white border border-border rounded-2xl p-4 mb-3">
+                  <Text className="font-inter-semibold text-text mb-1">{sti.name}</Text>
+                  <Text className="font-inter-regular text-text-light text-sm mb-2">{sti.result}</Text>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={() => {
+                        const updated = [...extractedResults];
+                        updated[index].status = "negative";
+                        setExtractedResults(updated);
+                      }}
+                      className={`px-3 py-1 rounded-full ${
+                        sti.status === "negative" ? "bg-success" : "bg-gray-100"
+                      }`}
+                    >
+                      <Text className={sti.status === "negative" ? "text-white text-xs" : "text-gray-600 text-xs"}>
+                        Negative
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        const updated = [...extractedResults];
+                        updated[index].status = "positive";
+                        setExtractedResults(updated);
+                      }}
+                      className={`px-3 py-1 rounded-full ${
+                        sti.status === "positive" ? "bg-danger" : "bg-gray-100"
+                      }`}
+                    >
+                      <Text className={sti.status === "positive" ? "text-white text-xs" : "text-gray-600 text-xs"}>
+                        Positive
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        const updated = [...extractedResults];
+                        updated[index].status = "pending";
+                        setExtractedResults(updated);
+                      }}
+                      className={`px-3 py-1 rounded-full ${
+                        sti.status === "pending" ? "bg-warning" : "bg-gray-100"
+                      }`}
+                    >
+                      <Text className={sti.status === "pending" ? "text-white text-xs" : "text-gray-600 text-xs"}>
+                        Pending
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               ))}
             </View>
-          </View>
+          ) : (
+            <View className="mb-6">
+              <Text className="text-text font-inter-semibold mb-3">
+                Tests Included
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {DEFAULT_STI_TESTS.map((test) => (
+                  <Pressable
+                    key={test}
+                    onPress={() => toggleTest(test)}
+                    className={`px-4 py-2 rounded-full border ${
+                      selectedTests.includes(test)
+                        ? "bg-primary border-primary"
+                        : "bg-white border-border"
+                    }`}
+                  >
+                    <Text
+                      className={`font-inter-medium text-sm ${
+                        selectedTests.includes(test) ? "text-white" : "text-text"
+                      }`}
+                    >
+                      {test}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
 
-          {/* Notes */}
-          <View className="mb-8">
-            <Text className="text-text font-inter-semibold mb-2">
-              Notes (Optional)
-            </Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Any additional notes..."
-              multiline
-              numberOfLines={3}
-              className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text min-h-[100px]"
-              textAlignVertical="top"
-            />
-          </View>
+          {!parsing && (
+            <>
+              {/* Notes */}
+              <View className="mb-8">
+                <Text className="text-text font-inter-semibold mb-2">
+                  Notes (Optional)
+                </Text>
+                <TextInput
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Any additional notes..."
+                  multiline
+                  numberOfLines={3}
+                  className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text min-h-[100px]"
+                  textAlignVertical="top"
+                />
+              </View>
 
-          <Button
-            label={uploading ? "Saving..." : "Save Test Result"}
-            onPress={handleSubmit}
-            disabled={uploading || selectedTests.length === 0}
-            className="mb-8"
-            icon={
-              uploading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : undefined
-            }
-          />
+              <Button
+                label={uploading ? "Saving..." : "Save Test Result"}
+                onPress={handleSubmit}
+                disabled={uploading || (extractedResults.length === 0 && selectedTests.length === 0)}
+                className="mb-8"
+                icon={
+                  uploading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : undefined
+                }
+              />
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

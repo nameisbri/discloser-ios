@@ -1,70 +1,63 @@
 // Main document parser - orchestrates text extraction and LLM parsing
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { parseDocumentWithLLM } from './llmParser';
 import { normalizeTestName } from './testNormalizer';
 import { standardizeResult } from './resultStandardizer';
 import { ParsedDocument, ParsedTest } from './types';
 
 /**
- * Extracts text from a PDF file
- * Note: This only works for text-based PDFs. For scanned PDFs, you'll need OCR.
- */
-async function extractTextFromPDF(uri: string): Promise<string> {
-  // For now, we'll read the PDF as base64 and try to extract text
-  // This is a limitation - for production, consider using a PDF parsing service
-  // or OCR for scanned documents
-
-  try {
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    // Decode base64 to text (works for text-based PDFs)
-    const text = atob(base64);
-
-    // Remove non-printable characters and clean up
-    const cleanText = text.replace(/[\x00-\x1F\x7F-\x9F]/g, ' ').trim();
-
-    if (cleanText.length < 50) {
-      throw new Error('PDF appears to be scanned or empty. Please use OCR or manual entry.');
-    }
-
-    return cleanText;
-  } catch (error) {
-    console.error('PDF text extraction error:', error);
-    throw new Error('Unable to extract text from PDF. It may be scanned or image-based.');
-  }
-}
-
-/**
- * Extracts text from an image using OCR
- * Note: Requires Google Cloud Vision API or similar OCR service
+ * Extracts text from an image using Google Cloud Vision OCR
  */
 async function extractTextFromImage(uri: string): Promise<string> {
-  // Placeholder for OCR implementation
-  // You would integrate Google Cloud Vision API here
-  throw new Error('OCR not yet implemented. Please use manual entry for images.');
+  const apiKey = process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google Vision API key not configured');
+  }
+
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  const response = await fetch(
+    `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{
+          image: { content: base64 },
+          features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+        }],
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OCR failed: ${error}`);
+  }
+
+  const data = await response.json();
+  const text = data.responses?.[0]?.fullTextAnnotation?.text;
+
+  if (!text || text.length < 20) {
+    throw new Error('No text found in image');
+  }
+
+  return text;
 }
 
 /**
- * Main function to parse a document (PDF or image) and extract STI test results
+ * Main function to parse an image and extract STI test results
  */
 export async function parseDocument(
   uri: string,
   mimeType: string
 ): Promise<ParsedDocument> {
   try {
-    let extractedText: string;
-
-    // Step 1: Extract text based on file type
-    if (mimeType === 'application/pdf') {
-      extractedText = await extractTextFromPDF(uri);
-    } else if (mimeType.startsWith('image/')) {
-      extractedText = await extractTextFromImage(uri);
-    } else {
-      throw new Error(`Unsupported file type: ${mimeType}`);
-    }
+    // Step 1: Extract text from image using OCR
+    const extractedText = await extractTextFromImage(uri);
 
     console.log('Extracted text length:', extractedText.length);
 
