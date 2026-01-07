@@ -24,21 +24,36 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 - AI-powered automatic extraction of test data (dates, results, STIs tested)
 - Support for multi-image uploads (e.g., 3-page test results)
 - Review and edit extracted results before saving
-- View test history with clear status indicators (Negative/Positive/Pending)
+- View test history with clear status indicators (Negative/Positive/Pending/Inconclusive)
+- Quick preset selection for manual entry (Full Panel, Basic Screen, 4-Test Panel, HIV Only)
 
 ### 2. Secure Sharing
 
-- Generate time-limited shareable links
+- Generate time-limited shareable links (1 hour to 30 days)
+- Optional view limits (1, 5, 10, or unlimited views)
 - Control exactly what information is visible to recipients
-- Share via link, QR code, or in-app
+- Share via link, QR code, or in-app preview
+- Share individual test results OR aggregated STI status
 
 ### 3. Testing Reminders
 
-- Set personalized testing schedules (3mo/6mo/yearly)
+- Set personalized testing schedules (monthly/3mo/6mo/yearly)
 - Push notification reminders
 - Track upcoming test dates
+- Overdue and upcoming alerts on dashboard
+- Auto-creates/updates reminders when tests are uploaded (based on risk level)
 
-### 4. Educational Resources
+### 4. Risk Assessment & Recommendations
+
+- 4-question questionnaire based on CDC guidelines
+- Calculates risk level (Low/Moderate/High)
+- Personalized testing frequency recommendations:
+  - Low risk: Test yearly
+  - Moderate risk: Test every 6 months
+  - High risk: Test every 3 months
+- Risk level stored in profile for personalization
+
+### 5. Educational Resources (Planned)
 
 - Verified sexual health information
 - Links to local testing locations
@@ -57,6 +72,8 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 | OCR           | Google Cloud Vision API      |
 | AI Parsing    | OpenRouter (Llama 3.3 70B)   |
 | Notifications | Expo Notifications           |
+| Web           | Next.js (share pages)        |
+| Deployment    | Vercel (web)                 |
 
 ---
 
@@ -64,11 +81,12 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 
 ### Public (Unauthenticated)
 
-| Screen        | Route           | Description                       |
-| ------------- | --------------- | --------------------------------- |
-| Landing       | `/`             | App intro, value prop             |
-| Login         | `/login`        | Apple Sign-In                     |
-| Shared Result | `/share/:token` | Public view of shared test result |
+| Screen        | Route            | Description                          |
+| ------------- | ---------------- | ------------------------------------ |
+| Landing       | `/`              | App intro, value prop                |
+| Login         | `/login`         | Apple Sign-In                        |
+| Shared Result | `/share/:token`  | Public view of shared test result    |
+| Shared Status | `/status/:token` | Public view of aggregated STI status |
 
 ### Protected (Authenticated)
 
@@ -76,29 +94,68 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 | ----------- | -------------- | --------------------------------------------- |
 | Dashboard   | `/dashboard`   | Recent results, next test date, quick actions |
 | Test Detail | `/results/:id` | Full result view, share options               |
-| Upload      | `/upload`      | Camera/file upload flow                       |
+| Upload      | `/upload`      | Camera/file upload flow with presets          |
 | Reminders   | `/reminders`   | Testing schedule management                   |
-| Settings    | `/settings`    | Profile, preferences, data management         |
+| Settings    | `/settings`    | Profile, risk assessment, data management     |
 
 ---
 
-## Data Model (High-Level)
+## Data Model
 
-### Users
+### Profiles
 
-- id, apple_id, display_name, created_at
+- id (UUID, references auth.users)
+- display_name (text)
+- risk_level (enum: low/moderate/high)
+- risk_assessed_at (timestamptz)
+- created_at, updated_at
 
 ### Test Results
 
-- id, user_id, test_date, status, sti_type[], file_url, parsed_data, created_at
+- id (UUID)
+- user_id (UUID, references auth.users)
+- test_date (date)
+- status (enum: negative/positive/pending/inconclusive)
+- test_type (text)
+- sti_results (jsonb array)
+- file_url, file_name (text)
+- notes (text)
+- is_verified (boolean)
+- created_at, updated_at
 
-### Share Links
+### Share Links (Individual Results)
 
-- id, test_id, token, expires_at, view_count, created_at
+- id (UUID)
+- test_result_id (UUID, references test_results)
+- user_id (UUID)
+- token (text, unique 64-char hex)
+- expires_at (timestamptz)
+- view_count (integer)
+- max_views (integer, optional)
+- show_name (boolean)
+- created_at
+
+### Status Share Links (Aggregated Status)
+
+- id (UUID)
+- user_id (UUID)
+- token (text, unique)
+- expires_at (timestamptz)
+- view_count, max_views
+- show_name (boolean)
+- display_name (text, snapshot)
+- status_snapshot (jsonb, snapshot of all STI statuses)
+- created_at
 
 ### Reminders
 
-- id, user_id, frequency, next_date, is_active
+- id (UUID)
+- user_id (UUID)
+- title (text)
+- frequency (enum: monthly/quarterly/biannual/annual)
+- next_date (date)
+- is_active (boolean)
+- created_at, updated_at
 
 ---
 
@@ -107,44 +164,57 @@ Sharing STI test results is awkward and often involves exposing unnecessary pers
 - Minimal data collection
 - User controls all sharing
 - Share links expire automatically
+- View limits prevent unlimited access
 - No identifying info shown on shared views unless user opts in
 - Easy data deletion
+- Row Level Security on all tables
 
 ---
 
 ## Development Phases
 
-### Phase 1: Foundation
+### Phase 1: Foundation - COMPLETE
 
-- Project setup (Expo + NativeWind + Supabase)
-- Apple auth flow
-- Basic navigation structure
+- [x] Project setup (Expo + NativeWind + Supabase)
+- [x] Apple auth flow
+- [x] Basic navigation structure
 
-### Phase 2: Core Features
+### Phase 2: Core Features - COMPLETE
 
-- Test result CRUD
-- File upload to Supabase Storage
-- Dashboard UI
+- [x] Test result CRUD
+- [x] File upload to Supabase Storage
+- [x] Dashboard UI
+- [x] AI-powered document parsing
 
-### Phase 3: Sharing
+### Phase 3: Sharing - COMPLETE
 
-- Generate shareable links
-- Public share page (web)
-- QR code generation
+- [x] Generate shareable links with expiry
+- [x] Public share page (web) for individual results
+- [x] Public share page (web) for aggregated status
+- [x] QR code generation
+- [x] View count tracking and limits
 
-### Phase 4: Reminders
+### Phase 4: Reminders - COMPLETE
 
-- Schedule setup
-- Push notifications
-- Reminder management
+- [x] Schedule setup with frequency options
+- [x] Reminder management (create, edit, delete, toggle)
+- [x] Overdue/upcoming alerts on dashboard
+- [x] Risk-based suggested reminders
+- [x] Auto-create reminders on test upload
 
-### Phase 5: Polish
+### Phase 5: Smart Features - COMPLETE
 
-- Educational content
-- Testing & bug fixes
-- PDF upload support (post-MVP)
+- [x] Risk assessment questionnaire
+- [x] Personalized testing recommendations
+- [x] Improved manual entry with presets
+- [x] Canadian lab verification
 
----
+### Phase 6: Polish & Production - IN PROGRESS
+
+- [ ] Push notifications (requires development build)
+- [ ] Educational resources
+- [ ] PDF upload support
+- [ ] App Store submission
 
 ---
 
@@ -230,38 +300,66 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 - Smooth transitions/animations (300ms ease)
 - Accessible contrast ratios
 
+---
 
-## Known Issues / TODO
+## Completed Features
 
 ### Storage & Files
 
-- [x] Fix Supabase Storage bucket permissions for file viewing/downloading
-- [x] Implement signed URLs for private file access
-- [x] Add file preview in-app (images) instead of opening in browser
+- [x] Supabase Storage bucket with RLS
+- [x] Signed URLs for private file access
+- [x] In-app image preview
 
-### Features to Complete
+### Core Functionality
 
-- [x] Share functionality (Phase 3) - In-app share modal complete
-- [x] Document parsing/OCR - Google Vision + OpenRouter LLM integration complete
-- [x] Push notifications for reminders (Phase 4)
-- [x] Settings page functionality (profile edit, data delete)
-- [x] Web share pages (`/share/[token]` and `/status/[token]`)
-- [x] Document verification (Canadian labs, health card, accession number)
+- [x] Share individual results with time-limited links
 - [x] Share aggregated STI status across all tests
+- [x] Document parsing/OCR (Google Vision + OpenRouter LLM)
+- [x] Settings page (profile edit, notifications toggle, data delete)
+- [x] Web share pages (`/share/[token]` and `/status/[token]`)
+- [x] Document verification (Canadian labs)
+- [x] Risk assessment questionnaire
+- [x] Testing recommendations based on risk level
+- [x] Smart reminders (auto-create on test upload)
+- [x] Manual entry presets (Full Panel, Basic Screen, etc.)
+- [x] Overdue reminder alerts on dashboard
 
-### Post-MVP Features
+### Deployment
 
-- [ ] PDF upload support (requires PDF-to-image conversion)
-- [ ] Development build for push notifications (Expo Go doesn't support remote notifications)
-- [ ] Educational resources (testing locations, health info)
+- [x] Web share pages on Vercel (https://discloser-ios.vercel.app)
+- [x] `EXPO_PUBLIC_SHARE_BASE_URL` configured
 
-### Deployment & Production
+---
 
-- [x] Deploy web share pages to Vercel (https://discloser-ios.vercel.app)
-- [x] Set `EXPO_PUBLIC_SHARE_BASE_URL` env var to production domain
-- [ ] Apple Developer Account signup (in progress)
+## TODO / Remaining Work
+
+### High Priority
+
+- [ ] Apple Developer Account signup
+- [ ] Development build for push notifications (Expo Go limitation)
 - [ ] Configure deep linking / iOS Universal Links
 - [ ] App Store submission
+
+### Medium Priority
+
+- [ ] PDF upload support (requires PDF-to-image conversion)
+- [ ] Educational resources (testing locations, health info)
+- [ ] Onboarding flow for new users
+
+### Future Enhancements
+
+- [ ] Intake questionnaire on account creation:
+  - Known chronic STI status (HSV/HIV)
+  - Medications (PrEP, antivirals)
+  - Testing history
+  - To personalize reminders and avoid flagging managed conditions
+- [ ] Apple Wallet pass for quick status sharing:
+  - QR code linking to status page
+  - Basic info (last tested date, overall status)
+  - Quick tap-to-share at events/clubs/play parties
+- [ ] Partner notification features
+- [ ] Testing location finder integration
+- [ ] Multi-language support
 
 ---
 
@@ -273,3 +371,4 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 - Supabase RLS (Row Level Security) is critical for privacy
 - Test on iOS simulator frequently
 - Reference Expo docs for native features
+- When adding database changes, update both schema.sql and run in Supabase SQL Editor
