@@ -257,9 +257,10 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 
 ### Deployment & Production
 
-- [ ] Deploy web share pages to Vercel/similar
+- [x] Deploy web share pages to Vercel (https://discloser-ios.vercel.app)
+- [x] Set `EXPO_PUBLIC_SHARE_BASE_URL` env var to production domain
+- [ ] Apple Developer Account signup (in progress)
 - [ ] Configure deep linking / iOS Universal Links
-- [ ] Set `EXPO_PUBLIC_SHARE_BASE_URL` env var to production domain
 - [ ] App Store submission
 
 ---

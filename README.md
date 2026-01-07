@@ -80,12 +80,14 @@ web/                   # Next.js web app for share pages
 
 ## Web Share Pages
 
+**Live at:** https://discloser-ios.vercel.app
+
 The `web/` directory contains a Next.js app for displaying shared results:
 
 - `/share/[token]` - Individual test result
 - `/status/[token]` - Aggregated STI status
 
-### Setup
+### Local Development
 
 ```bash
 cd web
@@ -94,7 +96,9 @@ npm install
 npm run dev
 ```
 
-Deploy to Vercel or similar, then set `EXPO_PUBLIC_SHARE_BASE_URL` to your domain.
+### Deployment
+
+Deployed to Vercel. Auto-deploys on push to `main`.
 
 ## License
 
