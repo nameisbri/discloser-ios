@@ -74,7 +74,26 @@ lib/
   notifications.ts     # Push notification helpers
 context/               # Auth context
 supabase/              # Database schema
+web/                   # Next.js web app for share pages
 ```
+
+## Web Share Pages
+
+The `web/` directory contains a Next.js app for displaying shared results:
+
+- `/share/[token]` - Individual test result
+- `/status/[token]` - Aggregated STI status
+
+### Setup
+
+```bash
+cd web
+cp .env.example .env  # Add Supabase credentials
+npm install
+npm run dev
+```
+
+Deploy to Vercel or similar, then set `EXPO_PUBLIC_SHARE_BASE_URL` to your domain.
 
 ## License
 
