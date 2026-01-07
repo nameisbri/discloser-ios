@@ -42,10 +42,7 @@ export default function TestPage() {
       </div>
 
       <p className="text-center text-gray-400 text-xs mt-6">
-        <span className="text-success">✓ Verified</span> = from a recognized Canadian lab with valid identifiers
-      </p>
-      <p className="text-center text-gray-400 text-xs mt-2">
-        Get Discloser to manage your own status
+        <span className="text-success">✓ Verified</span> = from a recognized Canadian lab
       </p>
     </div>
   );

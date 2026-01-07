@@ -70,10 +70,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         </div>
       )}
 
-      <p className="text-center text-gray-400 text-xs mt-6">
-        {data.is_verified && <><span className="text-success">✓ Verified</span> = from a recognized Canadian lab<br /></>}
-        Get Discloser to manage your own results
-      </p>
+      {data.is_verified && (
+        <p className="text-center text-gray-400 text-xs mt-6">
+          <span className="text-success">✓ Verified</span> = from a recognized Canadian lab
+        </p>
+      )}
     </div>
   );
 }
