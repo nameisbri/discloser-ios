@@ -5,6 +5,10 @@ import type {
   CreateReminderInput,
   UpdateReminderInput,
 } from "../types";
+import {
+  scheduleReminderNotification,
+  cancelReminderNotification,
+} from "../notifications";
 
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -66,6 +70,11 @@ export function useReminders() {
 
       if (createError) throw createError;
 
+      // Schedule notification
+      if (data.is_active) {
+        scheduleReminderNotification(data.id, data.title, new Date(data.next_date));
+      }
+
       setReminders((prev) =>
         [...prev, data].sort(
           (a, b) =>
@@ -96,6 +105,13 @@ export function useReminders() {
 
       if (updateError) throw updateError;
 
+      // Update notification
+      if (data.is_active) {
+        scheduleReminderNotification(data.id, data.title, new Date(data.next_date));
+      } else {
+        cancelReminderNotification(data.id);
+      }
+
       setReminders((prev) =>
         prev
           .map((r) => (r.id === id ? data : r))
@@ -122,6 +138,9 @@ export function useReminders() {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
+
+      // Cancel notification
+      cancelReminderNotification(id);
 
       setReminders((prev) => prev.filter((r) => r.id !== id));
       return true;

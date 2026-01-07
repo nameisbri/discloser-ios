@@ -10,6 +10,7 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { registerForPushNotifications } from "../lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,6 +27,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+
+  useEffect(() => {
+    registerForPushNotifications();
+  }, []);
 
   if (!loaded && !error) {
     return null;
