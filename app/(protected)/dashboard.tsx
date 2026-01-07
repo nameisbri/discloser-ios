@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from "react-native";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/auth";
@@ -18,7 +19,6 @@ import {
   FileText,
   Share2,
   ShieldCheck,
-  Heart,
   Sparkles,
 } from "lucide-react-native";
 import { StatusShareModal } from "../../components/StatusShareModal";
@@ -89,9 +89,10 @@ export default function Dashboard() {
         >
           <View className="flex-row justify-between items-center mb-6">
             <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center mr-3">
-                <Heart size={20} color="#FF6B8A" fill="#FF6B8A" />
-              </View>
+              <Image
+                source={require("../../assets/icon.png")}
+                style={{ width: 40, height: 40, borderRadius: 10, marginRight: 12 }}
+              />
               <Text className="text-white/90 font-inter-bold text-lg">Discloser</Text>
             </View>
             <Link href="/settings" asChild>

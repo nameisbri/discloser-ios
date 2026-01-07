@@ -1,7 +1,7 @@
 import * as AppleAuthentication from "expo-apple-authentication";
-import { View, Text, Platform, Pressable } from "react-native";
+import { View, Text, Platform, Pressable, Image } from "react-native";
 import { useAuth } from "../../context/auth";
-import { Heart, Sparkles, Shield } from "lucide-react-native";
+import { Sparkles, Shield } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 export default function Login() {
@@ -23,9 +23,10 @@ export default function Login() {
 
         <View className="flex-1 justify-center">
           {/* Logo mark */}
-          <View className="w-16 h-16 bg-white/10 rounded-2xl items-center justify-center mb-8 border border-white/20">
-            <Heart size={32} color="#FF6B8A" fill="#FF6B8A" />
-          </View>
+          <Image
+            source={require("../../assets/icon.png")}
+            style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 32 }}
+          />
 
           <Text className="text-5xl font-inter-bold text-white mb-4">
             Discloser
