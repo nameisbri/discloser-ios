@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/auth";
-import { useTestResults, useSTIStatus } from "../../lib/hooks";
+import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
 import { useReminders } from "../../lib/hooks";
 import {
   Plus,
@@ -20,8 +20,10 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  AlertTriangle,
 } from "lucide-react-native";
 import { StatusShareModal } from "../../components/StatusShareModal";
+import { RiskAssessment } from "../../components/RiskAssessment";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
@@ -33,24 +35,28 @@ export default function Dashboard() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { results, loading, refetch } = useTestResults();
-  const { nextReminder, refetch: refetchReminders } = useReminders();
+  const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
   const { aggregatedStatus } = useSTIStatus();
+  const { profile, refetch: refetchProfile, updateRiskLevel } = useProfile();
+  const recommendation = useTestingRecommendations();
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
 
   // Refetch data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refetch();
       refetchReminders();
-    }, [refetch, refetchReminders])
+      refetchProfile();
+    }, [refetch, refetchReminders, refetchProfile])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetch(), refetchReminders()]);
+    await Promise.all([refetch(), refetchReminders(), refetchProfile()]);
     setRefreshing(false);
-  }, [refetch, refetchReminders]);
+  }, [refetch, refetchReminders, refetchProfile]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -122,33 +128,66 @@ export default function Dashboard() {
 
         <View className="px-6 -mt-8">
           {/* Next Test Reminder Card */}
-          <Card className="bg-background-card mb-6 shadow-lg">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center flex-1">
-                <View className="w-12 h-12 bg-accent-soft rounded-2xl items-center justify-center mr-4">
-                  <Bell size={24} color="#FF6B8A" />
+          {overdueReminder && !nextReminder ? (
+            <View
+              className="mb-6 shadow-lg rounded-2xl p-5 border-2 border-danger"
+              style={{ backgroundColor: "#FEE2E2" }}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View
+                    className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                    style={{ backgroundColor: "#FECACA" }}
+                  >
+                    <Bell size={24} color="#EF4444" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-danger font-inter-medium text-sm mb-1">
+                      Overdue
+                    </Text>
+                    <Text className="text-lg font-inter-bold text-danger">
+                      {formatDate(overdueReminder.next_date)}
+                    </Text>
+                  </View>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-text-light font-inter-medium text-sm mb-1">
-                    Next checkup
-                  </Text>
-                  <Text className="text-text text-lg font-inter-bold">
-                    {nextReminder
-                      ? formatDate(nextReminder.next_date)
-                      : "Set a reminder"}
-                  </Text>
-                </View>
+                <Pressable
+                  onPress={() => router.push("/reminders")}
+                  className="px-4 py-2 rounded-xl"
+                  style={{ backgroundColor: "#FECACA" }}
+                >
+                  <Text className="font-inter-semibold text-sm text-danger">Edit</Text>
+                </Pressable>
               </View>
-              <Pressable
-                onPress={() => router.push("/reminders")}
-                className="bg-primary-muted px-4 py-2 rounded-xl"
-              >
-                <Text className="text-primary font-inter-semibold text-sm">
-                  {nextReminder ? "Edit" : "Add"}
-                </Text>
-              </Pressable>
             </View>
-          </Card>
+          ) : (
+            <Card className="bg-background-card mb-6 shadow-lg">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="w-12 h-12 bg-accent-soft rounded-2xl items-center justify-center mr-4">
+                    <Bell size={24} color="#FF6B8A" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-text-light font-inter-medium text-sm mb-1">
+                      Next checkup
+                    </Text>
+                    <Text className="text-text text-lg font-inter-bold">
+                      {nextReminder
+                        ? formatDate(nextReminder.next_date)
+                        : "Set a reminder"}
+                    </Text>
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => router.push("/reminders")}
+                  className="bg-primary-muted px-4 py-2 rounded-xl"
+                >
+                  <Text className="text-primary font-inter-semibold text-sm">
+                    {nextReminder ? "Edit" : "Add"}
+                  </Text>
+                </Pressable>
+              </View>
+            </Card>
+          )}
 
           {/* Quick Actions */}
           <View className="flex-row gap-3 mb-4">
@@ -166,11 +205,43 @@ export default function Dashboard() {
             </Link>
           </View>
 
+          {/* No Reminders Prompt */}
+          {!overdueReminder && activeReminders.length === 0 && results.length > 0 && (
+            <Pressable
+              onPress={() => router.push("/reminders")}
+              className="bg-accent-soft/50 border-2 border-accent/30 py-4 rounded-2xl flex-row items-center justify-center mb-4 active:bg-accent-soft"
+            >
+              <Bell size={20} color="#FF6B8A" />
+              <Text className="text-accent-dark font-inter-bold ml-2">Set up testing reminders</Text>
+            </Pressable>
+          )}
+
+          {/* Testing Overdue - Small inline warning */}
+          {(recommendation.isOverdue || recommendation.isDueSoon) && (
+            <View className="flex-row items-center justify-center mb-4">
+              <AlertTriangle size={14} color="#F59E0B" />
+              <Text className="text-warning-dark font-inter-medium text-xs ml-1.5">
+                {formatDueMessage(recommendation)}
+              </Text>
+            </View>
+          )}
+
+          {/* Risk Assessment Prompt */}
+          {!profile?.risk_level && results.length > 0 && (
+            <Pressable
+              onPress={() => setShowRiskAssessment(true)}
+              className="bg-primary-light/50 border-2 border-primary/20 py-4 rounded-2xl flex-row items-center justify-center mb-4 active:bg-primary-light"
+            >
+              <Sparkles size={20} color="#923D5C" />
+              <Text className="text-primary font-inter-bold ml-2">Take Risk Assessment</Text>
+            </Pressable>
+          )}
+
           {/* Share Status Button */}
-          {aggregatedStatus.length > 0 && (
+          {results.length > 0 && (
             <Pressable
               onPress={() => setShowStatusShare(true)}
-              className="bg-primary-light/50 border-2 border-primary/20 py-4 rounded-2xl flex-row items-center justify-center mb-8 active:bg-primary-light"
+              className="bg-primary-light/50 border-2 border-primary/20 py-4 rounded-2xl flex-row items-center justify-center mb-4 active:bg-primary-light"
             >
               <Share2 size={20} color="#923D5C" />
               <Text className="text-primary font-inter-bold ml-2">Share My Status</Text>
@@ -240,6 +311,15 @@ export default function Dashboard() {
         visible={showStatusShare}
         onClose={() => setShowStatusShare(false)}
       />
+
+      <RiskAssessment
+        visible={showRiskAssessment}
+        onClose={() => setShowRiskAssessment(false)}
+        onComplete={(level) => {
+          // Update local state immediately for instant UI update
+          updateRiskLevel(level);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -265,6 +345,12 @@ function ResultCard({ result, index }: { result: TestResult; index: number }) {
       text: "text-warning",
       label: "Pending",
       icon: "#F59E0B",
+    },
+    inconclusive: {
+      bg: "bg-gray-100",
+      text: "text-gray-600",
+      label: "Inconclusive",
+      icon: "#6B7280",
     },
   };
 

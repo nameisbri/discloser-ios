@@ -21,8 +21,10 @@ import {
   ChevronLeft,
   X,
   Trash2,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react-native";
-import { useReminders } from "../../lib/hooks";
+import { useReminders, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
@@ -35,6 +37,12 @@ const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
   { value: "annual", label: "Yearly" },
 ];
 
+const RISK_FREQUENCY: Record<string, ReminderFrequency> = {
+  low: "annual",
+  moderate: "biannual",
+  high: "quarterly",
+};
+
 export default function Reminders() {
   const router = useRouter();
   const {
@@ -46,6 +54,7 @@ export default function Reminders() {
     updateReminder,
     deleteReminder,
   } = useReminders();
+  const recommendation = useTestingRecommendations();
 
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -166,6 +175,57 @@ export default function Reminders() {
             Stay on top of your sexual health with personalized reminders.
           </Text>
         </View>
+
+        {/* Testing Overdue Alert */}
+        {(recommendation.isOverdue || recommendation.isDueSoon) && (
+          <Card className="mb-6 border-2 border-warning" style={{ backgroundColor: "#FEF3C7" }}>
+            <View className="flex-row items-center">
+              <View
+                className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                style={{ backgroundColor: "#FDE68A" }}
+              >
+                <AlertTriangle size={20} color="#F59E0B" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-warning-dark font-inter-bold text-sm">
+                  {formatDueMessage(recommendation)}
+                </Text>
+                <Text className="text-warning-dark/70 font-inter-regular text-xs mt-0.5">
+                  Based on your {recommendation.riskLevel} risk assessment
+                </Text>
+              </View>
+            </View>
+          </Card>
+        )}
+
+        {/* Suggested Reminder based on risk */}
+        {recommendation.riskLevel && recommendation.nextDueDate && activeReminders.length === 0 && (
+          <Card className="mb-6 bg-primary-light/30 border-2 border-primary/20">
+            <View className="flex-row items-center mb-3">
+              <Sparkles size={18} color="#923D5C" />
+              <Text className="text-primary font-inter-bold ml-2">Suggested for you</Text>
+            </View>
+            <Text className="text-text font-inter-medium mb-3">
+              Based on your {recommendation.riskLevel} risk level, we recommend testing{" "}
+              {recommendation.intervalDays === 365 ? "yearly" : recommendation.intervalDays === 180 ? "every 6 months" : "every 3 months"}.
+            </Text>
+            <Text className="text-text-light text-sm mb-4">
+              Next suggested date: {formatDate(recommendation.nextDueDate)}
+            </Text>
+            <Button
+              label="Create Suggested Reminder"
+              size="sm"
+              onPress={async () => {
+                await createReminder({
+                  title: "Routine Checkup",
+                  frequency: RISK_FREQUENCY[recommendation.riskLevel!],
+                  next_date: recommendation.nextDueDate!,
+                  is_active: true,
+                });
+              }}
+            />
+          </Card>
+        )}
 
         {loading ? (
           <View className="py-12 items-center">

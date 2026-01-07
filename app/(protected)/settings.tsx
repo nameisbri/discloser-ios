@@ -1,17 +1,23 @@
 import { View, Text, Pressable, ScrollView, SafeAreaView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useAuth } from "../../context/auth";
-import { User, Bell, Shield, HelpCircle, LogOut, ChevronRight, ChevronLeft, Mail, Trash2 } from "lucide-react-native";
+import { User, Bell, Shield, HelpCircle, LogOut, ChevronRight, ChevronLeft, Mail, Trash2, Activity } from "lucide-react-native";
+import { useProfile } from "../../lib/hooks";
+import { RiskAssessment } from "../../components/RiskAssessment";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications } from "../../lib/notifications";
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/Button";
 
+const RISK_LABELS = { low: "Low", moderate: "Moderate", high: "High" };
+
 export default function Settings() {
   const router = useRouter();
   const { signOut, session } = useAuth();
+  const { profile, refetch: refetchProfile } = useProfile();
   const [notifications, setNotifications] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -112,6 +118,24 @@ export default function Settings() {
           />
         </View>
 
+        <Text className="text-lg font-inter-bold text-secondary-dark mb-4">Health</Text>
+
+        <View className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden mb-8">
+          <SettingsItem
+            icon={<Activity size={20} color="#374151" />}
+            title="Risk Assessment"
+            onPress={() => setShowRiskAssessment(true)}
+            rightElement={
+              profile?.risk_level ? (
+                <Text className="text-text-light font-inter-medium mr-2">
+                  {RISK_LABELS[profile.risk_level]}
+                </Text>
+              ) : null
+            }
+            showChevron
+          />
+        </View>
+
         <Text className="text-lg font-inter-bold text-secondary-dark mb-4">Privacy & Data</Text>
 
         <View className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden mb-8">
@@ -172,6 +196,12 @@ export default function Settings() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <RiskAssessment
+        visible={showRiskAssessment}
+        onClose={() => setShowRiskAssessment(false)}
+        onComplete={() => refetchProfile()}
+      />
     </SafeAreaView>
   );
 }

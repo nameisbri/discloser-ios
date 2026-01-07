@@ -26,11 +26,24 @@ import {
   Image as ImageIcon,
 } from "lucide-react-native";
 import { uploadTestDocument } from "../../lib/storage";
-import { useTestResults } from "../../lib/hooks";
+import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
-import type { TestStatus, STIResult } from "../../lib/types";
+import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
 import { parseDocument } from "../../lib/parsing";
+
+// Risk level to testing interval in days
+const RISK_INTERVALS: Record<RiskLevel, number> = {
+  low: 365,      // 12 months
+  moderate: 180, // 6 months
+  high: 90,      // 3 months
+};
+
+const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "annual"> = {
+  low: "annual",
+  moderate: "biannual",
+  high: "quarterly",
+};
 
 type Step = "select" | "preview" | "details";
 
@@ -50,9 +63,45 @@ const DEFAULT_STI_TESTS = [
   "Herpes (HSV-2)",
 ];
 
+// Test presets for quick selection
+const TEST_PRESETS = [
+  {
+    id: "full",
+    label: "Full Panel",
+    description: "All 7 common STIs",
+    tests: ["HIV-1/2", "Syphilis", "Chlamydia", "Gonorrhea", "Hepatitis B", "Hepatitis C", "Herpes (HSV-2)"],
+  },
+  {
+    id: "basic",
+    label: "Basic Screen",
+    description: "Chlamydia & Gonorrhea",
+    tests: ["Chlamydia", "Gonorrhea"],
+  },
+  {
+    id: "std4",
+    label: "4-Test Panel",
+    description: "HIV, Syphilis, Chlamydia, Gonorrhea",
+    tests: ["HIV-1/2", "Syphilis", "Chlamydia", "Gonorrhea"],
+  },
+  {
+    id: "hiv",
+    label: "HIV Only",
+    description: "HIV-1/2 test",
+    tests: ["HIV-1/2"],
+  },
+  {
+    id: "custom",
+    label: "Custom",
+    description: "Select specific tests",
+    tests: [],
+  },
+];
+
 export default function Upload() {
   const router = useRouter();
   const { createResult } = useTestResults();
+  const { activeReminders, createReminder, updateReminder } = useReminders();
+  const { profile } = useProfile();
 
   const [step, setStep] = useState<Step>("select");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -66,9 +115,8 @@ export default function Upload() {
   const [testType, setTestType] = useState("Full STI Panel");
   const [overallStatus, setOverallStatus] = useState<TestStatus>("negative");
   const [extractedResults, setExtractedResults] = useState<STIResult[]>([]);
-  const [selectedTests, setSelectedTests] = useState<string[]>(
-    DEFAULT_STI_TESTS.slice(0, 5)
-  );
+  const [selectedTests, setSelectedTests] = useState<string[]>(DEFAULT_STI_TESTS);
+  const [selectedPreset, setSelectedPreset] = useState<string>("full");
   const [notes, setNotes] = useState("");
   const [isVerified, setIsVerified] = useState(false);
 
@@ -219,6 +267,36 @@ export default function Upload() {
       });
 
       if (result) {
+        // Auto-create or update reminder based on risk level
+        if (profile?.risk_level) {
+          const riskLevel = profile.risk_level;
+          const intervalDays = RISK_INTERVALS[riskLevel];
+          const nextDueDate = new Date(testDate);
+          nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
+          const nextDateStr = nextDueDate.toISOString().split("T")[0];
+
+          // Check if there's an existing routine reminder to update
+          const existingReminder = activeReminders.find(
+            (r) => r.title === "Routine Checkup" || r.title.toLowerCase().includes("routine")
+          );
+
+          if (existingReminder) {
+            // Update existing reminder with new date
+            await updateReminder(existingReminder.id, {
+              next_date: nextDateStr,
+              frequency: RISK_FREQUENCY[riskLevel],
+            });
+          } else {
+            // Create new reminder
+            await createReminder({
+              title: "Routine Checkup",
+              frequency: RISK_FREQUENCY[riskLevel],
+              next_date: nextDateStr,
+              is_active: true,
+            });
+          }
+        }
+
         Alert.alert("Success", "Test result saved successfully!", [
           {
             text: "View Result",
@@ -246,6 +324,16 @@ export default function Upload() {
     setSelectedTests((prev) =>
       prev.includes(test) ? prev.filter((t) => t !== test) : [...prev, test]
     );
+    setSelectedPreset("custom");
+  };
+
+  const selectPreset = (presetId: string) => {
+    setSelectedPreset(presetId);
+    const preset = TEST_PRESETS.find((p) => p.id === presetId);
+    if (preset && preset.tests.length > 0) {
+      setSelectedTests(preset.tests);
+      setTestType(preset.label);
+    }
   };
 
   if (step === "select") {
@@ -569,30 +657,84 @@ export default function Upload() {
             </View>
           ) : (
             <View className="mb-6">
+              {/* Test Presets */}
               <Text className="text-text font-inter-semibold mb-3">
-                Tests Included
+                What tests did you get?
               </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {DEFAULT_STI_TESTS.map((test) => (
+              <View className="gap-2 mb-4">
+                {TEST_PRESETS.slice(0, 4).map((preset) => (
                   <Pressable
-                    key={test}
-                    onPress={() => toggleTest(test)}
-                    className={`px-4 py-2 rounded-full border ${
-                      selectedTests.includes(test)
-                        ? "bg-primary border-primary"
+                    key={preset.id}
+                    onPress={() => selectPreset(preset.id)}
+                    className={`p-4 rounded-2xl border-2 flex-row items-center justify-between ${
+                      selectedPreset === preset.id
+                        ? "bg-primary-light/30 border-primary"
                         : "bg-white border-border"
                     }`}
                   >
-                    <Text
-                      className={`font-inter-medium text-sm ${
-                        selectedTests.includes(test) ? "text-white" : "text-text"
-                      }`}
-                    >
-                      {test}
-                    </Text>
+                    <View>
+                      <Text
+                        className={`font-inter-semibold ${
+                          selectedPreset === preset.id ? "text-primary" : "text-text"
+                        }`}
+                      >
+                        {preset.label}
+                      </Text>
+                      <Text className="text-text-light text-xs font-inter-regular mt-0.5">
+                        {preset.description}
+                      </Text>
+                    </View>
+                    {selectedPreset === preset.id && (
+                      <View className="w-6 h-6 bg-primary rounded-full items-center justify-center">
+                        <Check size={14} color="white" strokeWidth={3} />
+                      </View>
+                    )}
                   </Pressable>
                 ))}
               </View>
+
+              {/* Custom Test Selection */}
+              <Pressable
+                onPress={() => setSelectedPreset("custom")}
+                className="mb-3"
+              >
+                <Text className={`font-inter-medium text-sm ${selectedPreset === "custom" ? "text-primary" : "text-text-light"}`}>
+                  {selectedPreset === "custom" ? "Custom selection:" : "Or select specific tests →"}
+                </Text>
+              </Pressable>
+
+              {selectedPreset === "custom" && (
+                <View className="flex-row flex-wrap gap-2">
+                  {DEFAULT_STI_TESTS.map((test) => (
+                    <Pressable
+                      key={test}
+                      onPress={() => toggleTest(test)}
+                      className={`px-4 py-2 rounded-full border ${
+                        selectedTests.includes(test)
+                          ? "bg-primary border-primary"
+                          : "bg-white border-border"
+                      }`}
+                    >
+                      <Text
+                        className={`font-inter-medium text-sm ${
+                          selectedTests.includes(test) ? "text-white" : "text-text"
+                        }`}
+                      >
+                        {test}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              {/* Summary of selected tests */}
+              {selectedPreset !== "custom" && selectedTests.length > 0 && (
+                <View className="bg-success-light/30 p-3 rounded-xl mt-2">
+                  <Text className="text-success-dark text-xs font-inter-medium">
+                    {selectedTests.length} tests: {selectedTests.join(", ")}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 

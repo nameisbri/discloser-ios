@@ -152,15 +152,21 @@ export function useReminders() {
     }
   };
 
-  // Get next upcoming reminder
+  // Get next upcoming reminder (future date)
   const nextReminder = reminders.find(
     (r) => r.is_active && new Date(r.next_date) > new Date()
+  );
+
+  // Get overdue reminder (past date, most recent first)
+  const overdueReminder = reminders.find(
+    (r) => r.is_active && new Date(r.next_date) <= new Date()
   );
 
   return {
     reminders,
     activeReminders: reminders.filter((r) => r.is_active),
     nextReminder,
+    overdueReminder,
     loading,
     error,
     refetch: fetchReminders,

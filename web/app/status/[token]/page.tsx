@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { notFound } from "next/navigation";
 
 interface STIStatus {
   name: string;
@@ -15,11 +14,53 @@ async function getSharedStatus(token: string) {
   return data[0];
 }
 
+function ExpiredPage({ isOverLimit }: { isOverLimit?: boolean }) {
+  return (
+    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+      <div className="w-16 h-16 bg-warning-light rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h1 className="text-xl font-bold text-gray-900 mb-2">
+        {isOverLimit ? "View Limit Reached" : "Link Expired"}
+      </h1>
+      <p className="text-gray-500 text-sm">
+        {isOverLimit
+          ? "This shared status has reached its maximum view limit."
+          : "This shared status is no longer available. The link may have expired or been revoked."}
+      </p>
+    </div>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h1 className="text-xl font-bold text-gray-900 mb-2">Link Not Found</h1>
+      <p className="text-gray-500 text-sm">This link doesn't exist or has been deleted.</p>
+    </div>
+  );
+}
+
 export default async function StatusPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const data = await getSharedStatus(token);
 
-  if (!data?.is_valid) notFound();
+  // Handle not found
+  if (!data) {
+    return <NotFoundPage />;
+  }
+
+  // Handle expired or over limit
+  if (!data.is_valid) {
+    return <ExpiredPage isOverLimit={data.is_over_limit} />;
+  }
 
   const statuses = data.status_snapshot as STIStatus[];
   const formatDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });

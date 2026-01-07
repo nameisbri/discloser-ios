@@ -5,9 +5,13 @@
 -- PROFILES TABLE
 -- Extended user info beyond Supabase auth.users
 -- ============================================
+create type risk_level as enum ('low', 'moderate', 'high');
+
 create table if not exists public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   display_name text,
+  risk_level risk_level,
+  risk_assessed_at timestamptz,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
@@ -213,26 +217,59 @@ returns table (
   status_snapshot jsonb,
   show_name boolean,
   display_name text,
-  is_valid boolean
+  is_valid boolean,
+  is_expired boolean,
+  is_over_limit boolean
 ) as $$
+declare
+  link_record record;
 begin
-  -- Increment view count
+  -- First, find the link
+  select * into link_record
+  from public.status_share_links
+  where token = share_token;
+
+  -- If not found, return nothing
+  if link_record is null then
+    return;
+  end if;
+
+  -- Check if expired
+  if link_record.expires_at <= now() then
+    return query select
+      link_record.status_snapshot,
+      link_record.show_name,
+      link_record.display_name,
+      false as is_valid,
+      true as is_expired,
+      false as is_over_limit;
+    return;
+  end if;
+
+  -- Check if over view limit
+  if link_record.max_views is not null and link_record.view_count >= link_record.max_views then
+    return query select
+      link_record.status_snapshot,
+      link_record.show_name,
+      link_record.display_name,
+      false as is_valid,
+      false as is_expired,
+      true as is_over_limit;
+    return;
+  end if;
+
+  -- Valid link - increment view count and return
   update public.status_share_links
   set view_count = view_count + 1
-  where token = share_token
-    and expires_at > now()
-    and (max_views is null or view_count < max_views);
+  where token = share_token;
 
-  return query
-  select
-    ssl.status_snapshot,
-    ssl.show_name,
-    ssl.display_name,
-    true as is_valid
-  from public.status_share_links ssl
-  where ssl.token = share_token
-    and ssl.expires_at > now()
-    and (ssl.max_views is null or ssl.view_count <= ssl.max_views);
+  return query select
+    link_record.status_snapshot,
+    link_record.show_name,
+    link_record.display_name,
+    true as is_valid,
+    false as is_expired,
+    false as is_over_limit;
 end;
 $$ language plpgsql security definer;
 

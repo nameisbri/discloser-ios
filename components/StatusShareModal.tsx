@@ -214,6 +214,15 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
               {statusLoading ? (
                 <ActivityIndicator size="large" color={colors.primary} />
+              ) : aggregatedStatus.length === 0 ? (
+                <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                  <ShieldCheck size={32} color={colors.textLight} style={{ marginBottom: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>No STI Data to Share</Text>
+                  <Text style={{ fontSize: 13, color: colors.textLight, textAlign: "center", lineHeight: 18 }}>
+                    Your test results don't have individual STI breakdowns.{"\n"}
+                    Try uploading a detailed lab report.
+                  </Text>
+                </View>
               ) : (
                 aggregatedStatus.map((sti, index) => (
                   <View key={sti.name}>
@@ -245,7 +254,11 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               )}
             </View>
 
-            <Button label="Create Share Link" onPress={() => setView("create")} />
+            <Button
+              label="Create Share Link"
+              onPress={() => setView("create")}
+              disabled={aggregatedStatus.length === 0}
+            />
 
             {links.length > 0 && (
               <Pressable onPress={() => setView("links")} style={{ marginTop: 12, padding: 12, alignItems: "center" }}>

@@ -4,9 +4,13 @@ export type TestStatus = "negative" | "positive" | "pending" | "inconclusive";
 
 export type ReminderFrequency = "monthly" | "quarterly" | "biannual" | "annual";
 
+export type RiskLevel = "low" | "moderate" | "high";
+
 export interface Profile {
   id: string;
   display_name: string | null;
+  risk_level: RiskLevel | null;
+  risk_assessed_at: string | null;
   created_at: string;
   updated_at: string;
 }
