@@ -10,6 +10,7 @@ A mobile app for managing and sharing STI test results securely.
 - **Share Securely** - Generate time-limited links or QR codes to share results
 - **Share Status** - Share your aggregated STI status across all tests
 - **Reminders** - Set recurring reminders for regular testing with push notifications
+- **Dark Mode** - Toggle between light, dark, or system preference
 - **Privacy First** - Your data stays private with row-level security
 
 ## Tech Stack
