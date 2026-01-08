@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react-native";
 import { useTestResult, useTestResults } from "../../../lib/hooks";
+import { useTheme } from "../../../context/theme";
 import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -32,6 +33,7 @@ import type { STIResult } from "../../../lib/types";
 export default function ResultDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { isDark } = useTheme();
   const { result, loading, error } = useTestResult(id);
   const { deleteResult } = useTestResults();
   const [showShareModal, setShowShareModal] = useState(false);
@@ -92,25 +94,25 @@ export default function ResultDetail() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color="#923D5C" />
+      <SafeAreaView className={`flex-1 items-center justify-center ${isDark ? "bg-dark-bg" : "bg-background"}`}>
+        <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
       </SafeAreaView>
     );
   }
 
   if (error || !result) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
         <View className="flex-row items-center px-6 py-4">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-danger font-inter-semibold text-lg mb-2">
             Result Not Found
           </Text>
-          <Text className="text-text-light font-inter-regular text-center">
+          <Text className={`font-inter-regular text-center ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
             {error || "This test result could not be loaded."}
           </Text>
           <Button
@@ -135,19 +137,19 @@ export default function ResultDetail() {
     result.status.charAt(0).toUpperCase() + result.status.slice(1);
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       <View className="flex-row items-center justify-between px-6 py-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-          <ChevronLeft size={24} color="#374151" />
+          <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
-        <Text className="text-lg font-inter-semibold text-secondary-dark">
+        <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
           Test Result
         </Text>
         <Pressable
           onPress={handleShare}
-          className="bg-primary-light/50 p-2 rounded-xl"
+          className={`p-2 rounded-xl ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/50"}`}
         >
-          <Share2 size={20} color="#923D5C" />
+          <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
         </Pressable>
       </View>
 
@@ -155,10 +157,10 @@ export default function ResultDetail() {
         <Card className="mb-6 mt-4">
           <View className="flex-row justify-between items-start mb-6">
             <View className="flex-1 mr-4">
-              <Text className="text-text-light font-inter-medium text-sm uppercase tracking-wider mb-1">
+              <Text className={`font-inter-medium text-sm uppercase tracking-wider mb-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
                 Test Type
               </Text>
-              <Text className="text-2xl font-inter-bold text-secondary-dark">
+              <Text className={`text-2xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
                 {result.test_type}
               </Text>
             </View>
@@ -167,28 +169,30 @@ export default function ResultDetail() {
 
           <View className="flex-row gap-8 mb-6">
             <View>
-              <Text className="text-text-light font-inter-medium text-xs mb-1">
+              <Text className={`font-inter-medium text-xs mb-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
                 TEST DATE
               </Text>
               <View className="flex-row items-center">
-                <Calendar size={14} color="#6B7280" />
-                <Text className="text-text font-inter-semibold ml-1">
+                <Calendar size={14} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
+                <Text className={`font-inter-semibold ml-1 ${isDark ? "text-dark-text" : "text-text"}`}>
                   {formatDate(result.test_date)}
                 </Text>
               </View>
             </View>
             <View>
-              <Text className="text-text-light font-inter-medium text-xs mb-1">
+              <Text className={`font-inter-medium text-xs mb-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
                 VERIFIED
               </Text>
               <View className="flex-row items-center">
                 <ShieldCheck
                   size={14}
-                  color={result.is_verified ? "#28A745" : "#9CA3AF"}
+                  color={result.is_verified ? (isDark ? "#00E5A0" : "#28A745") : "#9CA3AF"}
                 />
                 <Text
                   className={`font-inter-semibold ml-1 ${
-                    result.is_verified ? "text-success" : "text-text-light"
+                    result.is_verified
+                      ? isDark ? "text-dark-mint" : "text-success"
+                      : isDark ? "text-dark-text-secondary" : "text-text-light"
                   }`}
                 >
                   {result.is_verified ? "Yes" : "No"}
@@ -201,38 +205,39 @@ export default function ResultDetail() {
             <Pressable
               onPress={handleViewFile}
               disabled={loadingImage}
-              className="bg-gray-50 rounded-2xl p-4 flex-row items-center active:bg-gray-100"
+              className={`rounded-2xl p-4 flex-row items-center ${isDark ? "bg-dark-surface-light active:bg-dark-surface-elevated" : "bg-gray-50 active:bg-gray-100"}`}
             >
               {loadingImage ? (
-                <ActivityIndicator size="small" color="#923D5C" />
+                <ActivityIndicator size="small" color={isDark ? "#FF2D7A" : "#923D5C"} />
               ) : (
-                <FileText size={18} color="#923D5C" />
+                <FileText size={18} color={isDark ? "#FF2D7A" : "#923D5C"} />
               )}
               <Text
-                className="text-primary font-inter-medium ml-2 flex-1"
+                className={`font-inter-medium ml-2 flex-1 ${isDark ? "text-dark-accent" : "text-primary"}`}
                 numberOfLines={1}
               >
                 {result.file_name}
               </Text>
-              <Text className="text-text-light text-xs">Tap to view</Text>
+              <Text className={`text-xs ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>Tap to view</Text>
             </Pressable>
           )}
         </Card>
 
         {result.sti_results && result.sti_results.length > 0 && (
           <>
-            <Text className="text-lg font-inter-bold text-secondary-dark mb-4">
+            <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
               Detailed Breakdown
             </Text>
 
-            <View className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden mb-8">
+            <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
               {result.sti_results.map((sti, index) => (
                 <View key={index}>
-                  {index > 0 && <View className="h-[1px] bg-border mx-4" />}
+                  {index > 0 && <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />}
                   <STILineItem
                     name={sti.name}
                     result={sti.result}
                     status={sti.status}
+                    isDark={isDark}
                   />
                 </View>
               ))}
@@ -242,18 +247,18 @@ export default function ResultDetail() {
 
         {result.notes && (
           <Card className="mb-6">
-            <Text className="text-text-light font-inter-medium text-xs mb-2 uppercase tracking-wider">
+            <Text className={`font-inter-medium text-xs mb-2 uppercase tracking-wider ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
               Notes
             </Text>
-            <Text className="text-text font-inter-regular leading-5">
+            <Text className={`font-inter-regular leading-5 ${isDark ? "text-dark-text" : "text-text"}`}>
               {result.notes}
             </Text>
           </Card>
         )}
 
-        <View className="bg-warning-light/30 p-5 rounded-3xl flex-row items-start mb-6">
+        <View className={`p-5 rounded-3xl flex-row items-start mb-6 ${isDark ? "bg-dark-warning-bg" : "bg-warning-light/30"}`}>
           <AlertCircle size={20} color="#FFC107" />
-          <Text className="ml-3 flex-1 text-text text-sm leading-5 font-inter-regular">
+          <Text className={`ml-3 flex-1 text-sm leading-5 font-inter-regular ${isDark ? "text-dark-text" : "text-text"}`}>
             This result is for information purposes only. Always consult with a
             healthcare professional for medical advice.
           </Text>
@@ -270,7 +275,7 @@ export default function ResultDetail() {
         </Pressable>
       </ScrollView>
 
-      <View className="p-6 bg-white border-t border-border">
+      <View className={`p-6 border-t ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
         <Button label="Share This Result" onPress={handleShare} />
       </View>
 
@@ -307,21 +312,23 @@ function STILineItem({
   name,
   result,
   status,
+  isDark,
 }: {
   name: string;
   result: string;
   status: STIResult["status"];
+  isDark: boolean;
 }) {
   const textColor =
     status === "negative"
-      ? "text-success"
+      ? isDark ? "text-dark-mint" : "text-success"
       : status === "positive"
       ? "text-danger"
-      : "text-warning";
+      : isDark ? "text-dark-warning" : "text-warning";
 
   return (
     <View className="flex-row items-center justify-between p-4">
-      <Text className="text-text font-inter-medium">{name}</Text>
+      <Text className={`font-inter-medium ${isDark ? "text-dark-text" : "text-text"}`}>{name}</Text>
       <Text className={`${textColor} font-inter-semibold`}>{result}</Text>
     </View>
   );

@@ -1,6 +1,7 @@
 import "../global.css";
 import { Slot } from "expo-router";
 import { AuthProvider } from "../context/auth";
+import { ThemeProvider, useTheme } from "../context/theme";
 import {
   useFonts,
   Inter_400Regular,
@@ -11,8 +12,21 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { registerForPushNotifications } from "../lib/notifications";
+import { View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 SplashScreen.preventAutoHideAsync();
+
+function AppContent() {
+  const { isDark } = useTheme();
+
+  return (
+    <View className={`flex-1 ${isDark ? "dark" : ""}`}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Slot />
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -37,8 +51,10 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <Slot />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/auth";
+import { useTheme } from "../../context/theme";
 import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
 import { useReminders } from "../../lib/hooks";
 import {
@@ -34,6 +35,7 @@ import { useState, useCallback } from "react";
 export default function Dashboard() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { isDark } = useTheme();
   const { results, loading, refetch } = useTestResults();
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
   const { aggregatedStatus } = useSTIStatus();
@@ -74,21 +76,26 @@ export default function Dashboard() {
     return "Good evening";
   };
 
+  // Dark mode gradient colors
+  const gradientColors: [string, string] = isDark
+    ? ["#1A1520", "#2D2438"]
+    : ["#923D5C", "#6B2D45"];
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       <ScrollView
         className="flex-1"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#923D5C"
+            tintColor={isDark ? "#FF2D7A" : "#923D5C"}
           />
         }
       >
         {/* Header with gradient accent */}
         <LinearGradient
-          colors={["#923D5C", "#6B2D45"]}
+          colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 64, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
@@ -102,7 +109,7 @@ export default function Dashboard() {
               <Text className="text-white/90 font-inter-bold text-lg">Discloser</Text>
             </View>
             <Link href="/settings" asChild>
-              <Pressable className="bg-white/20 p-3 rounded-xl active:bg-white/30">
+              <Pressable className={`p-3 rounded-xl active:opacity-80 ${isDark ? "bg-dark-accent/20" : "bg-white/20"}`}>
                 <Settings size={20} color="white" />
               </Pressable>
             </Link>
@@ -117,8 +124,8 @@ export default function Dashboard() {
 
           {/* Status pill */}
           {results.length > 0 && results[0].status === "negative" && (
-            <View className="flex-row items-center bg-white/20 self-start px-4 py-2 rounded-full">
-              <ShieldCheck size={16} color="#10B981" />
+            <View className={`flex-row items-center self-start px-4 py-2 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-white/20"}`}>
+              <ShieldCheck size={16} color={isDark ? "#00E5A0" : "#10B981"} />
               <Text className="text-white font-inter-semibold ml-2 text-sm">
                 All clear on your last test
               </Text>
@@ -130,14 +137,13 @@ export default function Dashboard() {
           {/* Next Test Reminder Card */}
           {overdueReminder && !nextReminder ? (
             <View
-              className="mb-6 shadow-lg rounded-2xl p-5 border-2 border-danger"
-              style={{ backgroundColor: "#FEE2E2" }}
+              className={`mb-6 shadow-lg rounded-2xl p-5 border-2 ${isDark ? "bg-dark-danger-bg border-danger" : "border-danger"}`}
+              style={{ backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2" }}
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View
-                    className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
-                    style={{ backgroundColor: "#FECACA" }}
+                    className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? "bg-danger/30" : "bg-red-200"}`}
                   >
                     <Bell size={24} color="#EF4444" />
                   </View>
@@ -152,25 +158,24 @@ export default function Dashboard() {
                 </View>
                 <Pressable
                   onPress={() => router.push("/reminders")}
-                  className="px-4 py-2 rounded-xl"
-                  style={{ backgroundColor: "#FECACA" }}
+                  className={`px-4 py-2 rounded-xl ${isDark ? "bg-danger/30" : "bg-red-200"}`}
                 >
                   <Text className="font-inter-semibold text-sm text-danger">Edit</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
-            <Card className="bg-background-card mb-6 shadow-lg">
+            <Card className="mb-6 shadow-lg">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="w-12 h-12 bg-accent-soft rounded-2xl items-center justify-center mr-4">
-                    <Bell size={24} color="#FF6B8A" />
+                  <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? "bg-dark-coral/20" : "bg-accent-soft"}`}>
+                    <Bell size={24} color={isDark ? "#FF6B8A" : "#FF6B8A"} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-text-light font-inter-medium text-sm mb-1">
+                    <Text className={`font-inter-medium text-sm mb-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
                       Next checkup
                     </Text>
-                    <Text className="text-text text-lg font-inter-bold">
+                    <Text className={`text-lg font-inter-bold ${isDark ? "text-dark-text" : "text-text"}`}>
                       {nextReminder
                         ? formatDate(nextReminder.next_date)
                         : "Set a reminder"}
@@ -179,9 +184,9 @@ export default function Dashboard() {
                 </View>
                 <Pressable
                   onPress={() => router.push("/reminders")}
-                  className="bg-primary-muted px-4 py-2 rounded-xl"
+                  className={`px-4 py-2 rounded-xl ${isDark ? "bg-dark-accent-muted" : "bg-primary-muted"}`}
                 >
-                  <Text className="text-primary font-inter-semibold text-sm">
+                  <Text className={`font-inter-semibold text-sm ${isDark ? "text-dark-accent" : "text-primary"}`}>
                     {nextReminder ? "Edit" : "Add"}
                   </Text>
                 </Pressable>
@@ -192,15 +197,15 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <View className="flex-row gap-3 mb-4">
             <Link href="/upload" asChild>
-              <Pressable className="flex-1 bg-primary py-5 rounded-2xl items-center active:opacity-90">
+              <Pressable className={`flex-1 py-5 rounded-2xl items-center active:opacity-90 ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
                 <Plus size={24} color="white" />
                 <Text className="text-white font-inter-bold mt-2">Add Result</Text>
               </Pressable>
             </Link>
             <Link href="/reminders" asChild>
-              <Pressable className="flex-1 bg-background-card border-2 border-border py-5 rounded-2xl items-center active:bg-gray-50">
-                <Sparkles size={24} color="#923D5C" />
-                <Text className="text-primary font-inter-bold mt-2">Reminders</Text>
+              <Pressable className={`flex-1 border-2 py-5 rounded-2xl items-center ${isDark ? "bg-dark-surface border-dark-border active:bg-dark-surface-light" : "bg-background-card border-border active:bg-gray-50"}`}>
+                <Sparkles size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                <Text className={`font-inter-bold mt-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>Reminders</Text>
               </Pressable>
             </Link>
           </View>
@@ -209,10 +214,16 @@ export default function Dashboard() {
           {!overdueReminder && activeReminders.length === 0 && results.length > 0 && (
             <Pressable
               onPress={() => router.push("/reminders")}
-              className="bg-accent-soft/50 border-2 border-accent/30 py-4 rounded-2xl flex-row items-center justify-center mb-4 active:bg-accent-soft"
+              className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
+                isDark
+                  ? "bg-dark-coral/10 border-dark-coral/30 active:bg-dark-coral/20"
+                  : "bg-accent-soft/50 border-accent/30 active:bg-accent-soft"
+              }`}
             >
-              <Bell size={20} color="#FF6B8A" />
-              <Text className="text-accent-dark font-inter-bold ml-2">Set up testing reminders</Text>
+              <Bell size={20} color={isDark ? "#FF6B8A" : "#FF6B8A"} />
+              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-coral" : "text-accent-dark"}`}>
+                Set up testing reminders
+              </Text>
             </Pressable>
           )}
 
@@ -220,7 +231,7 @@ export default function Dashboard() {
           {(recommendation.isOverdue || recommendation.isDueSoon) && (
             <View className="flex-row items-center justify-center mb-4">
               <AlertTriangle size={14} color="#F59E0B" />
-              <Text className="text-warning-dark font-inter-medium text-xs ml-1.5">
+              <Text className={`font-inter-medium text-xs ml-1.5 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
                 {formatDueMessage(recommendation)}
               </Text>
             </View>
@@ -230,10 +241,16 @@ export default function Dashboard() {
           {!profile?.risk_level && results.length > 0 && (
             <Pressable
               onPress={() => setShowRiskAssessment(true)}
-              className="bg-primary-light/50 border-2 border-primary/20 py-4 rounded-2xl flex-row items-center justify-center mb-4 active:bg-primary-light"
+              className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
+                isDark
+                  ? "bg-dark-lavender/10 border-dark-lavender/30 active:bg-dark-lavender/20"
+                  : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
+              }`}
             >
-              <Sparkles size={20} color="#923D5C" />
-              <Text className="text-primary font-inter-bold ml-2">Take Risk Assessment</Text>
+              <Sparkles size={20} color={isDark ? "#C9A0DC" : "#923D5C"} />
+              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-lavender" : "text-primary"}`}>
+                Take Risk Assessment
+              </Text>
             </Pressable>
           )}
 
@@ -241,20 +258,26 @@ export default function Dashboard() {
           {results.length > 0 && (
             <Pressable
               onPress={() => setShowStatusShare(true)}
-              className="bg-primary-light/50 border-2 border-primary/20 py-4 rounded-2xl flex-row items-center justify-center mb-4 active:bg-primary-light"
+              className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
+                isDark
+                  ? "bg-dark-accent-muted border-dark-accent/30 active:bg-dark-accent/20"
+                  : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
+              }`}
             >
-              <Share2 size={20} color="#923D5C" />
-              <Text className="text-primary font-inter-bold ml-2">Share My Status</Text>
+              <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                Share My Status
+              </Text>
             </Pressable>
           )}
 
           {/* Results Section */}
           <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-xl font-inter-bold text-text">
+            <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-text"}`}>
               Your Results
             </Text>
             {results.length > 0 && (
-              <Text className="text-text-muted font-inter-medium">
+              <Text className={`font-inter-medium ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
                 {results.length} total
               </Text>
             )}
@@ -262,21 +285,21 @@ export default function Dashboard() {
 
           {loading ? (
             <View className="py-12 items-center">
-              <ActivityIndicator size="large" color="#923D5C" />
+              <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
             </View>
           ) : results.length === 0 ? (
-            <Card className="p-8 items-center justify-center border-2 border-dashed border-border bg-primary-muted/30 mb-8">
-              <View className="w-16 h-16 bg-primary-light rounded-full items-center justify-center mb-4">
-                <FileText size={32} color="#923D5C" />
+            <Card className={`p-8 items-center justify-center border-2 border-dashed mb-8 ${isDark ? "border-dark-border bg-dark-surface/50" : "border-border bg-primary-muted/30"}`}>
+              <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
+                <FileText size={32} color={isDark ? "#FF2D7A" : "#923D5C"} />
               </View>
-              <Text className="text-xl font-inter-bold text-text mb-2">
+              <Text className={`text-xl font-inter-bold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
                 No results yet
               </Text>
-              <Text className="text-text-light font-inter-regular text-center mb-6 leading-5">
+              <Text className={`font-inter-regular text-center mb-6 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
                 Upload your first test result and take{"\n"}control of your sexual health 💪
               </Text>
               <Link href="/upload" asChild>
-                <Pressable className="bg-primary px-8 py-3 rounded-full">
+                <Pressable className={`px-8 py-3 rounded-full ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
                   <Text className="text-white font-inter-bold">Get Started</Text>
                 </Pressable>
               </Link>
@@ -284,11 +307,11 @@ export default function Dashboard() {
           ) : (
             <View className="gap-3 mb-8">
               {results.slice(0, 5).map((result, index) => (
-                <ResultCard key={result.id} result={result} index={index} />
+                <ResultCard key={result.id} result={result} index={index} isDark={isDark} />
               ))}
               {results.length > 5 && (
-                <Pressable className="py-4 items-center bg-primary-muted rounded-2xl">
-                  <Text className="text-primary font-inter-bold">
+                <Pressable className={`py-4 items-center rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-primary-muted"}`}>
+                  <Text className={`font-inter-bold ${isDark ? "text-dark-accent" : "text-primary"}`}>
                     View All Results ({results.length})
                   </Text>
                 </Pressable>
@@ -300,7 +323,7 @@ export default function Dashboard() {
             onPress={signOut}
             className="mb-12 py-4 items-center"
           >
-            <Text className="text-text-muted font-inter-medium">
+            <Text className={`font-inter-medium ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
               Sign Out
             </Text>
           </Pressable>
@@ -324,33 +347,37 @@ export default function Dashboard() {
   );
 }
 
-function ResultCard({ result, index }: { result: TestResult; index: number }) {
+function ResultCard({ result, index, isDark }: { result: TestResult; index: number; isDark: boolean }) {
   const router = useRouter();
 
   const statusConfig = {
     negative: {
-      bg: "bg-success-light",
-      text: "text-success-dark",
+      bgLight: "bg-success-light",
+      bgDark: "bg-dark-success-bg",
+      text: isDark ? "text-dark-success" : "text-success-dark",
       label: "All Clear ✓",
-      icon: "#10B981",
+      icon: isDark ? "#00E5A0" : "#10B981",
     },
     positive: {
-      bg: "bg-danger-light",
+      bgLight: "bg-danger-light",
+      bgDark: "bg-dark-danger-bg",
       text: "text-danger",
       label: "Positive",
       icon: "#EF4444",
     },
     pending: {
-      bg: "bg-warning-light",
-      text: "text-warning",
+      bgLight: "bg-warning-light",
+      bgDark: "bg-dark-warning-bg",
+      text: isDark ? "text-dark-warning" : "text-warning",
       label: "Pending",
       icon: "#F59E0B",
     },
     inconclusive: {
-      bg: "bg-gray-100",
-      text: "text-gray-600",
+      bgLight: "bg-gray-100",
+      bgDark: "bg-dark-surface-light",
+      text: isDark ? "text-dark-text-secondary" : "text-gray-600",
       label: "Inconclusive",
-      icon: "#6B7280",
+      icon: isDark ? "#C9A0DC" : "#6B7280",
     },
   };
 
@@ -371,27 +398,27 @@ function ResultCard({ result, index }: { result: TestResult; index: number }) {
       className="active:scale-[0.98]"
       style={{ transform: [{ scale: 1 }] }}
     >
-      <Card className="flex-row items-center bg-background-card">
-        <View className={`w-12 h-12 ${status.bg} rounded-2xl items-center justify-center mr-4`}>
+      <Card className="flex-row items-center">
+        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? status.bgDark : status.bgLight}`}>
           <FileText size={22} color={status.icon} />
         </View>
         <View className="flex-1">
-          <Text className="text-text font-inter-bold mb-1">
+          <Text className={`font-inter-bold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>
             {result.test_type}
           </Text>
           <View className="flex-row items-center">
-            <Text className="text-text-light text-sm font-inter-regular">
+            <Text className={`text-sm font-inter-regular ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
               {formatDate(result.test_date)}
             </Text>
             {result.is_verified && (
               <>
-                <Text className="text-text-muted mx-2">•</Text>
-                <ShieldCheck size={14} color="#10B981" />
+                <Text className={`mx-2 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>•</Text>
+                <ShieldCheck size={14} color={isDark ? "#00E5A0" : "#10B981"} />
               </>
             )}
           </View>
         </View>
-        <View className={`${status.bg} px-3 py-1.5 rounded-full`}>
+        <View className={`px-3 py-1.5 rounded-full ${isDark ? status.bgDark : status.bgLight}`}>
           <Text className={`${status.text} font-inter-bold text-xs`}>
             {status.label}
           </Text>

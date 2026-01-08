@@ -3,6 +3,7 @@ import { View, Text, Modal, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, ChevronRight } from "lucide-react-native";
 import { Button } from "./Button";
+import { useTheme } from "../context/theme";
 import { supabase } from "../lib/supabase";
 import type { RiskLevel } from "../lib/types";
 
@@ -63,10 +64,24 @@ const RISK_INFO: Record<RiskLevel, { label: string; interval: string; color: str
 };
 
 export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentProps) {
+  const { isDark } = useTheme();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<RiskLevel | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Theme colors
+  const colors = {
+    bg: isDark ? "#0D0B0E" : "#FAFAFA",
+    surface: isDark ? "#1A1520" : "#FFFFFF",
+    border: isDark ? "#3D3548" : "#E5E7EB",
+    text: isDark ? "#FFFFFF" : "#1F2937",
+    textSecondary: isDark ? "rgba(255, 255, 255, 0.7)" : "#6B7280",
+    textMuted: isDark ? "rgba(255, 255, 255, 0.4)" : "#9CA3AF",
+    primary: isDark ? "#FF2D7A" : "#923D5C",
+    progressBg: isDark ? "#2D2438" : "#E5E7EB",
+    infoBg: isDark ? "#2D2438" : "#F3F4F6",
+  };
 
   const handleAnswer = (questionId: string, points: number) => {
     const newAnswers = { ...answers, [questionId]: points };
@@ -110,13 +125,13 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA" }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: "#1F2937" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>
             {result ? "Your Risk Level" : "Risk Assessment"}
           </Text>
           <Pressable onPress={handleClose} style={{ padding: 8 }}>
-            <X size={24} color="#6B7280" />
+            <X size={24} color={colors.textSecondary} />
           </Pressable>
         </View>
 
@@ -132,14 +147,14 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
                       flex: 1,
                       height: 4,
                       borderRadius: 2,
-                      backgroundColor: i <= step ? "#923D5C" : "#E5E7EB",
+                      backgroundColor: i <= step ? colors.primary : colors.progressBg,
                     }}
                   />
                 ))}
               </View>
 
               {/* Question */}
-              <Text style={{ fontSize: 20, fontWeight: "600", color: "#1F2937", marginBottom: 24 }}>
+              <Text style={{ fontSize: 20, fontWeight: "600", color: colors.text, marginBottom: 24 }}>
                 {currentQuestion.question}
               </Text>
 
@@ -150,23 +165,23 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
                     key={opt.label}
                     onPress={() => handleAnswer(currentQuestion.id, opt.points)}
                     style={{
-                      backgroundColor: "#fff",
+                      backgroundColor: colors.surface,
                       padding: 16,
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: "#E5E7EB",
+                      borderColor: colors.border,
                       flexDirection: "row",
                       alignItems: "center",
                       justifyContent: "space-between",
                     }}
                   >
-                    <Text style={{ fontSize: 16, color: "#1F2937" }}>{opt.label}</Text>
-                    <ChevronRight size={20} color="#9CA3AF" />
+                    <Text style={{ fontSize: 16, color: colors.text }}>{opt.label}</Text>
+                    <ChevronRight size={20} color={colors.textMuted} />
                   </Pressable>
                 ))}
               </View>
 
-              <Text style={{ marginTop: 24, fontSize: 12, color: "#9CA3AF", textAlign: "center" }}>
+              <Text style={{ marginTop: 24, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
                 This assessment is based on CDC guidelines and helps personalize your testing reminders.
               </Text>
             </>
@@ -194,12 +209,12 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
                   {info!.label}
                 </Text>
 
-                <Text style={{ fontSize: 16, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
+                <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", marginBottom: 24 }}>
                   Based on your answers, we recommend testing {info!.interval}.
                 </Text>
 
-                <View style={{ backgroundColor: "#F3F4F6", padding: 16, borderRadius: 12, width: "100%" }}>
-                  <Text style={{ fontSize: 14, color: "#6B7280", textAlign: "center" }}>
+                <View style={{ backgroundColor: colors.infoBg, padding: 16, borderRadius: 12, width: "100%" }}>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: "center" }}>
                     We'll use this to suggest testing dates and send you timely reminders.
                   </Text>
                 </View>
@@ -208,7 +223,7 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
               <View style={{ marginTop: 32 }}>
                 <Button label={saving ? "Saving..." : "Save & Continue"} onPress={handleSave} disabled={saving} />
                 <Pressable onPress={() => { setStep(0); setAnswers({}); setResult(null); }} style={{ padding: 16 }}>
-                  <Text style={{ textAlign: "center", color: "#923D5C", fontWeight: "600" }}>Retake Assessment</Text>
+                  <Text style={{ textAlign: "center", color: colors.primary, fontWeight: "600" }}>Retake Assessment</Text>
                 </Pressable>
               </View>
             </>

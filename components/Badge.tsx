@@ -1,8 +1,9 @@
 import { View, Text } from "react-native";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
+import { useTheme } from "../context/theme";
 
-const badgeVariants = cva(
+const badgeVariantsLight = cva(
   "px-3 py-1 rounded-full items-center justify-center",
   {
     variants: {
@@ -20,7 +21,25 @@ const badgeVariants = cva(
   }
 );
 
-const badgeTextVariants = cva(
+const badgeVariantsDark = cva(
+  "px-3 py-1 rounded-full items-center justify-center",
+  {
+    variants: {
+      variant: {
+        default: "bg-dark-accent-muted",
+        success: "bg-dark-success-bg",
+        danger: "bg-dark-danger-bg",
+        warning: "bg-dark-warning-bg",
+        outline: "bg-transparent border border-dark-border",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
+
+const badgeTextVariantsLight = cva(
   "text-xs font-inter-bold uppercase tracking-wider",
   {
     variants: {
@@ -38,7 +57,25 @@ const badgeTextVariants = cva(
   }
 );
 
-interface BadgeProps extends VariantProps<typeof badgeVariants> {
+const badgeTextVariantsDark = cva(
+  "text-xs font-inter-bold uppercase tracking-wider",
+  {
+    variants: {
+      variant: {
+        default: "text-dark-accent",
+        success: "text-dark-success",
+        danger: "text-dark-danger",
+        warning: "text-dark-warning",
+        outline: "text-dark-text-secondary",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
+
+interface BadgeProps extends VariantProps<typeof badgeVariantsLight> {
   label: string;
   className?: string;
   textClassName?: string;
@@ -50,9 +87,14 @@ export function Badge({
   className,
   textClassName,
 }: BadgeProps) {
+  const { isDark } = useTheme();
+
+  const badgeVariants = isDark ? badgeVariantsDark : badgeVariantsLight;
+  const textVariants = isDark ? badgeTextVariantsDark : badgeTextVariantsLight;
+
   return (
     <View className={cn(badgeVariants({ variant }), className)}>
-      <Text className={cn(badgeTextVariants({ variant }), textClassName)}>
+      <Text className={cn(textVariants({ variant }), textClassName)}>
         {label}
       </Text>
     </View>

@@ -27,6 +27,7 @@ import {
 } from "lucide-react-native";
 import { uploadTestDocument } from "../../lib/storage";
 import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
+import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
@@ -99,6 +100,7 @@ const TEST_PRESETS = [
 
 export default function Upload() {
   const router = useRouter();
+  const { isDark } = useTheme();
   const { createResult } = useTestResults();
   const { activeReminders, createReminder, updateReminder } = useReminders();
   const { profile } = useProfile();
@@ -338,50 +340,53 @@ export default function Upload() {
 
   if (step === "select") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
         <View className="flex-row items-center px-6 py-4">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
         </View>
 
         <ScrollView className="flex-1 px-8 py-6" contentContainerStyle={{ paddingBottom: 40 }}>
           <View className="items-center mb-10">
-            <View className="w-20 h-20 bg-primary-light/30 rounded-full items-center justify-center mb-6">
-              <UploadIcon size={40} color="#923D5C" />
+            <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/30"}`}>
+              <UploadIcon size={40} color={isDark ? "#FF2D7A" : "#923D5C"} />
             </View>
-            <Text className="text-3xl font-inter-bold text-secondary-dark mb-3">
+            <Text className={`text-3xl font-inter-bold mb-3 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
               Add Test Result
             </Text>
-            <Text className="text-text-light font-inter-regular text-center">
+            <Text className={`font-inter-regular text-center ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
               Choose how you want to add your new test result.
             </Text>
           </View>
 
           <View className="gap-4">
             <UploadOption
-              icon={<Camera size={28} color="#923D5C" />}
+              icon={<Camera size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
               title="Take a Photo"
               description="Use your camera to capture a result document"
               onPress={() => pickImage(true)}
+              isDark={isDark}
             />
             <UploadOption
-              icon={<ImageIcon size={28} color="#923D5C" />}
+              icon={<ImageIcon size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
               title="Choose from Gallery"
               description="Select images from your photo library"
               onPress={() => pickImage(false)}
+              isDark={isDark}
             />
             <UploadOption
-              icon={<Calendar size={28} color="#923D5C" />}
+              icon={<Calendar size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
               title="Manual Entry"
               description="Enter your test results manually"
               onPress={() => setStep("details")}
+              isDark={isDark}
             />
           </View>
 
-          <View className="bg-primary-light/20 p-5 rounded-3xl flex-row items-start mt-6">
-            <Info size={20} color="#923D5C" />
-            <Text className="ml-3 flex-1 text-primary-dark font-inter-medium text-sm leading-5">
+          <View className={`p-5 rounded-3xl flex-row items-start mt-6 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/20"}`}>
+            <Info size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+            <Text className={`ml-3 flex-1 font-inter-medium text-sm leading-5 ${isDark ? "text-dark-accent" : "text-primary-dark"}`}>
               Your documents are encrypted and stored securely. Only you control
               who can see them.
             </Text>
@@ -393,7 +398,7 @@ export default function Upload() {
 
   if (step === "preview") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
         <View className="flex-row items-center justify-between px-6 py-4">
           <Pressable
             onPress={() => {
@@ -402,16 +407,16 @@ export default function Upload() {
             }}
             className="p-2 -ml-2"
           >
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
-          <Text className="text-lg font-inter-semibold text-secondary-dark">
+          <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
             Documents Selected
           </Text>
           <View className="w-10" />
         </View>
 
         <ScrollView className="flex-1 px-6 py-4">
-          <Text className="text-text-light font-inter-medium mb-4">
+          <Text className={`font-inter-medium mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
             {selectedFiles.length} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
             selected
           </Text>
@@ -419,23 +424,23 @@ export default function Upload() {
           <View className="gap-3 mb-6">
             {selectedFiles.map((file, index) => (
               <Card key={index} className="flex-row items-center p-4">
-                <View className="bg-gray-50 p-3 rounded-xl mr-4">
-                  <ImageIcon size={24} color="#923D5C" />
+                <View className={`p-3 rounded-xl mr-4 ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
+                  <ImageIcon size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
                 </View>
                 <View className="flex-1">
                   <Text
-                    className="text-text font-inter-semibold mb-1"
+                    className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}
                     numberOfLines={1}
                   >
                     {file.name}
                   </Text>
-                  <Text className="text-text-light text-xs font-inter-regular uppercase">
+                  <Text className={`text-xs font-inter-regular uppercase ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                     Image
                   </Text>
                 </View>
                 <Pressable
                   onPress={() => removeFile(index)}
-                  className="p-2 bg-danger-light rounded-xl"
+                  className={`p-2 rounded-xl ${isDark ? "bg-dark-danger-bg" : "bg-danger-light"}`}
                 >
                   <X size={18} color="#DC3545" />
                 </Pressable>
@@ -446,10 +451,10 @@ export default function Upload() {
           {/* Add more files */}
           <Pressable
             onPress={() => setStep("select")}
-            className="flex-row items-center justify-center py-4 border-2 border-dashed border-border rounded-2xl mb-6"
+            className={`flex-row items-center justify-center py-4 border-2 border-dashed rounded-2xl mb-6 ${isDark ? "border-dark-border" : "border-border"}`}
           >
-            <Plus size={20} color="#923D5C" />
-            <Text className="text-primary font-inter-semibold ml-2">
+            <Plus size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+            <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
               Add More Files
             </Text>
           </Pressable>
@@ -468,7 +473,7 @@ export default function Upload() {
 
   // Details step
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -480,9 +485,9 @@ export default function Upload() {
             }
             className="p-2 -ml-2"
           >
-            <ChevronLeft size={24} color="#374151" />
+            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
-          <Text className="text-lg font-inter-semibold text-secondary-dark">
+          <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
             Test Details
           </Text>
           <View className="w-10" />
@@ -496,14 +501,14 @@ export default function Upload() {
           {selectedFiles.length > 0 && (
             <Pressable
               onPress={() => setStep("preview")}
-              className="bg-success-light/50 p-4 rounded-2xl flex-row items-center mb-3"
+              className={`p-4 rounded-2xl flex-row items-center mb-3 ${isDark ? "bg-dark-success-bg" : "bg-success-light/50"}`}
             >
-              <Check size={20} color="#28A745" />
-              <Text className="text-success font-inter-medium ml-2 flex-1">
+              <Check size={20} color={isDark ? "#00E5A0" : "#28A745"} />
+              <Text className={`font-inter-medium ml-2 flex-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
                 {selectedFiles.length} file
                 {selectedFiles.length !== 1 ? "s" : ""} attached
               </Text>
-              <Text className="text-success/70 text-sm font-inter-regular">
+              <Text className={`text-sm font-inter-regular ${isDark ? "text-dark-mint/70" : "text-success/70"}`}>
                 Tap to edit
               </Text>
             </Pressable>
@@ -511,29 +516,29 @@ export default function Upload() {
 
           {/* Show verification status */}
           {isVerified && (
-            <View className="bg-primary-light/50 p-4 rounded-2xl mb-3">
+            <View className={`p-4 rounded-2xl mb-3 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/50"}`}>
               <View className="flex-row items-center mb-1">
-                <Check size={20} color="#923D5C" />
-                <Text className="text-primary font-inter-semibold ml-2">
+                <Check size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
                   Document verified
                 </Text>
               </View>
-              <Text className="text-primary/70 text-xs font-inter-regular ml-7">
+              <Text className={`text-xs font-inter-regular ml-7 ${isDark ? "text-dark-accent/70" : "text-primary/70"}`}>
                 From a recognized Canadian lab with valid identifiers
               </Text>
             </View>
           )}
 
           {parsing && (
-            <View className="bg-primary-light/20 p-6 rounded-3xl items-center mb-6">
-              <ActivityIndicator size="large" color="#923D5C" />
-              <Text className="mt-4 text-xl font-inter-bold text-primary-dark text-center">
+            <View className={`p-6 rounded-3xl items-center mb-6 ${isDark ? "bg-dark-surface" : "bg-primary-light/20"}`}>
+              <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
+              <Text className={`mt-4 text-xl font-inter-bold text-center ${isDark ? "text-dark-text" : "text-primary-dark"}`}>
                 Reading your test results...
               </Text>
-              <Text className="mt-2 text-sm font-inter-regular text-primary text-center">
+              <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
                 Analyzing {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''} with AI
               </Text>
-              <Text className="mt-3 text-xs font-inter-regular text-text-light text-center">
+              <Text className={`mt-3 text-xs font-inter-regular text-center ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                 This may take 15-30 seconds
               </Text>
             </View>
@@ -543,34 +548,44 @@ export default function Upload() {
             <>
               {/* Test Date */}
               <View className="mb-6">
-                <Text className="text-text font-inter-semibold mb-2">
+                <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
                   Test Date
                 </Text>
                 <TextInput
                   value={testDate}
                   onChangeText={setTestDate}
                   placeholder="YYYY-MM-DD"
-                  className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
+                  placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                  className={`border rounded-2xl px-4 py-4 font-inter-regular ${
+                    isDark
+                      ? "bg-dark-surface border-dark-border text-dark-text"
+                      : "bg-white border-border text-text"
+                  }`}
                 />
               </View>
 
               {/* Test Type */}
               <View className="mb-6">
-                <Text className="text-text font-inter-semibold mb-2">
+                <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
                   Test Type
                 </Text>
                 <TextInput
                   value={testType}
                   onChangeText={setTestType}
                   placeholder="e.g., Full STI Panel"
-                  className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text"
+                  placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                  className={`border rounded-2xl px-4 py-4 font-inter-regular ${
+                    isDark
+                      ? "bg-dark-surface border-dark-border text-dark-text"
+                      : "bg-white border-border text-text"
+                  }`}
                 />
               </View>
 
               {/* Overall Status - only show for manual entry */}
               {extractedResults.length === 0 && (
                 <View className="mb-6">
-                  <Text className="text-text font-inter-semibold mb-3">
+                  <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
                     Overall Result
                   </Text>
                   <View className="flex-row gap-3">
@@ -579,18 +594,21 @@ export default function Upload() {
                       selected={overallStatus === "negative"}
                       onPress={() => setOverallStatus("negative")}
                       variant="success"
+                      isDark={isDark}
                     />
                     <StatusButton
                       label="Positive"
                       selected={overallStatus === "positive"}
                       onPress={() => setOverallStatus("positive")}
                       variant="danger"
+                      isDark={isDark}
                     />
                     <StatusButton
                       label="Pending"
                       selected={overallStatus === "pending"}
                       onPress={() => setOverallStatus("pending")}
                       variant="warning"
+                      isDark={isDark}
                     />
                   </View>
                 </View>
@@ -601,13 +619,13 @@ export default function Upload() {
           {/* Tests Included */}
           {parsing ? null : extractedResults.length > 0 ? (
             <View className="mb-6">
-              <Text className="text-text font-inter-semibold mb-3">
+              <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
                 Extracted Test Results ({extractedResults.length})
               </Text>
               {extractedResults.map((sti, index) => (
-                <View key={index} className="bg-white border border-border rounded-2xl p-4 mb-3">
-                  <Text className="font-inter-semibold text-text mb-1">{sti.name}</Text>
-                  <Text className="font-inter-regular text-text-light text-sm mb-2">{sti.result}</Text>
+                <View key={index} className={`border rounded-2xl p-4 mb-3 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
+                  <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>{sti.name}</Text>
+                  <Text className={`font-inter-regular text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>{sti.result}</Text>
                   <View className="flex-row gap-2">
                     <Pressable
                       onPress={() => {
@@ -616,10 +634,12 @@ export default function Upload() {
                         setExtractedResults(updated);
                       }}
                       className={`px-3 py-1 rounded-full ${
-                        sti.status === "negative" ? "bg-success" : "bg-gray-100"
+                        sti.status === "negative"
+                          ? "bg-success"
+                          : isDark ? "bg-dark-surface-light" : "bg-gray-100"
                       }`}
                     >
-                      <Text className={sti.status === "negative" ? "text-white text-xs" : "text-gray-600 text-xs"}>
+                      <Text className={sti.status === "negative" ? "text-white text-xs" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
                         Negative
                       </Text>
                     </Pressable>
@@ -630,10 +650,12 @@ export default function Upload() {
                         setExtractedResults(updated);
                       }}
                       className={`px-3 py-1 rounded-full ${
-                        sti.status === "positive" ? "bg-danger" : "bg-gray-100"
+                        sti.status === "positive"
+                          ? "bg-danger"
+                          : isDark ? "bg-dark-surface-light" : "bg-gray-100"
                       }`}
                     >
-                      <Text className={sti.status === "positive" ? "text-white text-xs" : "text-gray-600 text-xs"}>
+                      <Text className={sti.status === "positive" ? "text-white text-xs" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
                         Positive
                       </Text>
                     </Pressable>
@@ -644,10 +666,12 @@ export default function Upload() {
                         setExtractedResults(updated);
                       }}
                       className={`px-3 py-1 rounded-full ${
-                        sti.status === "pending" ? "bg-warning" : "bg-gray-100"
+                        sti.status === "pending"
+                          ? "bg-warning"
+                          : isDark ? "bg-dark-surface-light" : "bg-gray-100"
                       }`}
                     >
-                      <Text className={sti.status === "pending" ? "text-white text-xs" : "text-gray-600 text-xs"}>
+                      <Text className={sti.status === "pending" ? "text-white text-xs" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
                         Pending
                       </Text>
                     </Pressable>
@@ -658,7 +682,7 @@ export default function Upload() {
           ) : (
             <View className="mb-6">
               {/* Test Presets */}
-              <Text className="text-text font-inter-semibold mb-3">
+              <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
                 What tests did you get?
               </Text>
               <View className="gap-2 mb-4">
@@ -668,24 +692,30 @@ export default function Upload() {
                     onPress={() => selectPreset(preset.id)}
                     className={`p-4 rounded-2xl border-2 flex-row items-center justify-between ${
                       selectedPreset === preset.id
-                        ? "bg-primary-light/30 border-primary"
+                        ? isDark
+                          ? "bg-dark-accent-muted border-dark-accent"
+                          : "bg-primary-light/30 border-primary"
+                        : isDark
+                        ? "bg-dark-surface border-dark-border"
                         : "bg-white border-border"
                     }`}
                   >
                     <View>
                       <Text
                         className={`font-inter-semibold ${
-                          selectedPreset === preset.id ? "text-primary" : "text-text"
+                          selectedPreset === preset.id
+                            ? isDark ? "text-dark-accent" : "text-primary"
+                            : isDark ? "text-dark-text" : "text-text"
                         }`}
                       >
                         {preset.label}
                       </Text>
-                      <Text className="text-text-light text-xs font-inter-regular mt-0.5">
+                      <Text className={`text-xs font-inter-regular mt-0.5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
                         {preset.description}
                       </Text>
                     </View>
                     {selectedPreset === preset.id && (
-                      <View className="w-6 h-6 bg-primary rounded-full items-center justify-center">
+                      <View className={`w-6 h-6 rounded-full items-center justify-center ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
                         <Check size={14} color="white" strokeWidth={3} />
                       </View>
                     )}
@@ -698,7 +728,7 @@ export default function Upload() {
                 onPress={() => setSelectedPreset("custom")}
                 className="mb-3"
               >
-                <Text className={`font-inter-medium text-sm ${selectedPreset === "custom" ? "text-primary" : "text-text-light"}`}>
+                <Text className={`font-inter-medium text-sm ${selectedPreset === "custom" ? isDark ? "text-dark-accent" : "text-primary" : isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                   {selectedPreset === "custom" ? "Custom selection:" : "Or select specific tests →"}
                 </Text>
               </Pressable>
@@ -711,13 +741,19 @@ export default function Upload() {
                       onPress={() => toggleTest(test)}
                       className={`px-4 py-2 rounded-full border ${
                         selectedTests.includes(test)
-                          ? "bg-primary border-primary"
+                          ? isDark
+                            ? "bg-dark-accent border-dark-accent"
+                            : "bg-primary border-primary"
+                          : isDark
+                          ? "bg-dark-surface border-dark-border"
                           : "bg-white border-border"
                       }`}
                     >
                       <Text
                         className={`font-inter-medium text-sm ${
-                          selectedTests.includes(test) ? "text-white" : "text-text"
+                          selectedTests.includes(test)
+                            ? "text-white"
+                            : isDark ? "text-dark-text" : "text-text"
                         }`}
                       >
                         {test}
@@ -729,8 +765,8 @@ export default function Upload() {
 
               {/* Summary of selected tests */}
               {selectedPreset !== "custom" && selectedTests.length > 0 && (
-                <View className="bg-success-light/30 p-3 rounded-xl mt-2">
-                  <Text className="text-success-dark text-xs font-inter-medium">
+                <View className={`p-3 rounded-xl mt-2 ${isDark ? "bg-dark-success-bg" : "bg-success-light/30"}`}>
+                  <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-mint" : "text-success-dark"}`}>
                     {selectedTests.length} tests: {selectedTests.join(", ")}
                   </Text>
                 </View>
@@ -742,16 +778,21 @@ export default function Upload() {
             <>
               {/* Notes */}
               <View className="mb-8">
-                <Text className="text-text font-inter-semibold mb-2">
+                <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
                   Notes (Optional)
                 </Text>
                 <TextInput
                   value={notes}
                   onChangeText={setNotes}
                   placeholder="Any additional notes..."
+                  placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
                   multiline
                   numberOfLines={3}
-                  className="bg-white border border-border rounded-2xl px-4 py-4 font-inter-regular text-text min-h-[100px]"
+                  className={`border rounded-2xl px-4 py-4 font-inter-regular min-h-[100px] ${
+                    isDark
+                      ? "bg-dark-surface border-dark-border text-dark-text"
+                      : "bg-white border-border text-text"
+                  }`}
                   textAlignVertical="top"
                 />
               </View>
@@ -780,29 +821,35 @@ function UploadOption({
   title,
   description,
   onPress,
+  isDark,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onPress: () => void;
+  isDark: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="bg-background-card p-5 rounded-2xl border-2 border-border flex-row items-center active:border-primary active:bg-primary-muted"
+      className={`p-5 rounded-2xl border-2 flex-row items-center ${
+        isDark
+          ? "bg-dark-surface border-dark-border active:border-dark-accent active:bg-dark-surface-light"
+          : "bg-background-card border-border active:border-primary active:bg-primary-muted"
+      }`}
     >
-      <View className="bg-primary-muted w-14 h-14 rounded-xl items-center justify-center mr-4">
+      <View className={`w-14 h-14 rounded-xl items-center justify-center mr-4 ${isDark ? "bg-dark-surface-light" : "bg-primary-muted"}`}>
         {icon}
       </View>
       <View className="flex-1">
-        <Text className="text-base font-inter-bold text-text mb-0.5">
+        <Text className={`text-base font-inter-bold mb-0.5 ${isDark ? "text-dark-text" : "text-text"}`}>
           {title}
         </Text>
-        <Text className="text-text-light font-inter-regular text-sm">
+        <Text className={`font-inter-regular text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
           {description}
         </Text>
       </View>
-      <ChevronLeft size={20} color="#E5E7EB" style={{ transform: [{ rotate: '180deg' }] }} />
+      <ChevronLeft size={20} color={isDark ? "#3D3548" : "#E5E7EB"} style={{ transform: [{ rotate: '180deg' }] }} />
     </Pressable>
   );
 }
@@ -812,27 +859,29 @@ function StatusButton({
   selected,
   onPress,
   variant,
+  isDark,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   variant: "success" | "danger" | "warning";
+  isDark: boolean;
 }) {
   const config = {
     success: {
       selectedBg: "bg-success",
       emoji: "✓",
-      unselectedBorder: "border-success/30",
+      unselectedBorder: isDark ? "border-dark-success/30" : "border-success/30",
     },
     danger: {
       selectedBg: "bg-danger",
       emoji: "!",
-      unselectedBorder: "border-danger/30",
+      unselectedBorder: isDark ? "border-danger/30" : "border-danger/30",
     },
     warning: {
       selectedBg: "bg-warning",
       emoji: "?",
-      unselectedBorder: "border-warning/30",
+      unselectedBorder: isDark ? "border-dark-warning/30" : "border-warning/30",
     },
   };
 
@@ -855,9 +904,9 @@ function StatusButton({
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-1 py-4 rounded-2xl bg-background-card border-2 ${style.unselectedBorder}`}
+      className={`flex-1 py-4 rounded-2xl border-2 ${style.unselectedBorder} ${isDark ? "bg-dark-surface" : "bg-background-card"}`}
     >
-      <Text className="text-center font-inter-medium text-text-light">
+      <Text className={`text-center font-inter-medium ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
         {label}
       </Text>
     </Pressable>

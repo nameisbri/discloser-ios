@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
@@ -26,28 +25,10 @@ import {
   Smartphone,
 } from "lucide-react-native";
 import { useShareLinks, getShareUrl } from "../lib/hooks/useShareLinks";
+import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
 import type { ShareLink } from "../lib/types";
-
-// Colors from tailwind config
-const colors = {
-  primary: "#923D5C",
-  primaryLight: "#EAC4CE",
-  primaryDark: "#6B2D45",
-  secondaryDark: "#2D2438",
-  success: "#10B981",
-  successLight: "#D1FAE5",
-  danger: "#EF4444",
-  dangerLight: "#FEE2E2",
-  background: "#FAFAFA",
-  cardBg: "#FFFFFF",
-  text: "#1F2937",
-  textLight: "#6B7280",
-  border: "#E5E7EB",
-  gray100: "#F3F4F6",
-  gray200: "#E5E7EB",
-};
 
 type ExpiryOption = {
   label: string;
@@ -75,6 +56,7 @@ interface ShareModalProps {
 }
 
 export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) {
+  const { isDark } = useTheme();
   const { links, loading, fetchLinks, createShareLink, deleteShareLink } =
     useShareLinks(testResultId);
 
@@ -85,6 +67,23 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<ShareLink | null>(null);
+
+  // Theme colors
+  const colors = useMemo(() => ({
+    bg: isDark ? "#0D0B0E" : "#FAFAFA",
+    surface: isDark ? "#1A1520" : "#FFFFFF",
+    surfaceLight: isDark ? "#2D2438" : "#F3F4F6",
+    border: isDark ? "#3D3548" : "#E5E7EB",
+    text: isDark ? "#FFFFFF" : "#1F2937",
+    textSecondary: isDark ? "rgba(255, 255, 255, 0.7)" : "#6B7280",
+    textMuted: isDark ? "rgba(255, 255, 255, 0.4)" : "#9CA3AF",
+    primary: isDark ? "#FF2D7A" : "#923D5C",
+    primaryLight: isDark ? "rgba(255, 45, 122, 0.2)" : "#EAC4CE80",
+    success: "#10B981",
+    successLight: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
+    danger: "#EF4444",
+    dangerLight: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
+  }), [isDark]);
 
   useEffect(() => {
     if (visible && testResultId) {
@@ -165,24 +164,24 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface }}>
           <Pressable
             onPress={() => {
               if (view === "create" || view === "qr" || view === "preview")
                 setView("list");
               else onClose();
             }}
-            style={styles.headerButton}
+            style={{ padding: 8, marginLeft: -8 }}
           >
             {view === "list" ? (
               <X size={24} color={colors.text} />
             ) : (
-              <Text style={styles.backText}>Back</Text>
+              <Text style={{ fontSize: 16, fontWeight: "500", color: colors.primary }}>Back</Text>
             )}
           </Pressable>
-          <Text style={styles.headerTitle}>
+          <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text }}>
             {view === "create"
               ? "New Share Link"
               : view === "qr"
@@ -196,12 +195,12 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
         {/* List View */}
         {view === "list" && (
-          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
-            <View style={styles.heroSection}>
-              <View style={styles.iconCircle}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+            <View style={{ alignItems: "center", marginBottom: 32 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
                 <LinkIcon size={32} color={colors.primary} />
               </View>
-              <Text style={styles.heroText}>
+              <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: "center", lineHeight: 22 }}>
                 Create secure, time-limited links to share your test result.
               </Text>
             </View>
@@ -220,12 +219,12 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                 style={{ marginTop: 32 }}
               />
             ) : activeLinks.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No active share links</Text>
+              <View style={{ alignItems: "center", paddingVertical: 32 }}>
+                <Text style={{ fontSize: 15, color: colors.textSecondary }}>No active share links</Text>
               </View>
             ) : (
               <>
-                <Text style={styles.sectionTitle}>
+                <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
                   Active Links ({activeLinks.length})
                 </Text>
                 <View style={{ gap: 12 }}>
@@ -242,6 +241,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                       }}
                       copied={copiedId === link.id}
                       formatExpiry={formatExpiry}
+                      colors={colors}
                     />
                   ))}
                 </View>
@@ -252,25 +252,30 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
         {/* Create View */}
         {view === "create" && (
-          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
             {/* Expiry */}
-            <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Link Expires After</Text>
-              <View style={styles.optionsRow}>
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Link Expires After</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {EXPIRY_OPTIONS.map((opt) => (
                   <Pressable
                     key={opt.hours}
                     onPress={() => setSelectedExpiry(opt)}
-                    style={[
-                      styles.optionChip,
-                      selectedExpiry.hours === opt.hours && styles.optionChipSelected,
-                    ]}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.border,
+                      backgroundColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.surface,
+                    }}
                   >
                     <Text
-                      style={[
-                        styles.optionChipText,
-                        selectedExpiry.hours === opt.hours && styles.optionChipTextSelected,
-                      ]}
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "500",
+                        color: selectedExpiry.hours === opt.hours ? "white" : colors.text,
+                      }}
                     >
                       {opt.label}
                     </Text>
@@ -280,23 +285,28 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
             </View>
 
             {/* View Limit */}
-            <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Maximum Views</Text>
-              <View style={styles.optionsRow}>
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Maximum Views</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {VIEW_LIMIT_OPTIONS.map((opt) => (
                   <Pressable
                     key={opt.label}
                     onPress={() => setSelectedViewLimit(opt)}
-                    style={[
-                      styles.optionChip,
-                      selectedViewLimit.value === opt.value && styles.optionChipSelected,
-                    ]}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: selectedViewLimit.value === opt.value ? colors.primary : colors.border,
+                      backgroundColor: selectedViewLimit.value === opt.value ? colors.primary : colors.surface,
+                    }}
                   >
                     <Text
-                      style={[
-                        styles.optionChipText,
-                        selectedViewLimit.value === opt.value && styles.optionChipTextSelected,
-                      ]}
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "500",
+                        color: selectedViewLimit.value === opt.value ? "white" : colors.text,
+                      }}
                     >
                       {opt.label}
                     </Text>
@@ -308,26 +318,41 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
             {/* Show Name Toggle */}
             <Pressable
               onPress={() => setShowName(!showName)}
-              style={styles.toggleRow}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: 16,
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 32,
+              }}
             >
-              <View style={styles.toggleContent}>
-                <View style={styles.toggleIcon}>
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
                   <User size={20} color={colors.text} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.toggleTitle}>Show Your Name</Text>
-                  <Text style={styles.toggleSubtitle}>
+                  <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>Show Your Name</Text>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
                     Display your name on shared result
                   </Text>
                 </View>
               </View>
               <View
-                style={[
-                  styles.toggle,
-                  showName ? styles.toggleOn : styles.toggleOff,
-                ]}
+                style={{
+                  width: 48,
+                  height: 28,
+                  borderRadius: 14,
+                  justifyContent: "center",
+                  padding: 2,
+                  backgroundColor: showName ? colors.primary : colors.surfaceLight,
+                  alignItems: showName ? "flex-end" : "flex-start",
+                }}
               >
-                <View style={styles.toggleKnob} />
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "white" }} />
               </View>
             </Pressable>
 
@@ -346,24 +371,24 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
         {/* QR View */}
         {view === "qr" && qrLink && (
-          <View style={styles.qrContainer}>
-            <View style={styles.qrCard}>
+          <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 24, alignItems: "center", justifyContent: "center" }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 32, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
               <QRCode
                 value={getShareUrl(qrLink.token)}
                 size={220}
                 color={colors.text}
-                backgroundColor="white"
+                backgroundColor={colors.surface}
               />
-              <Text style={styles.qrLabel}>Scan to view shared result</Text>
-              <View style={styles.qrExpiry}>
-                <Clock size={14} color={colors.textLight} />
-                <Text style={styles.qrExpiryText}>
+              <Text style={{ fontSize: 15, fontWeight: "500", color: colors.textSecondary, marginTop: 24, textAlign: "center" }}>Scan to view shared result</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+                <Clock size={14} color={colors.textSecondary} />
+                <Text style={{ fontSize: 14, color: colors.textSecondary, marginLeft: 4 }}>
                   {formatExpiry(qrLink.expires_at)}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.qrButtons}>
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 24, width: "100%" }}>
               <Button
                 label={copiedId === qrLink.id ? "Copied!" : "Copy Link"}
                 variant="secondary"
@@ -376,15 +401,13 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                 }
                 onPress={() => handleCopy(qrLink)}
                 className="flex-1"
-                textClassName="text-primary"
               />
               <Button
                 label="Preview"
                 variant="outline"
-                icon={<Smartphone size={20} color={colors.primary} />}
+                icon={<Smartphone size={20} color={colors.text} />}
                 onPress={() => setView("preview")}
                 className="flex-1"
-                textClassName="text-primary"
               />
             </View>
           </View>
@@ -407,6 +430,7 @@ function ShareLinkCard({
   onPreview,
   copied,
   formatExpiry,
+  colors,
 }: {
   link: ShareLink;
   onCopy: () => void;
@@ -415,24 +439,25 @@ function ShareLinkCard({
   onPreview: () => void;
   copied: boolean;
   formatExpiry: (exp: string) => string;
+  colors: Record<string, string>;
 }) {
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
+    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
         <View style={{ flex: 1 }}>
-          <View style={styles.badgeRow}>
-            <View style={styles.badgeOutline}>
-              <Text style={styles.badgeOutlineText}>{formatExpiry(link.expires_at)}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
             </View>
             {link.show_name && (
-              <View style={styles.badgeSecondary}>
-                <Text style={styles.badgeSecondaryText}>Name visible</Text>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight }}>
+                <Text style={{ fontSize: 12, fontWeight: "500", color: colors.primary }}>Name visible</Text>
               </View>
             )}
           </View>
-          <View style={styles.viewCount}>
-            <Eye size={14} color={colors.textLight} />
-            <Text style={styles.viewCountText}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+            <Eye size={14} color={colors.textSecondary} />
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
               {link.view_count} view{link.view_count !== 1 ? "s" : ""}
               {link.max_views && ` / ${link.max_views} max`}
             </Text>
@@ -440,325 +465,41 @@ function ShareLinkCard({
         </View>
       </View>
 
-      <View style={styles.cardActions}>
+      <View style={{ flexDirection: "row", gap: 8 }}>
         <Pressable
           onPress={onCopy}
-          style={[styles.actionButton, styles.actionButtonPrimary, copied && styles.actionButtonSuccess]}
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            paddingVertical: 12,
+            borderRadius: 12,
+            backgroundColor: copied ? colors.successLight : colors.primaryLight,
+          }}
         >
           {copied ? (
             <Check size={18} color={colors.success} />
           ) : (
             <Copy size={18} color={colors.primary} />
           )}
-          <Text style={[styles.actionButtonText, copied && styles.actionButtonTextSuccess]}>
+          <Text style={{ fontSize: 14, fontWeight: "500", color: copied ? colors.success : colors.primary, marginLeft: 8 }}>
             {copied ? "Copied" : "Copy"}
           </Text>
         </Pressable>
 
-        <Pressable onPress={onPreview} style={styles.iconButton}>
+        <Pressable onPress={onPreview} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}>
           <Smartphone size={18} color={colors.text} />
         </Pressable>
 
-        <Pressable onPress={onShowQR} style={styles.iconButton}>
+        <Pressable onPress={onShowQR} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}>
           <QrCode size={18} color={colors.text} />
         </Pressable>
 
-        <Pressable onPress={onDelete} style={[styles.iconButton, styles.iconButtonDanger]}>
+        <Pressable onPress={onDelete} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight }}>
           <Trash2 size={18} color={colors.danger} />
         </Pressable>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  headerButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.secondaryDark,
-  },
-  backText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.primary,
-  },
-  scrollContent: {
-    flex: 1,
-  },
-  scrollContentContainer: {
-    padding: 24,
-  },
-  heroSection: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: `${colors.primaryLight}50`,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  heroText: {
-    fontSize: 15,
-    color: colors.textLight,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: colors.textLight,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.secondaryDark,
-    marginBottom: 16,
-  },
-  formSection: {
-    marginBottom: 24,
-  },
-  formLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 12,
-  },
-  optionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  optionChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  optionChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  optionChipText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  optionChipTextSelected: {
-    color: "white",
-  },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 32,
-  },
-  toggleContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  toggleIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.gray100,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  toggleTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  toggleSubtitle: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginTop: 2,
-  },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    padding: 2,
-  },
-  toggleOn: {
-    backgroundColor: colors.primary,
-    alignItems: "flex-end",
-  },
-  toggleOff: {
-    backgroundColor: colors.gray200,
-    alignItems: "flex-start",
-  },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "white",
-  },
-  qrContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  qrCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 24,
-    padding: 32,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  qrLabel: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: colors.textLight,
-    marginTop: 24,
-    textAlign: "center",
-  },
-  qrExpiry: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  qrExpiryText: {
-    fontSize: 14,
-    color: colors.textLight,
-    marginLeft: 4,
-  },
-  qrButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 24,
-    width: "100%",
-  },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  badgeOutline: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  badgeOutlineText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.textLight,
-  },
-  badgeSecondary: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: colors.primaryLight,
-  },
-  badgeSecondaryText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.primary,
-  },
-  viewCount: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  viewCountText: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginLeft: 4,
-  },
-  cardActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  actionButtonPrimary: {
-    backgroundColor: `${colors.primaryLight}80`,
-  },
-  actionButtonSuccess: {
-    backgroundColor: colors.successLight,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.primary,
-    marginLeft: 8,
-  },
-  actionButtonTextSuccess: {
-    color: colors.success,
-  },
-  iconButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: colors.gray100,
-  },
-  iconButtonDanger: {
-    backgroundColor: colors.dangerLight,
-  },
-});

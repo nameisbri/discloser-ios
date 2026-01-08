@@ -13,7 +13,6 @@ import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
 import {
   X,
-  Link as LinkIcon,
   Clock,
   Eye,
   User,
@@ -21,27 +20,13 @@ import {
   Check,
   Trash2,
   QrCode,
-  Plus,
   Calendar,
   ShieldCheck,
 } from "lucide-react-native";
-import { useSTIStatus, type AggregatedSTI } from "../lib/hooks";
+import { useSTIStatus } from "../lib/hooks";
+import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { supabase } from "../lib/supabase";
-
-const colors = {
-  primary: "#923D5C",
-  primaryLight: "#EAC4CE",
-  success: "#10B981",
-  successLight: "#D1FAE5",
-  danger: "#EF4444",
-  dangerLight: "#FEE2E2",
-  warning: "#F59E0B",
-  warningLight: "#FEF3C7",
-  text: "#1F2937",
-  textLight: "#6B7280",
-  border: "#E5E7EB",
-};
 
 const EXPIRY_OPTIONS = [
   { label: "1 hour", hours: 1 },
@@ -66,6 +51,7 @@ interface StatusShareModalProps {
 }
 
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
+  const { isDark } = useTheme();
   const { aggregatedStatus, loading: statusLoading } = useSTIStatus();
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
@@ -76,6 +62,25 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<StatusShareLink | null>(null);
   const [previewLink, setPreviewLink] = useState<StatusShareLink | null>(null);
+
+  // Theme colors
+  const colors = {
+    bg: isDark ? "#0D0B0E" : "#FAFAFA",
+    surface: isDark ? "#1A1520" : "#FFFFFF",
+    surfaceLight: isDark ? "#2D2438" : "#F3F4F6",
+    border: isDark ? "#3D3548" : "#E5E7EB",
+    text: isDark ? "#FFFFFF" : "#1F2937",
+    textSecondary: isDark ? "rgba(255, 255, 255, 0.7)" : "#6B7280",
+    textMuted: isDark ? "rgba(255, 255, 255, 0.4)" : "#9CA3AF",
+    primary: isDark ? "#FF2D7A" : "#923D5C",
+    primaryLight: isDark ? "rgba(255, 45, 122, 0.2)" : "#EAC4CE",
+    success: "#10B981",
+    successLight: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
+    danger: "#EF4444",
+    dangerLight: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
+    warning: "#F59E0B",
+    warningLight: isDark ? "rgba(245, 158, 11, 0.15)" : "#FEF3C7",
+  };
 
   useEffect(() => {
     if (visible) {
@@ -195,30 +200,30 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Share My Status</Text>
           <Pressable onPress={onClose} style={{ padding: 8 }}>
-            <X size={24} color={colors.textLight} />
+            <X size={24} color={colors.textSecondary} />
           </Pressable>
         </View>
 
         {view === "preview" && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Text style={{ fontSize: 14, color: colors.textLight, marginBottom: 16, textAlign: "center" }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16, textAlign: "center" }}>
               This is what recipients will see
             </Text>
 
             {/* Status Preview */}
-            <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
               {statusLoading ? (
                 <ActivityIndicator size="large" color={colors.primary} />
               ) : aggregatedStatus.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 20 }}>
-                  <ShieldCheck size={32} color={colors.textLight} style={{ marginBottom: 12 }} />
+                  <ShieldCheck size={32} color={colors.textSecondary} style={{ marginBottom: 12 }} />
                   <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>No STI Data to Share</Text>
-                  <Text style={{ fontSize: 13, color: colors.textLight, textAlign: "center", lineHeight: 18 }}>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: "center", lineHeight: 18 }}>
                     Your test results don't have individual STI breakdowns.{"\n"}
                     Try uploading a detailed lab report.
                   </Text>
@@ -231,8 +236,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>{sti.name}</Text>
                         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                          <Calendar size={12} color={colors.textLight} />
-                          <Text style={{ fontSize: 12, color: colors.textLight, marginLeft: 4 }}>
+                          <Calendar size={12} color={colors.textSecondary} />
+                          <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
                             {formatDate(sti.testDate)}
                           </Text>
                           {sti.isVerified && (
@@ -285,7 +290,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     paddingHorizontal: 16,
                     paddingVertical: 10,
                     borderRadius: 20,
-                    backgroundColor: selectedExpiry.hours === opt.hours ? colors.primary : "#fff",
+                    backgroundColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.surface,
                     borderWidth: 1,
                     borderColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.border,
                   }}
@@ -305,7 +310,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: 16,
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: colors.border,
@@ -313,7 +318,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <User size={20} color={colors.textLight} />
+                <User size={20} color={colors.textSecondary} />
                 <Text style={{ marginLeft: 12, color: colors.text, fontWeight: "500" }}>Show my name</Text>
               </View>
               <View style={{
@@ -322,7 +327,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 borderRadius: 6,
                 borderWidth: 2,
                 borderColor: showName ? colors.primary : colors.border,
-                backgroundColor: showName ? colors.primary : "#fff",
+                backgroundColor: showName ? colors.primary : colors.surface,
                 alignItems: "center",
                 justifyContent: "center",
               }}>
@@ -349,18 +354,18 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : links.length === 0 ? (
-              <Text style={{ color: colors.textLight, textAlign: "center", padding: 20 }}>No active links</Text>
+              <Text style={{ color: colors.textSecondary, textAlign: "center", padding: 20 }}>No active links</Text>
             ) : (
               links.map((link) => (
-                <View key={link.id} style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+                <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Clock size={14} color={colors.textLight} />
-                      <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textLight }}>{formatExpiry(link.expires_at)}</Text>
+                      <Clock size={14} color={colors.textSecondary} />
+                      <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
                     </View>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Eye size={14} color={colors.textLight} />
-                      <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textLight }}>{link.view_count} views</Text>
+                      <Eye size={14} color={colors.textSecondary} />
+                      <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textSecondary }}>{link.view_count} views</Text>
                     </View>
                   </View>
 
@@ -376,13 +381,13 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     </Pressable>
                     <Pressable
                       onPress={() => { setQrLink(link); setView("qr"); }}
-                      style={{ padding: 10, backgroundColor: colors.primaryLight, borderRadius: 8 }}
+                      style={{ padding: 10, backgroundColor: colors.surfaceLight, borderRadius: 8 }}
                     >
                       <QrCode size={16} color={colors.primary} />
                     </Pressable>
                     <Pressable
                       onPress={() => { setPreviewLink(link); setView("recipient"); }}
-                      style={{ padding: 10, backgroundColor: colors.primaryLight, borderRadius: 8 }}
+                      style={{ padding: 10, backgroundColor: colors.surfaceLight, borderRadius: 8 }}
                     >
                       <Eye size={16} color={colors.primary} />
                     </Pressable>
@@ -407,9 +412,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back</Text>
             </Pressable>
 
-            <View style={{ backgroundColor: "#fff", padding: 24, borderRadius: 16, alignItems: "center" }}>
-              <QRCode value={getShareUrl(qrLink.token)} size={200} />
-              <Text style={{ marginTop: 16, color: colors.textLight, textAlign: "center" }}>
+            <View style={{ backgroundColor: colors.surface, padding: 24, borderRadius: 16, alignItems: "center" }}>
+              <QRCode value={getShareUrl(qrLink.token)} size={200} color={colors.text} backgroundColor={colors.surface} />
+              <Text style={{ marginTop: 16, color: colors.textSecondary, textAlign: "center" }}>
                 Scan to view status
               </Text>
             </View>
@@ -430,12 +435,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back</Text>
             </Pressable>
 
-            <Text style={{ fontSize: 14, color: colors.textLight, marginBottom: 16, textAlign: "center" }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16, textAlign: "center" }}>
               This is how recipients will see your shared status
             </Text>
 
             {/* Recipient Preview Card */}
-            <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
               <View style={{ alignItems: "center", marginBottom: 20 }}>
                 <View style={{ width: 48, height: 48, backgroundColor: colors.primaryLight, borderRadius: 24, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
                   <ShieldCheck size={24} color={colors.primary} />
@@ -443,7 +448,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
                   STI Status
                 </Text>
-                <Text style={{ fontSize: 13, color: colors.textLight }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary }}>
                   Shared via Discloser
                 </Text>
               </View>
@@ -456,8 +461,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>{sti.name}</Text>
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                        <Calendar size={12} color={colors.textLight} />
-                        <Text style={{ fontSize: 12, color: colors.textLight, marginLeft: 4 }}>
+                        <Calendar size={12} color={colors.textSecondary} />
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
                           {formatDate(sti.testDate)}
                         </Text>
                         {sti.isVerified && (
@@ -481,14 +486,14 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <View style={{ marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Clock size={14} color={colors.textLight} />
-                    <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textLight }}>
+                    <Clock size={14} color={colors.textSecondary} />
+                    <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textSecondary }}>
                       Expires: {formatExpiry(previewLink.expires_at)}
                     </Text>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Eye size={14} color={colors.textLight} />
-                    <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textLight }}>
+                    <Eye size={14} color={colors.textSecondary} />
+                    <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textSecondary }}>
                       {previewLink.view_count} views
                     </Text>
                   </View>
