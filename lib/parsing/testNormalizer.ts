@@ -59,9 +59,10 @@ const TEST_NAME_MAPPING: Record<string, string> = {
   'HSV-2 IGG': 'Herpes (HSV-2)',
   'HERPES SIMPLEX VIRUS INTERPRETATION': 'Herpes',
 
-  // Trichomonas
-  'TRICHOMONAS VAGINALIS': 'Trichomonas',
-  'TRICHOMONAS VAGINALIS DNA': 'Trichomonas',
+  // Trichomoniasis
+  'TRICHOMONAS VAGINALIS': 'Trichomoniasis',
+  'TRICHOMONAS VAGINALIS DNA': 'Trichomoniasis',
+  'TRICHOMONIASIS': 'Trichomoniasis',
 };
 
 export function normalizeTestName(testName: string): string {
@@ -97,7 +98,7 @@ export function getTestCategory(testName: string): string {
   if (normalized.includes('Gonorrhea')) return 'Bacterial';
   if (normalized.includes('Chlamydia')) return 'Bacterial';
   if (normalized.includes('Herpes') || normalized.includes('HSV')) return 'Herpes';
-  if (normalized.includes('Trichomonas')) return 'Parasitic';
+  if (normalized.includes('Trichomoniasis')) return 'Parasitic';
 
   return 'Other';
 }
