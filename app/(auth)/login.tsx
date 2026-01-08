@@ -39,26 +39,26 @@ export default function Login() {
             Discloser
           </Text>
           <Text className="text-xl font-inter-medium text-white/80 leading-8 mb-2">
-            Your sexual health,{"\n"}
-            <Text className={`font-inter-bold ${isDark ? "text-dark-accent" : "text-accent"}`}>your control.</Text>
+            Share your status.{"\n"}
+            <Text className={`font-inter-bold ${isDark ? "text-dark-accent" : "text-accent"}`}>Keep your name.</Text>
           </Text>
           <Text className="text-base font-inter-regular text-white/60 leading-6 mt-4">
-            Store results securely. Share on your terms.{"\n"}
-            No awkward conversations required.
+            Being responsible shouldn't cost you your privacy.{"\n"}
+            Be adventurous. Stay anonymous.
           </Text>
         </View>
 
         {/* Feature pills */}
         <View className="flex-row flex-wrap gap-2 mb-8">
-          <FeaturePill icon={<Shield size={14} color={isDark ? "#00E5A0" : "#10B981"} />} label="End-to-end encrypted" isDark={isDark} />
-          <FeaturePill icon={<Sparkles size={14} color={isDark ? "#FF2D7A" : "#F59E0B"} />} label="Auto-expiring links" isDark={isDark} />
+          <FeaturePill icon={<Shield size={14} color={isDark ? "#00E5A0" : "#10B981"} />} label="Privacy that works" isDark={isDark} />
+          <FeaturePill icon={<Sparkles size={14} color={isDark ? "#FF2D7A" : "#F59E0B"} />} label="Links that vanish" isDark={isDark} />
         </View>
       </LinearGradient>
 
       {/* Bottom card with sign in */}
       <View className={`px-8 py-10 rounded-t-[32px] -mt-8 ${isDark ? "bg-dark-surface" : "bg-background-card"}`}>
         <Text className={`text-center font-inter-medium mb-6 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-          Ready to take control?
+          Your results. Your rules.
         </Text>
 
         {Platform.OS === "ios" ? (
@@ -86,8 +86,8 @@ export default function Login() {
         )}
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
-          By signing in, you agree to keep your health data{"\n"}
-          private and share responsibly ❤️
+          Your data stays yours. Always encrypted.{"\n"}
+          Share smart, not sorry.
         </Text>
       </View>
     </View>

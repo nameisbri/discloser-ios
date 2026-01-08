@@ -171,10 +171,10 @@ export default function Reminders() {
             <Bell size={40} color="#FFC107" />
           </View>
           <Text className={`text-3xl font-inter-bold mb-3 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-            Testing Schedule
+            Stay sharp
           </Text>
           <Text className={`font-inter-regular text-center ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-            Stay on top of your sexual health with personalized reminders.
+            Regular testing is hot. We'll remind you.
           </Text>
         </View>
 
@@ -205,17 +205,17 @@ export default function Reminders() {
           <Card className={`mb-6 border-2 ${isDark ? "bg-dark-accent-muted border-dark-accent/30" : "bg-primary-light/30 border-primary/20"}`}>
             <View className="flex-row items-center mb-3">
               <Sparkles size={18} color={isDark ? "#FF2D7A" : "#923D5C"} />
-              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>Suggested for you</Text>
+              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>Just for you</Text>
             </View>
             <Text className={`font-inter-medium mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-              Based on your {recommendation.riskLevel} risk level, we recommend testing{" "}
-              {recommendation.intervalDays === 365 ? "yearly" : recommendation.intervalDays === 180 ? "every 6 months" : "every 3 months"}.
+              Based on your vibe, we'd say{" "}
+              {recommendation.intervalDays === 365 ? "yearly" : recommendation.intervalDays === 180 ? "every 6 months" : "every 3 months"} works.
             </Text>
             <Text className={`text-sm mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              Next suggested date: {formatDate(recommendation.nextDueDate)}
+              Mark your calendar: {formatDate(recommendation.nextDueDate)}
             </Text>
             <Button
-              label="Create Suggested Reminder"
+              label="Set it up"
               size="sm"
               onPress={async () => {
                 await createReminder({
@@ -251,10 +251,10 @@ export default function Reminders() {
               {activeReminders.length === 0 ? (
                 <View className="items-center py-6">
                   <Text className={`font-inter-regular mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                    No active reminders
+                    Nothing set up yet
                   </Text>
                   <Button
-                    label="Create Reminder"
+                    label="Add one"
                     variant="secondary"
                     size="sm"
                     onPress={() => setShowModal(true)}
@@ -374,14 +374,14 @@ export default function Reminders() {
 
             <View className={`p-5 rounded-3xl mb-8 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/20"}`}>
               <Text className={`font-inter-medium text-sm ${isDark ? "text-dark-accent" : "text-primary-dark"}`}>
-                Next reminder will be set for:{" "}
+                We'll nudge you on{" "}
                 <Text className="font-inter-bold">
                   {formatDate(getNextDate(newFrequency))}
                 </Text>
               </Text>
             </View>
 
-            <Button label="Create Reminder" onPress={handleCreateReminder} />
+            <Button label="Set it" onPress={handleCreateReminder} />
           </View>
         </SafeAreaView>
       </Modal>

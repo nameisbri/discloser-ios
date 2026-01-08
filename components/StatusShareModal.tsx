@@ -203,7 +203,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Share My Status</Text>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Share your status</Text>
           <Pressable onPress={onClose} style={{ padding: 8 }}>
             <X size={24} color={colors.textSecondary} />
           </Pressable>
@@ -212,7 +212,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
         {view === "preview" && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
             <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16, textAlign: "center" }}>
-              This is what recipients will see
+              Preview what they'll see. No surprises.
             </Text>
 
             {/* Status Preview */}
@@ -222,10 +222,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               ) : aggregatedStatus.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 20 }}>
                   <ShieldCheck size={32} color={colors.textSecondary} style={{ marginBottom: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>No STI Data to Share</Text>
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>Nothing to share yet</Text>
                   <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: "center", lineHeight: 18 }}>
-                    Your test results don't have individual STI breakdowns.{"\n"}
-                    Try uploading a detailed lab report.
+                    Need individual test breakdowns.{"\n"}
+                    Upload a detailed lab report to get started.
                   </Text>
                 </View>
               ) : (
@@ -260,7 +260,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             </View>
 
             <Button
-              label="Create Share Link"
+              label="Create a link"
               onPress={() => setView("create")}
               disabled={aggregatedStatus.length === 0}
             />
@@ -280,7 +280,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             </Pressable>
 
             {/* Expiry Selection */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 8 }}>Link Expires In</Text>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 8 }}>Self-destructs in</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
               {EXPIRY_OPTIONS.map((opt) => (
                 <Pressable
@@ -319,7 +319,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <User size={20} color={colors.textSecondary} />
-                <Text style={{ marginLeft: 12, color: colors.text, fontWeight: "500" }}>Show my name</Text>
+                <Text style={{ marginLeft: 12, color: colors.text, fontWeight: "500" }}>Let them know it's me</Text>
               </View>
               <View style={{
                 width: 24,
@@ -336,7 +336,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             </Pressable>
 
             <Button
-              label={creating ? "Creating..." : "Create Link"}
+              label={creating ? "On it..." : "Make it happen"}
               onPress={handleCreate}
               disabled={creating}
             />
@@ -354,7 +354,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : links.length === 0 ? (
-              <Text style={{ color: colors.textSecondary, textAlign: "center", padding: 20 }}>No active links</Text>
+              <Text style={{ color: colors.textSecondary, textAlign: "center", padding: 20 }}>No links yet. Create one above.</Text>
             ) : (
               links.map((link) => (
                 <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
@@ -402,7 +402,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               ))
             )}
 
-            <Button label="Create New Link" onPress={() => setView("create")} variant="secondary" />
+            <Button label="Create another" onPress={() => setView("create")} variant="secondary" />
           </ScrollView>
         )}
 
@@ -415,7 +415,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <View style={{ backgroundColor: colors.surface, padding: 24, borderRadius: 16, alignItems: "center" }}>
               <QRCode value={getShareUrl(qrLink.token)} size={200} color={colors.text} backgroundColor={colors.surface} />
               <Text style={{ marginTop: 16, color: colors.textSecondary, textAlign: "center" }}>
-                Scan to view status
+                Point, scan, done
               </Text>
             </View>
 
@@ -436,7 +436,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             </Pressable>
 
             <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16, textAlign: "center" }}>
-              This is how recipients will see your shared status
+              Exactly what they'll see. No extras.
             </Text>
 
             {/* Recipient Preview Card */}

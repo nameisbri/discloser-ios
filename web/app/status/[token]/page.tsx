@@ -39,12 +39,12 @@ function ExpiredPage({ isOverLimit }: { isOverLimit?: boolean }) {
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-white mb-3">
-          {isOverLimit ? "View Limit Reached" : "Link Expired"}
+          {isOverLimit ? "That's a wrap" : "This link vanished"}
         </h1>
         <p className="text-white/60">
           {isOverLimit
-            ? "This shared status has reached its maximum view limit."
-            : "This shared status is no longer available. The link may have expired or been revoked."}
+            ? "Max views reached. Ask for a fresh link if you need one."
+            : "It expired or got revoked. Privacy in action."}
         </p>
       </div>
     </PageWrapper>
@@ -60,8 +60,8 @@ function NotFoundPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-3">Link Not Found</h1>
-        <p className="text-white/60">This link doesn't exist or has been deleted.</p>
+        <h1 className="text-2xl font-bold text-white mb-3">Nothing here</h1>
+        <p className="text-white/60">This link doesn't exist or got deleted.</p>
       </div>
     </PageWrapper>
   );
@@ -138,15 +138,18 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           {/* Footer Note */}
           <div className="border-t border-surface-light px-6 py-4">
             <p className="text-center text-white/40 text-xs">
-              <span className="text-accent-mint">✓ Verified</span> = from a recognized Canadian lab
+              <span className="text-accent-mint">✓ Verified</span> = the real deal from a Canadian lab
             </p>
           </div>
         </div>
 
         {/* Branding Footer */}
-        <div className="flex items-center justify-center gap-2 mt-8 text-white/40 text-sm">
-          <Image src="/logo.png" alt="Discloser" width={20} height={20} className="rounded" />
-          <span>Shared via Discloser</span>
+        <div className="flex flex-col items-center justify-center gap-1 mt-8">
+          <div className="flex items-center gap-2 text-white/40 text-sm">
+            <Image src="/logo.png" alt="Discloser" width={20} height={20} className="rounded" />
+            <span>Shared via Discloser</span>
+          </div>
+          <span className="text-white/25 text-xs">Be adventurous. Stay anonymous.</span>
         </div>
       </div>
     </main>

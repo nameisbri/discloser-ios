@@ -10,7 +10,7 @@ import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNoti
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/Button";
 
-const RISK_LABELS = { low: "Low", moderate: "Moderate", high: "High" };
+const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Moon }[] = [
   { value: "dark", label: "Dark", icon: Moon },
@@ -61,12 +61,12 @@ export default function Settings() {
 
   const handleDeleteAllData = () => {
     Alert.alert(
-      "Delete All Data",
-      "This will permanently delete all your test results, reminders, and share links. This cannot be undone.",
+      "Start fresh?",
+      "This wipes everything - results, reminders, links. No going back.",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Never mind", style: "cancel" },
         {
-          text: "Delete Everything",
+          text: "Wipe it all",
           style: "destructive",
           onPress: async () => {
             const userId = session?.user?.id;
@@ -75,7 +75,7 @@ export default function Settings() {
             await supabase.from("test_results").delete().eq("user_id", userId);
             await supabase.from("reminders").delete().eq("user_id", userId);
             await cancelAllReminderNotifications();
-            Alert.alert("Done", "All your data has been deleted.");
+            Alert.alert("Done", "Clean slate. You're good to go.");
           },
         },
       ]
@@ -159,13 +159,13 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Health
+          Your vibe
         </Text>
 
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
           <SettingsItem
             icon={<Activity size={20} color={isDark ? "#00E5A0" : "#374151"} />}
-            title="Risk Assessment"
+            title="How often to test?"
             onPress={() => setShowRiskAssessment(true)}
             rightElement={
               profile?.risk_level ? (
@@ -180,7 +180,7 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Privacy & Data
+          Your data
         </Text>
 
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
@@ -193,7 +193,7 @@ export default function Settings() {
           <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
           <SettingsItem
             icon={<Trash2 size={20} color="#DC3545" />}
-            title="Delete All Data"
+            title="Start fresh"
             onPress={handleDeleteAllData}
             danger
             isDark={isDark}
@@ -201,14 +201,14 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Support
+          Need help?
         </Text>
-        
+
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
-          <SettingsItem 
-            icon={<HelpCircle size={20} color={isDark ? "#C9A0DC" : "#374151"} />} 
-            title="Help Center" 
-            showChevron 
+          <SettingsItem
+            icon={<HelpCircle size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
+            title="Get support"
+            showChevron
             isDark={isDark}
           />
         </View>
@@ -229,7 +229,7 @@ export default function Settings() {
             <View className="flex-row justify-between items-center mb-6">
               <View className="w-12" />
               <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-                Choose Theme
+                Pick your vibe
               </Text>
               <Pressable onPress={() => setShowThemeModal(false)}>
                 <Text className={`font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>Done</Text>

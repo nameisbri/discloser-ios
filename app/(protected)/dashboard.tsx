@@ -71,9 +71,9 @@ export default function Dashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return "Rise and shine";
+    if (hour < 18) return "Hey there";
+    return "Evening, you";
   };
 
   // Dark mode gradient colors
@@ -119,7 +119,7 @@ export default function Dashboard() {
             {getGreeting()} 👋
           </Text>
           <Text className="text-3xl font-inter-bold text-white mb-4">
-            You're looking healthy
+            Looking good out there
           </Text>
 
           {/* Status pill */}
@@ -127,7 +127,7 @@ export default function Dashboard() {
             <View className={`flex-row items-center self-start px-4 py-2 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-white/20"}`}>
               <ShieldCheck size={16} color={isDark ? "#00E5A0" : "#10B981"} />
               <Text className="text-white font-inter-semibold ml-2 text-sm">
-                All clear on your last test
+                All clear. Go be adventurous.
               </Text>
             </View>
           )}
@@ -222,7 +222,7 @@ export default function Dashboard() {
             >
               <Bell size={20} color={isDark ? "#FF6B8A" : "#FF6B8A"} />
               <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-coral" : "text-accent-dark"}`}>
-                Set up testing reminders
+                Stay on top of it
               </Text>
             </Pressable>
           )}
@@ -249,7 +249,7 @@ export default function Dashboard() {
             >
               <Sparkles size={20} color={isDark ? "#C9A0DC" : "#923D5C"} />
               <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-lavender" : "text-primary"}`}>
-                Take Risk Assessment
+                How often should I test?
               </Text>
             </Pressable>
           )}
@@ -266,7 +266,7 @@ export default function Dashboard() {
             >
               <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
               <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Share My Status
+                Share without the awkward
               </Text>
             </Pressable>
           )}
@@ -293,14 +293,14 @@ export default function Dashboard() {
                 <FileText size={32} color={isDark ? "#FF2D7A" : "#923D5C"} />
               </View>
               <Text className={`text-xl font-inter-bold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
-                No results yet
+                Nothing here yet
               </Text>
               <Text className={`font-inter-regular text-center mb-6 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                Upload your first test result and take{"\n"}control of your sexual health 💪
+                Add your first result and start sharing{"\n"}on your terms. Privacy included.
               </Text>
               <Link href="/upload" asChild>
                 <Pressable className={`px-8 py-3 rounded-full ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
-                  <Text className="text-white font-inter-bold">Get Started</Text>
+                  <Text className="text-white font-inter-bold">Add Your First</Text>
                 </Pressable>
               </Link>
             </Card>

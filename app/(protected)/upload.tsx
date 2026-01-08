@@ -353,32 +353,32 @@ export default function Upload() {
               <UploadIcon size={40} color={isDark ? "#FF2D7A" : "#923D5C"} />
             </View>
             <Text className={`text-3xl font-inter-bold mb-3 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-              Add Test Result
+              Add a result
             </Text>
             <Text className={`font-inter-regular text-center ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              Choose how you want to add your new test result.
+              We'll keep it safe. You decide who sees it.
             </Text>
           </View>
 
           <View className="gap-4">
             <UploadOption
               icon={<Camera size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Take a Photo"
-              description="Use your camera to capture a result document"
+              title="Snap it"
+              description="Take a photo of your results"
               onPress={() => pickImage(true)}
               isDark={isDark}
             />
             <UploadOption
               icon={<ImageIcon size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Choose from Gallery"
-              description="Select images from your photo library"
+              title="Pick from photos"
+              description="Already got it saved? Perfect."
               onPress={() => pickImage(false)}
               isDark={isDark}
             />
             <UploadOption
               icon={<Calendar size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Manual Entry"
-              description="Enter your test results manually"
+              title="Type it in"
+              description="No document? No problem."
               onPress={() => setStep("details")}
               isDark={isDark}
             />
@@ -387,8 +387,7 @@ export default function Upload() {
           <View className={`p-5 rounded-3xl flex-row items-start mt-6 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/20"}`}>
             <Info size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
             <Text className={`ml-3 flex-1 font-inter-medium text-sm leading-5 ${isDark ? "text-dark-accent" : "text-primary-dark"}`}>
-              Your documents are encrypted and stored securely. Only you control
-              who can see them.
+              Encrypted, secure, and yours alone. Privacy that's not just theatre.
             </Text>
           </View>
         </ScrollView>
@@ -533,13 +532,13 @@ export default function Upload() {
             <View className={`p-6 rounded-3xl items-center mb-6 ${isDark ? "bg-dark-surface" : "bg-primary-light/20"}`}>
               <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
               <Text className={`mt-4 text-xl font-inter-bold text-center ${isDark ? "text-dark-text" : "text-primary-dark"}`}>
-                Reading your test results...
+                Working some magic...
               </Text>
               <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Analyzing {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''} with AI
+                Reading {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''}
               </Text>
               <Text className={`mt-3 text-xs font-inter-regular text-center ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                This may take 15-30 seconds
+                Hang tight, 15-30 seconds
               </Text>
             </View>
           )}
@@ -798,7 +797,7 @@ export default function Upload() {
               </View>
 
               <Button
-                label={uploading ? "Saving..." : "Save Test Result"}
+                label={uploading ? "On it..." : "Save it"}
                 onPress={handleSubmit}
                 disabled={uploading || (extractedResults.length === 0 && selectedTests.length === 0)}
                 className="mb-8"

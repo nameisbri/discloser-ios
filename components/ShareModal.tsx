@@ -201,12 +201,12 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                 <LinkIcon size={32} color={colors.primary} />
               </View>
               <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: "center", lineHeight: 22 }}>
-                Create secure, time-limited links to share your test result.
+                Share on your terms. Links that vanish when you want.
               </Text>
             </View>
 
             <Button
-              label="Create New Link"
+              label="Create a link"
               icon={<Plus size={20} color="white" />}
               onPress={() => setView("create")}
               className="mb-6"
@@ -220,7 +220,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
               />
             ) : activeLinks.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 32 }}>
-                <Text style={{ fontSize: 15, color: colors.textSecondary }}>No active share links</Text>
+                <Text style={{ fontSize: 15, color: colors.textSecondary }}>No links yet</Text>
               </View>
             ) : (
               <>
@@ -255,7 +255,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
             {/* Expiry */}
             <View style={{ marginBottom: 24 }}>
-              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Link Expires After</Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Self-destructs in</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {EXPIRY_OPTIONS.map((opt) => (
                   <Pressable
@@ -286,7 +286,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
             {/* View Limit */}
             <View style={{ marginBottom: 24 }}>
-              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Maximum Views</Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>View limit</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {VIEW_LIMIT_OPTIONS.map((opt) => (
                   <Pressable
@@ -335,9 +335,9 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                   <User size={20} color={colors.text} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>Show Your Name</Text>
+                  <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>Let them know it's you</Text>
                   <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                    Display your name on shared result
+                    Your name shows on the shared result
                   </Text>
                 </View>
               </View>
@@ -357,7 +357,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
             </Pressable>
 
             <Button
-              label={creating ? "Creating..." : "Create Share Link"}
+              label={creating ? "On it..." : "Make it happen"}
               onPress={handleCreate}
               disabled={creating}
               icon={
@@ -379,7 +379,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                 color={colors.text}
                 backgroundColor={colors.surface}
               />
-              <Text style={{ fontSize: 15, fontWeight: "500", color: colors.textSecondary, marginTop: 24, textAlign: "center" }}>Scan to view shared result</Text>
+              <Text style={{ fontSize: 15, fontWeight: "500", color: colors.textSecondary, marginTop: 24, textAlign: "center" }}>Point, scan, done</Text>
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
                 <Clock size={14} color={colors.textSecondary} />
                 <Text style={{ fontSize: 14, color: colors.textSecondary, marginLeft: 4 }}>

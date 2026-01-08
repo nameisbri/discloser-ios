@@ -16,36 +16,36 @@ interface RiskAssessmentProps {
 const QUESTIONS = [
   {
     id: "partners",
-    question: "How many sexual partners have you had in the last 12 months?",
+    question: "How many partners in the last year?",
     options: [
       { label: "0-1", points: 1 },
       { label: "2-5", points: 2 },
-      { label: "6 or more", points: 3 },
+      { label: "6+ (we don't judge)", points: 3 },
     ],
   },
   {
     id: "protection",
-    question: "How often do you use protection (condoms, dental dams)?",
+    question: "How often do you wrap it up?",
     options: [
       { label: "Always", points: 1 },
       { label: "Sometimes", points: 2 },
-      { label: "Rarely or never", points: 3 },
+      { label: "Living dangerously", points: 3 },
     ],
   },
   {
     id: "status",
-    question: "Do any of your partners have unknown STI status?",
+    question: "Any partners with unknown status?",
     options: [
-      { label: "No", points: 1 },
-      { label: "Yes or unsure", points: 2 },
+      { label: "Nope, all clear", points: 1 },
+      { label: "Yeah, or not sure", points: 2 },
     ],
   },
   {
     id: "history",
-    question: "Have you had an STI in the past 2 years?",
+    question: "Had an STI in the past 2 years?",
     options: [
       { label: "No", points: 1 },
-      { label: "Yes", points: 2 },
+      { label: "Yes (no shame)", points: 2 },
     ],
   },
 ];
@@ -58,9 +58,9 @@ function calculateRiskLevel(answers: Record<string, number>): RiskLevel {
 }
 
 const RISK_INFO: Record<RiskLevel, { label: string; interval: string; color: string }> = {
-  low: { label: "Low Risk", interval: "every 12 months", color: "#10B981" },
-  moderate: { label: "Moderate Risk", interval: "every 6 months", color: "#F59E0B" },
-  high: { label: "High Risk", interval: "every 3 months", color: "#EF4444" },
+  low: { label: "Chill vibes", interval: "yearly", color: "#10B981" },
+  moderate: { label: "Stay sharp", interval: "every 6 months", color: "#F59E0B" },
+  high: { label: "Keep it tight", interval: "every 3 months", color: "#EF4444" },
 };
 
 export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentProps) {
@@ -128,7 +128,7 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>
-            {result ? "Your Risk Level" : "Risk Assessment"}
+            {result ? "Your vibe" : "Quick check-in"}
           </Text>
           <Pressable onPress={handleClose} style={{ padding: 8 }}>
             <X size={24} color={colors.textSecondary} />
@@ -182,7 +182,7 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
               </View>
 
               <Text style={{ marginTop: 24, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
-                This assessment is based on CDC guidelines and helps personalize your testing reminders.
+                Based on CDC guidelines. No judgment, just smart reminders.
               </Text>
             </>
           ) : (
@@ -210,20 +210,20 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
                 </Text>
 
                 <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", marginBottom: 24 }}>
-                  Based on your answers, we recommend testing {info!.interval}.
+                  Testing {info!.interval} keeps you in the clear.
                 </Text>
 
                 <View style={{ backgroundColor: colors.infoBg, padding: 16, borderRadius: 12, width: "100%" }}>
                   <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: "center" }}>
-                    We'll use this to suggest testing dates and send you timely reminders.
+                    We'll nudge you when it's time. Stay sharp, stay confident.
                   </Text>
                 </View>
               </View>
 
               <View style={{ marginTop: 32 }}>
-                <Button label={saving ? "Saving..." : "Save & Continue"} onPress={handleSave} disabled={saving} />
+                <Button label={saving ? "On it..." : "That's me"} onPress={handleSave} disabled={saving} />
                 <Pressable onPress={() => { setStep(0); setAnswers({}); setResult(null); }} style={{ padding: 16 }}>
-                  <Text style={{ textAlign: "center", color: colors.primary, fontWeight: "600" }}>Retake Assessment</Text>
+                  <Text style={{ textAlign: "center", color: colors.primary, fontWeight: "600" }}>Try again</Text>
                 </Pressable>
               </View>
             </>
