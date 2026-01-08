@@ -61,7 +61,9 @@ const DEFAULT_STI_TESTS = [
   "Gonorrhea",
   "Hepatitis B",
   "Hepatitis C",
+  "Herpes (HSV-1)",
   "Herpes (HSV-2)",
+  "Trichomoniasis",
 ];
 
 // Test presets for quick selection
@@ -69,14 +71,14 @@ const TEST_PRESETS = [
   {
     id: "full",
     label: "Full Panel",
-    description: "All 7 common STIs",
-    tests: ["HIV-1/2", "Syphilis", "Chlamydia", "Gonorrhea", "Hepatitis B", "Hepatitis C", "Herpes (HSV-2)"],
+    description: "All 9 common STIs",
+    tests: ["HIV-1/2", "Syphilis", "Chlamydia", "Gonorrhea", "Hepatitis B", "Hepatitis C", "Herpes (HSV-1)", "Herpes (HSV-2)", "Trichomoniasis"],
   },
   {
     id: "basic",
     label: "Basic Screen",
-    description: "Chlamydia & Gonorrhea",
-    tests: ["Chlamydia", "Gonorrhea"],
+    description: "Syphilis, Gonorrhea & Chlamydia",
+    tests: ["Syphilis", "Chlamydia", "Gonorrhea"],
   },
   {
     id: "std4",
