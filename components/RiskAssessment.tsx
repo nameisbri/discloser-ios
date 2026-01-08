@@ -25,11 +25,11 @@ const QUESTIONS = [
   },
   {
     id: "protection",
-    question: "How often do you wrap it up?",
+    question: "How often do you use condoms or barriers?",
     options: [
       { label: "Always", points: 1 },
       { label: "Sometimes", points: 2 },
-      { label: "Living dangerously", points: 3 },
+      { label: "Rarely or never", points: 3 },
     ],
   },
   {
