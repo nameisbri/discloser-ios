@@ -80,7 +80,7 @@ web/                   # Next.js web app for share pages
 
 ## Web Share Pages
 
-**Live at:** https://discloser-ios.vercel.app
+**Live at:** https://discloser.app
 
 The `web/` directory contains a Next.js app for displaying shared results:
 

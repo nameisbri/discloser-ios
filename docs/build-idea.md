@@ -326,7 +326,7 @@ Use consistent spacing: `1` (4px), `2` (8px), `3` (12px), `4` (16px), `6` (24px)
 
 ### Deployment
 
-- [x] Web share pages on Vercel (https://discloser-ios.vercel.app)
+- [x] Web share pages on Vercel (https://discloser.app)
 - [x] `EXPO_PUBLIC_SHARE_BASE_URL` configured
 
 ---
