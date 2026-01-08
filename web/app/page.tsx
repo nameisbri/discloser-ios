@@ -36,7 +36,9 @@ const scaleIn = {
 
 export default function Home() {
   const [email, setEmail] = useState("");
+  const [honeypot, setHoneypot] = useState(""); // Bot trap - should stay empty
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [loadTime] = useState(() => Date.now()); // Track when page loaded
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Smooth scroll
@@ -63,12 +65,23 @@ export default function Home() {
     e.preventDefault();
     if (!email) return;
 
+    // Client-side honeypot check (bots might fill this)
+    if (honeypot) {
+      // Pretend success to fool bots
+      setStatus("success");
+      return;
+    }
+
     setStatus("loading");
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          email, 
+          website: honeypot, // Honeypot field
+          loadTime // Time when page was loaded
+        }),
       });
       if (res.ok) {
         setStatus("success");
@@ -197,6 +210,17 @@ export default function Home() {
           ) : (
             <>
               <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
+                {/* Honeypot field - hidden from humans, bots will fill it */}
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  autoComplete="off"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="absolute -left-[9999px] opacity-0 h-0 w-0 pointer-events-none"
+                />
                 <input
                   type="email"
                   placeholder="you@email.com"
@@ -490,6 +514,17 @@ export default function Home() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+                {/* Honeypot field - hidden from humans, bots will fill it */}
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  autoComplete="off"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="absolute -left-[9999px] opacity-0 h-0 w-0 pointer-events-none"
+                />
                 <input
                   type="email"
                   placeholder="you@email.com"
