@@ -13,11 +13,18 @@ const INTERVALS: Record<RiskLevel, number> = {
 // Routine tests that drive reminder calculations
 // Status tests (HSV, Hep A/B/C) have different cadences and don't trigger overdue warnings
 const ROUTINE_TESTS = ["hiv", "syphilis", "chlamydia", "gonorrhea"];
+const ROUTINE_PANEL_KEYWORDS = ["basic", "full", "std", "sti", "routine", "panel", "4-test"];
 
 function hasRoutineTests(result: TestResult): boolean {
-  return result.sti_results?.some((sti) =>
+  // Check sti_results for routine tests
+  const hasRoutineSTI = result.sti_results?.some((sti) =>
     ROUTINE_TESTS.some((routine) => sti.name.toLowerCase().includes(routine))
-  ) ?? false;
+  );
+  if (hasRoutineSTI) return true;
+
+  // Fallback: check test_type for routine panel keywords
+  const testType = result.test_type?.toLowerCase() || "";
+  return ROUTINE_PANEL_KEYWORDS.some((kw) => testType.includes(kw));
 }
 
 export interface TestingRecommendation {
