@@ -106,7 +106,7 @@ const TEST_PRESETS = [
 export default function Upload() {
   const router = useRouter();
   const { isDark } = useTheme();
-  const { createResult } = useTestResults();
+  const { results, createResult } = useTestResults();
   const { activeReminders, createReminder, updateReminder } = useReminders();
   const { profile } = useProfile();
 
@@ -229,6 +229,23 @@ export default function Upload() {
   };
 
   const handleSubmit = async () => {
+    // Check for duplicate test date
+    const existingResult = results.find((r) => r.test_date === testDate);
+    if (existingResult) {
+      Alert.alert(
+        "Duplicate Test Date",
+        `You already have results from ${testDate}. Do you want to add another result for this date?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Add Anyway", onPress: () => submitResult() },
+        ]
+      );
+      return;
+    }
+    await submitResult();
+  };
+
+  const submitResult = async () => {
     try {
       setUploading(true);
 
