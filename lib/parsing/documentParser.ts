@@ -84,8 +84,9 @@ export async function parseDocument(
       };
     });
 
-    // Step 4: Use LLM's suggested test type or fall back to determined type
-    const testType = llmResponse.test_type || determineTestType(tests);
+    // Step 4: Determine test type - use our logic for comprehensive panels, otherwise trust LLM
+    const determinedType = determineTestType(tests);
+    const testType = determinedType === 'Full STI Panel' ? determinedType : (llmResponse.test_type || determinedType);
 
     // Step 5: Format collection date
     const collectionDate = formatDate(llmResponse.collection_date);
