@@ -134,8 +134,8 @@ export default function Dashboard() {
         </LinearGradient>
 
         <View className="px-6 -mt-8">
-          {/* Next Test Reminder Card */}
-          {overdueReminder && !nextReminder ? (
+          {/* Next Test Reminder Card - use recommendation (based on routine tests) not reminder table */}
+          {recommendation.isOverdue && recommendation.nextDueDate ? (
             <View
               className={`mb-6 shadow-lg rounded-2xl p-5 border-2 ${isDark ? "bg-dark-danger-bg border-danger" : "border-danger"}`}
               style={{ backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2" }}
@@ -152,7 +152,7 @@ export default function Dashboard() {
                       Overdue
                     </Text>
                     <Text className="text-lg font-inter-bold text-danger">
-                      {formatDate(overdueReminder.next_date)}
+                      {formatDate(recommendation.nextDueDate)}
                     </Text>
                   </View>
                 </View>
