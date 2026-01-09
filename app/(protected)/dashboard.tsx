@@ -40,7 +40,7 @@ export default function Dashboard() {
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
   const { aggregatedStatus } = useSTIStatus();
   const { profile, refetch: refetchProfile, updateRiskLevel } = useProfile();
-  const recommendation = useTestingRecommendations();
+  const recommendation = useTestingRecommendations(results);
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
@@ -61,7 +61,9 @@ export default function Dashboard() {
   }, [refetch, refetchReminders, refetchProfile]);
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse YYYY-MM-DD without timezone shift
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -134,8 +136,8 @@ export default function Dashboard() {
         </LinearGradient>
 
         <View className="px-6 -mt-8">
-          {/* Next Test Reminder Card */}
-          {overdueReminder && !nextReminder ? (
+          {/* Next Test Reminder Card - use recommendation (based on routine tests) not reminder table */}
+          {recommendation.isOverdue && recommendation.nextDueDate ? (
             <View
               className={`mb-6 shadow-lg rounded-2xl p-5 border-2 ${isDark ? "bg-dark-danger-bg border-danger" : "border-danger"}`}
               style={{ backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2" }}
@@ -152,7 +154,7 @@ export default function Dashboard() {
                       Overdue
                     </Text>
                     <Text className="text-lg font-inter-bold text-danger">
-                      {formatDate(overdueReminder.next_date)}
+                      {formatDate(recommendation.nextDueDate)}
                     </Text>
                   </View>
                 </View>
@@ -384,7 +386,9 @@ function ResultCard({ result, index, isDark }: { result: TestResult; index: numb
   const status = statusConfig[result.status];
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse YYYY-MM-DD without timezone shift
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
