@@ -61,7 +61,9 @@ export default function Dashboard() {
   }, [refetch, refetchReminders, refetchProfile]);
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse YYYY-MM-DD without timezone shift
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -384,7 +386,9 @@ function ResultCard({ result, index, isDark }: { result: TestResult; index: numb
   const status = statusConfig[result.status];
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse YYYY-MM-DD without timezone shift
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
