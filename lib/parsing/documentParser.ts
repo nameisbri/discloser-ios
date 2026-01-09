@@ -84,8 +84,9 @@ export async function parseDocument(
       };
     });
 
-    // Step 4: Use LLM's suggested test type or fall back to determined type
-    const testType = llmResponse.test_type || determineTestType(tests);
+    // Step 4: Determine test type - use our logic for comprehensive panels, otherwise trust LLM
+    const determinedType = determineTestType(tests);
+    const testType = determinedType === 'Full STI Panel' ? determinedType : (llmResponse.test_type || determinedType);
 
     // Step 5: Format collection date
     const collectionDate = formatDate(llmResponse.collection_date);
@@ -117,12 +118,12 @@ function determineTestType(tests: ParsedTest[]): string {
   for (const test of tests) {
     const name = test.name.toLowerCase();
     if (name.includes('hiv')) categories.add('HIV');
-    if (name.includes('hepatitis a')) categories.add('Hepatitis A');
-    if (name.includes('hepatitis b')) categories.add('Hepatitis B');
-    if (name.includes('hepatitis c')) categories.add('Hepatitis C');
-    if (name.includes('syphilis')) categories.add('Syphilis');
-    if (name.includes('gonorrhea')) categories.add('Gonorrhea');
-    if (name.includes('chlamydia')) categories.add('Chlamydia');
+    if (name.includes('hepatitis a') || name.includes('hep a') || name === 'hav') categories.add('Hepatitis A');
+    if (name.includes('hepatitis b') || name.includes('hep b') || name === 'hbv') categories.add('Hepatitis B');
+    if (name.includes('hepatitis c') || name.includes('hep c') || name === 'hcv') categories.add('Hepatitis C');
+    if (name.includes('syphilis') || name.includes('rpr') || name.includes('vdrl')) categories.add('Syphilis');
+    if (name.includes('gonorrhea') || name.includes('gc') || name.includes('neisseria')) categories.add('Gonorrhea');
+    if (name.includes('chlamydia') || name.includes('ct')) categories.add('Chlamydia');
     if (name.includes('herpes') || name.includes('hsv')) categories.add('Herpes');
   }
 
@@ -152,14 +153,18 @@ function formatDate(dateString: string | null): string | null {
   if (!dateString) return null;
 
   try {
-    // Handle various date formats
+    // If already in YYYY-MM-DD format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+
+    // Parse and use UTC to avoid timezone shifts
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return null;
 
-    // Format as YYYY-MM-DD
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
   } catch (error) {

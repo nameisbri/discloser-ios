@@ -46,6 +46,9 @@ const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "
   high: "quarterly",
 };
 
+// Routine tests that drive reminder calculations
+const ROUTINE_TESTS = ["hiv", "syphilis", "chlamydia", "gonorrhea"];
+
 type Step = "select" | "preview" | "details";
 
 type SelectedFile = {
@@ -103,7 +106,7 @@ const TEST_PRESETS = [
 export default function Upload() {
   const router = useRouter();
   const { isDark } = useTheme();
-  const { createResult } = useTestResults();
+  const { results, createResult } = useTestResults();
   const { activeReminders, createReminder, updateReminder } = useReminders();
   const { profile } = useProfile();
 
@@ -226,6 +229,23 @@ export default function Upload() {
   };
 
   const handleSubmit = async () => {
+    // Check for duplicate test date
+    const existingResult = results.find((r) => r.test_date === testDate);
+    if (existingResult) {
+      Alert.alert(
+        "Duplicate Test Date",
+        `You already have results from ${testDate}. Do you want to add another result for this date?`,
+        [
+          { text: "Cancel", style: "cancel", onPress: () => router.replace("/dashboard") },
+          { text: "Add Anyway", onPress: () => submitResult() },
+        ]
+      );
+      return;
+    }
+    await submitResult();
+  };
+
+  const submitResult = async () => {
     try {
       setUploading(true);
 
@@ -271,27 +291,27 @@ export default function Upload() {
       });
 
       if (result) {
-        // Auto-create or update reminder based on risk level
-        if (profile?.risk_level) {
+        // Only update reminder if results contain routine tests (HIV, Syphilis, Chlamydia, Gonorrhea)
+        const hasRoutine = stiResults.some((sti) =>
+          ROUTINE_TESTS.some((r) => sti.name.toLowerCase().includes(r))
+        );
+
+        if (profile?.risk_level && hasRoutine) {
           const riskLevel = profile.risk_level;
           const intervalDays = RISK_INTERVALS[riskLevel];
           const nextDueDate = new Date(testDate);
           nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
           const nextDateStr = nextDueDate.toISOString().split("T")[0];
 
-          // Check if there's an existing routine reminder to update
-          const existingReminder = activeReminders.find(
-            (r) => r.title === "Routine Checkup" || r.title.toLowerCase().includes("routine")
-          );
+          // Update first active reminder, or create new one
+          const existingReminder = activeReminders[0];
 
           if (existingReminder) {
-            // Update existing reminder with new date
             await updateReminder(existingReminder.id, {
               next_date: nextDateStr,
               frequency: RISK_FREQUENCY[riskLevel],
             });
           } else {
-            // Create new reminder
             await createReminder({
               title: "Routine Checkup",
               frequency: RISK_FREQUENCY[riskLevel],
@@ -500,19 +520,13 @@ export default function Upload() {
         >
           {/* Show attached files summary */}
           {selectedFiles.length > 0 && (
-            <Pressable
-              onPress={() => setStep("preview")}
-              className={`p-4 rounded-2xl flex-row items-center mb-3 ${isDark ? "bg-dark-success-bg" : "bg-success-light/50"}`}
-            >
+            <View className={`p-4 rounded-2xl flex-row items-center mb-3 ${isDark ? "bg-dark-success-bg" : "bg-success-light/50"}`}>
               <Check size={20} color={isDark ? "#00E5A0" : "#28A745"} />
               <Text className={`font-inter-medium ml-2 flex-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
                 {selectedFiles.length} file
                 {selectedFiles.length !== 1 ? "s" : ""} attached
               </Text>
-              <Text className={`text-sm font-inter-regular ${isDark ? "text-dark-mint/70" : "text-success/70"}`}>
-                Tap to edit
-              </Text>
-            </Pressable>
+            </View>
           )}
 
           {/* Show verification status */}

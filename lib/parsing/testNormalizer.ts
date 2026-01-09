@@ -2,6 +2,7 @@
 
 const TEST_NAME_MAPPING: Record<string, string> = {
   // HIV tests
+  'HIV': 'HIV',
   'HIV 1/2 AG/AB COMBO SCREEN': 'HIV-1/2',
   'HIV1/2 AG/AB COMBO SCREEN': 'HIV-1/2',
   'HIV 1/2 ANTIBODY': 'HIV-1/2',
@@ -82,10 +83,17 @@ export function normalizeTestName(testName: string): string {
     }
   }
 
-  // Return title-cased version if no match
+  // Acronyms that should stay uppercase
+  const acronyms = ['HIV', 'HSV', 'HPV', 'HBV', 'HCV', 'HAV', 'RPR', 'STI', 'STD'];
+
+  // Return title-cased version if no match, preserving acronyms
   return testName
     .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => {
+      const upper = word.toUpperCase();
+      if (acronyms.includes(upper)) return upper;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
     .join(' ');
 }
 
