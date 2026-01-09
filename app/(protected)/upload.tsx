@@ -236,7 +236,7 @@ export default function Upload() {
         "Duplicate Test Date",
         `You already have results from ${testDate}. Do you want to add another result for this date?`,
         [
-          { text: "Cancel", style: "cancel" },
+          { text: "Cancel", style: "cancel", onPress: () => router.replace("/dashboard") },
           { text: "Add Anyway", onPress: () => submitResult() },
         ]
       );
