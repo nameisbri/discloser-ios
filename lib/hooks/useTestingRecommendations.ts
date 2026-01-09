@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTestResults } from "./useTestResults";
 import { useProfile } from "./useProfile";
-import type { RiskLevel } from "../types";
+import type { RiskLevel, TestResult } from "../types";
 
 // Testing intervals in days by risk level
 const INTERVALS: Record<RiskLevel, number> = {
@@ -9,6 +9,16 @@ const INTERVALS: Record<RiskLevel, number> = {
   moderate: 180, // 6 months
   high: 90,      // 3 months
 };
+
+// Routine tests that drive reminder calculations
+// Status tests (HSV, Hep A/B/C) have different cadences and don't trigger overdue warnings
+const ROUTINE_TESTS = ["hiv", "syphilis", "chlamydia", "gonorrhea"];
+
+function hasRoutineTests(result: TestResult): boolean {
+  return result.sti_results?.some((sti) =>
+    ROUTINE_TESTS.some((routine) => sti.name.toLowerCase().includes(routine))
+  ) ?? false;
+}
 
 export interface TestingRecommendation {
   lastTestDate: string | null;
@@ -27,9 +37,12 @@ export function useTestingRecommendations(): TestingRecommendation {
   return useMemo(() => {
     const riskLevel = profile?.risk_level || null;
 
-    if (!riskLevel || results.length === 0) {
+    // Only consider results with routine tests for reminder calculation
+    const routineResults = results.filter(hasRoutineTests);
+
+    if (!riskLevel || routineResults.length === 0) {
       return {
-        lastTestDate: results[0]?.test_date || null,
+        lastTestDate: routineResults[0]?.test_date || null,
         nextDueDate: null,
         daysUntilDue: null,
         isOverdue: false,
@@ -39,8 +52,8 @@ export function useTestingRecommendations(): TestingRecommendation {
       };
     }
 
-    // Get most recent test date
-    const lastTestDate = results[0].test_date;
+    // Get most recent routine test date
+    const lastTestDate = routineResults[0].test_date;
     const intervalDays = INTERVALS[riskLevel];
 
     // Calculate next due date
