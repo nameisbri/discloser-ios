@@ -118,12 +118,12 @@ function determineTestType(tests: ParsedTest[]): string {
   for (const test of tests) {
     const name = test.name.toLowerCase();
     if (name.includes('hiv')) categories.add('HIV');
-    if (name.includes('hepatitis a')) categories.add('Hepatitis A');
-    if (name.includes('hepatitis b')) categories.add('Hepatitis B');
-    if (name.includes('hepatitis c')) categories.add('Hepatitis C');
-    if (name.includes('syphilis')) categories.add('Syphilis');
-    if (name.includes('gonorrhea')) categories.add('Gonorrhea');
-    if (name.includes('chlamydia')) categories.add('Chlamydia');
+    if (name.includes('hepatitis a') || name.includes('hep a') || name === 'hav') categories.add('Hepatitis A');
+    if (name.includes('hepatitis b') || name.includes('hep b') || name === 'hbv') categories.add('Hepatitis B');
+    if (name.includes('hepatitis c') || name.includes('hep c') || name === 'hcv') categories.add('Hepatitis C');
+    if (name.includes('syphilis') || name.includes('rpr') || name.includes('vdrl')) categories.add('Syphilis');
+    if (name.includes('gonorrhea') || name.includes('gc') || name.includes('neisseria')) categories.add('Gonorrhea');
+    if (name.includes('chlamydia') || name.includes('ct')) categories.add('Chlamydia');
     if (name.includes('herpes') || name.includes('hsv')) categories.add('Herpes');
   }
 
