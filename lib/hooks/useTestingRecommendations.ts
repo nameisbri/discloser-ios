@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useTestResults } from "./useTestResults";
 import { useProfile } from "./useProfile";
 import type { RiskLevel, TestResult } from "../types";
 
@@ -37,8 +36,7 @@ export interface TestingRecommendation {
   intervalDays: number | null;
 }
 
-export function useTestingRecommendations(): TestingRecommendation {
-  const { results } = useTestResults();
+export function useTestingRecommendations(results: TestResult[]): TestingRecommendation {
   const { profile } = useProfile();
 
   return useMemo(() => {
