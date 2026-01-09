@@ -24,7 +24,7 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react-native";
-import { useReminders, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
+import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
 import { useTheme } from "../../context/theme";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
@@ -56,7 +56,8 @@ export default function Reminders() {
     updateReminder,
     deleteReminder,
   } = useReminders();
-  const recommendation = useTestingRecommendations();
+  const { results } = useTestResults();
+  const recommendation = useTestingRecommendations(results);
 
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);

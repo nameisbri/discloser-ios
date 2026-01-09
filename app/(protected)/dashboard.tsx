@@ -40,7 +40,7 @@ export default function Dashboard() {
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
   const { aggregatedStatus } = useSTIStatus();
   const { profile, refetch: refetchProfile, updateRiskLevel } = useProfile();
-  const recommendation = useTestingRecommendations();
+  const recommendation = useTestingRecommendations(results);
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
