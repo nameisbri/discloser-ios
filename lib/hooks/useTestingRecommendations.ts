@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useProfile } from "./useProfile";
 import type { RiskLevel, TestResult } from "../types";
+import { ROUTINE_TESTS } from "../constants";
 
 // Testing intervals in days by risk level
 const INTERVALS: Record<RiskLevel, number> = {
@@ -9,9 +10,6 @@ const INTERVALS: Record<RiskLevel, number> = {
   high: 90,      // 3 months
 };
 
-// Routine tests that drive reminder calculations
-// Status tests (HSV, Hep A/B/C) have different cadences and don't trigger overdue warnings
-const ROUTINE_TESTS = ["hiv", "syphilis", "chlamydia", "gonorrhea"];
 const ROUTINE_PANEL_KEYWORDS = ["basic", "full", "std", "sti", "routine", "panel", "4-test"];
 
 function hasRoutineTests(result: TestResult): boolean {

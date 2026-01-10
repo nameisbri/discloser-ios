@@ -102,17 +102,3 @@ export function isStatusSTI(testName: string): boolean {
   const patterns = [/hiv/i, /hsv[-\s]?[12]/i, /herpes/i, /hepatitis\s*[bc]/i, /hep\s*[bc]/i, /hbv/i, /hcv/i];
   return patterns.some((p) => p.test(testName));
 }
-
-export function getTestCategory(testName: string): string {
-  const normalized = normalizeTestName(testName);
-
-  if (normalized.includes('HIV')) return 'HIV';
-  if (normalized.includes('Hepatitis')) return 'Hepatitis';
-  if (normalized.includes('Syphilis')) return 'Syphilis';
-  if (normalized.includes('Gonorrhea')) return 'Bacterial';
-  if (normalized.includes('Chlamydia')) return 'Bacterial';
-  if (normalized.includes('Herpes') || normalized.includes('HSV')) return 'Herpes';
-  if (normalized.includes('Trichomoniasis')) return 'Parasitic';
-
-  return 'Other';
-}

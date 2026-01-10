@@ -55,33 +55,6 @@ export async function uploadTestDocument(
   };
 }
 
-/**
- * Delete a file from Supabase Storage
- */
-export async function deleteTestDocument(filePath: string): Promise<void> {
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove([filePath]);
-
-  if (error) throw error;
-}
-
-/**
- * Get a signed URL for a private file
- * Use this if the bucket is set to private
- */
-export async function getSignedUrl(
-  filePath: string,
-  expiresIn: number = 3600
-): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(filePath, expiresIn);
-
-  if (error) throw error;
-  return data.signedUrl;
-}
-
 function getContentType(extension: string): string {
   const types: Record<string, string> = {
     jpg: "image/jpeg",
