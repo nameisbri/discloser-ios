@@ -2,18 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useInView,
+} from "framer-motion";
 import Lenis from "lenis";
 
-const SURVEY_URL = "https://forms.gle/YOUR_FORM_ID"; // TODO: Replace with actual survey URL
+const SURVEY_URL = "https://tally.so/r/Gx9WqQ";
 
 // Stagger container for children animations
 const stagger = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-  }
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
 };
 
 const fadeUp = {
@@ -21,8 +27,8 @@ const fadeUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.8, ease: [0.25, 0.4, 0.25, 1] as const }
-  }
+    transition: { duration: 0.8, ease: [0.25, 0.4, 0.25, 1] as const },
+  },
 };
 
 const scaleIn = {
@@ -30,14 +36,16 @@ const scaleIn = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] as const }
-  }
+    transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] as const },
+  },
 };
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [honeypot, setHoneypot] = useState(""); // Bot trap - should stay empty
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [loadTime] = useState(() => Date.now()); // Track when page loaded
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -77,10 +85,10 @@ export default function Home() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email, 
+        body: JSON.stringify({
+          email,
           website: honeypot, // Honeypot field
-          loadTime // Time when page was loaded
+          loadTime, // Time when page was loaded
         }),
       });
       if (res.ok) {
@@ -118,7 +126,13 @@ export default function Home() {
         className="relative z-10 p-6 flex justify-between items-center max-w-5xl mx-auto"
       >
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Discloser" width={36} height={36} className="rounded-xl" />
+          <Image
+            src="/logo.png"
+            alt="Discloser"
+            width={36}
+            height={36}
+            className="rounded-xl"
+          />
           <span className="font-semibold text-white/90">Discloser</span>
         </div>
         <a
@@ -133,11 +147,7 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative z-10 px-6 pt-16 pb-24 max-w-4xl mx-auto text-center">
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-        >
+        <motion.div variants={stagger} initial="hidden" animate="visible">
           <motion.h1
             variants={fadeUp}
             className="text-4xl sm:text-6xl font-bold mb-6 leading-tight"
@@ -157,7 +167,8 @@ export default function Home() {
             variants={fadeUp}
             className="text-lg sm:text-xl text-white/60 max-w-xl mx-auto mb-10"
           >
-            The smart way to share STI results without exposing your identity to someone you just met.
+            The smart way to share STI results without exposing your identity to
+            someone you just met.
           </motion.p>
         </motion.div>
 
@@ -172,13 +183,20 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] as const }}
+              transition={{
+                duration: 0.5,
+                ease: [0.34, 1.56, 0.64, 1] as const,
+              }}
               className="bg-accent-mint/10 border border-accent-mint/30 rounded-2xl p-6 text-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] as const }}
+                transition={{
+                  delay: 0.2,
+                  duration: 0.4,
+                  ease: [0.34, 1.56, 0.64, 1] as const,
+                }}
                 className="w-16 h-16 rounded-full bg-accent-mint/20 flex items-center justify-center mx-auto mb-4"
               >
                 <motion.span
@@ -209,7 +227,10 @@ export default function Home() {
             </motion.div>
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
+              <form
+                onSubmit={handleSubmit}
+                className="flex flex-col sm:flex-row gap-3 mb-4"
+              >
                 {/* Honeypot field - hidden from humans, bots will fill it */}
                 <input
                   type="text"
@@ -248,7 +269,9 @@ export default function Home() {
                   )}
                 </motion.button>
               </form>
-              <p className="text-sm text-white/40">Join 847 people on the waitlist</p>
+              <p className="text-sm text-white/40">
+                Join 847 people on the waitlist
+              </p>
             </>
           )}
         </motion.div>
@@ -256,19 +279,13 @@ export default function Home() {
 
       {/* Problem section */}
       <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto">
-        <motion.div
-          variants={fadeUp}
-          className="text-center mb-12"
-        >
+        <motion.div variants={fadeUp} className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold mb-4">
             Right now, proving you're negative means...
           </h2>
         </motion.div>
 
-        <motion.div
-          variants={stagger}
-          className="grid sm:grid-cols-2 gap-6"
-        >
+        <motion.div variants={stagger} className="grid sm:grid-cols-2 gap-6">
           <motion.div
             variants={scaleIn}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
@@ -281,10 +298,12 @@ export default function Home() {
             >
               📄
             </motion.div>
-            <h3 className="font-semibold text-lg mb-2">Showing your whole life</h3>
+            <h3 className="font-semibold text-lg mb-2">
+              Showing your whole life
+            </h3>
             <p className="text-white/50 text-sm">
-              Full name, date of birth, health card number, address...
-              all visible to someone who might not even remember your name tomorrow.
+              Full name, date of birth, health card number, address... all
+              visible to someone who might not even remember your name tomorrow.
             </p>
             <motion.div
               className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg overflow-hidden"
@@ -295,7 +314,9 @@ export default function Home() {
                 animate={{ x: [0, -5, 0] }}
                 transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
               >
-                <span className="bg-danger/30 px-1">Jane Smith</span> · <span className="bg-danger/30 px-1">1990-03-15</span> · <span className="bg-danger/30 px-1">HC# 1234-567-890</span>
+                <span className="bg-danger/30 px-1">Jane Smith</span> ·{" "}
+                <span className="bg-danger/30 px-1">1990-03-15</span> ·{" "}
+                <span className="bg-danger/30 px-1">HC# 1234-567-890</span>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -312,21 +333,21 @@ export default function Home() {
             >
               📱
             </motion.div>
-            <h3 className="font-semibold text-lg mb-2">Screenshots that live forever</h3>
+            <h3 className="font-semibold text-lg mb-2">
+              Screenshots that live forever
+            </h3>
             <p className="text-white/50 text-sm">
-              That photo of your test results? It's sitting in their camera roll.
-              Backed up to iCloud. Forever.
+              That photo of your test results? It's sitting in their camera
+              roll. Backed up to iCloud. Forever.
             </p>
             <div className="mt-4 p-3 bg-surface-light rounded-lg text-xs text-white/40 flex items-center gap-2">
-              <span>📷</span> Saved to Photos · Synced to iCloud · Shared to... ?
+              <span>📷</span> Saved to Photos · Synced to iCloud · Shared to...
+              ?
             </div>
           </motion.div>
         </motion.div>
 
-        <motion.p
-          variants={fadeUp}
-          className="text-center text-white/60 mt-10"
-        >
+        <motion.p variants={fadeUp} className="text-center text-white/60 mt-10">
           Being responsible shouldn't cost you your privacy.
         </motion.p>
       </AnimatedSection>
@@ -338,18 +359,23 @@ export default function Home() {
           className="bg-gradient-to-br from-surface to-surface-light border border-surface-light rounded-3xl p-8 sm:p-12 backdrop-blur-sm"
         >
           <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
-            With Discloser, you share <span className="text-accent">proof</span> not your identity
+            With Discloser, you share <span className="text-accent">proof</span>{" "}
+            not your identity
           </h2>
 
           <div className="grid sm:grid-cols-2 gap-8 items-center">
             {/* Before */}
-            <motion.div
-              variants={fadeUp}
-              className="space-y-4 opacity-50"
-            >
-              <p className="text-sm text-white/40 uppercase tracking-wide">Without Discloser</p>
+            <motion.div variants={fadeUp} className="space-y-4 opacity-50">
+              <p className="text-sm text-white/40 uppercase tracking-wide">
+                Without Discloser
+              </p>
               <div className="space-y-2 text-white/60">
-                {["Full lab document visible", "Name, DOB, HC# exposed", "Screenshot stays forever", "Awkward photo swap"].map((item, i) => (
+                {[
+                  "Full lab document visible",
+                  "Name, DOB, HC# exposed",
+                  "Screenshot stays forever",
+                  "Awkward photo swap",
+                ].map((item, i) => (
                   <motion.div
                     key={item}
                     initial={{ opacity: 0, x: -20 }}
@@ -365,14 +391,16 @@ export default function Home() {
             </motion.div>
 
             {/* After */}
-            <motion.div
-              variants={fadeUp}
-              className="space-y-4"
-            >
-              <p className="text-sm text-accent uppercase tracking-wide">With Discloser</p>
+            <motion.div variants={fadeUp} className="space-y-4">
+              <p className="text-sm text-accent uppercase tracking-wide">
+                With Discloser
+              </p>
               <motion.div
                 className="bg-background/50 rounded-2xl p-6 border border-accent/20 shadow-lg shadow-accent/10"
-                whileHover={{ scale: 1.02, boxShadow: "0 20px 40px rgba(255, 45, 122, 0.2)" }}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0 20px 40px rgba(255, 45, 122, 0.2)",
+                }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="flex items-center gap-3 mb-4">
@@ -393,7 +421,9 @@ export default function Home() {
                   <span>👁 3 views left</span>
                 </div>
               </motion.div>
-              <p className="text-sm text-white/50">They see your status. Not your life story.</p>
+              <p className="text-sm text-white/50">
+                They see your status. Not your life story.
+              </p>
             </motion.div>
           </div>
         </motion.div>
@@ -408,14 +438,23 @@ export default function Home() {
           Three taps. Total control.
         </motion.h2>
 
-        <motion.div
-          variants={stagger}
-          className="grid sm:grid-cols-3 gap-8"
-        >
+        <motion.div variants={stagger} className="grid sm:grid-cols-3 gap-8">
           {[
-            { icon: "📸", title: "Upload", desc: "Snap a photo of your results or import from files" },
-            { icon: "⏱", title: "Set limits", desc: "Choose expiry time (1 hour to 30 days) and view limits" },
-            { icon: "🔗", title: "Share", desc: "Send a link or QR code. They see status, not your data" },
+            {
+              icon: "📸",
+              title: "Upload",
+              desc: "Snap a photo of your results or import from files",
+            },
+            {
+              icon: "⏱",
+              title: "Set limits",
+              desc: "Choose expiry time (1 hour to 30 days) and view limits",
+            },
+            {
+              icon: "🔗",
+              title: "Share",
+              desc: "Send a link or QR code. They see status, not your data",
+            },
           ].map((step, i) => (
             <motion.div
               key={step.title}
@@ -425,7 +464,10 @@ export default function Home() {
             >
               <motion.div
                 className="w-16 h-16 rounded-2xl bg-surface border border-surface-light flex items-center justify-center text-2xl mx-auto mb-4"
-                whileHover={{ rotate: [0, -5, 5, 0], transition: { duration: 0.3 } }}
+                whileHover={{
+                  rotate: [0, -5, 5, 0],
+                  transition: { duration: 0.3 },
+                }}
               >
                 {step.icon}
               </motion.div>
@@ -442,7 +484,9 @@ export default function Home() {
           <h2 className="text-2xl sm:text-3xl font-bold mb-3">
             Privacy that's not just theatre.
           </h2>
-          <p className="text-white/50">No data selling. No social features. No traces.</p>
+          <p className="text-white/50">
+            No data selling. No social features. No traces.
+          </p>
         </motion.div>
 
         <motion.div
@@ -488,9 +532,12 @@ export default function Home() {
             🔔
           </motion.div>
           <div>
-            <h3 className="font-semibold text-lg mb-1">Oh, and we'll keep you on schedule.</h3>
+            <h3 className="font-semibold text-lg mb-1">
+              Oh, and we'll keep you on schedule.
+            </h3>
             <p className="text-white/50 text-sm">
-              Quick 4-question assessment → personalised reminders based on CDC guidelines. No judgement, just nudges.
+              Quick 4-question assessment → personalised reminders based on CDC
+              guidelines. No judgement, just nudges.
             </p>
           </div>
         </motion.div>
@@ -513,7 +560,10 @@ export default function Home() {
                 <span className="text-white">You're on the list!</span>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+              <form
+                onSubmit={handleSubmit}
+                className="flex flex-col sm:flex-row gap-3"
+              >
                 {/* Honeypot field - hidden from humans, bots will fill it */}
                 <input
                   type="text"
@@ -555,13 +605,18 @@ export default function Home() {
               href={SURVEY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              whileHover={{ scale: 1.03, backgroundColor: "rgba(201, 160, 220, 0.1)" }}
+              whileHover={{
+                scale: 1.03,
+                backgroundColor: "rgba(201, 160, 220, 0.1)",
+              }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-accent-lavender/30 text-accent-lavender transition-colors"
             >
               Take the 2-min survey →
             </motion.a>
-            <p className="text-xs text-white/30 mt-3">Your answers = your influence on v1</p>
+            <p className="text-xs text-white/30 mt-3">
+              Your answers = your influence on v1
+            </p>
           </motion.div>
         </motion.div>
       </AnimatedSection>
@@ -575,23 +630,49 @@ export default function Home() {
       >
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Discloser" width={28} height={28} className="rounded-lg" />
+            <Image
+              src="/logo.png"
+              alt="Discloser"
+              width={28}
+              height={28}
+              className="rounded-lg"
+            />
             <span className="text-white/60 text-sm">Discloser</span>
           </div>
-          <p className="text-white/40 text-sm italic">Be adventurous. Stay anonymous.</p>
+          <p className="text-white/40 text-sm italic">
+            Be adventurous. Stay anonymous.
+          </p>
           <div className="flex gap-6 text-sm text-white/40">
-            <a href="/privacy" className="hover:text-white/60 transition-colors">Privacy</a>
-            <a href="mailto:hello@discloser.app" className="hover:text-white/60 transition-colors">Contact</a>
+            <a
+              href="/privacy"
+              className="hover:text-white/60 transition-colors"
+            >
+              Privacy
+            </a>
+            <a
+              href="mailto:hello@discloser.app"
+              className="hover:text-white/60 transition-colors"
+            >
+              Contact
+            </a>
           </div>
         </div>
-        <p className="text-center text-white/20 text-xs mt-8">© 2026 Discloser</p>
+        <p className="text-center text-white/20 text-xs mt-8">
+          © 2026 Discloser
+        </p>
       </motion.footer>
     </div>
   );
 }
 
 // Wrapper component for scroll-triggered sections
-function AnimatedSection({ children, className }: { children: React.ReactNode; className?: string }) {
+function AnimatedSection({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
