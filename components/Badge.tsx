@@ -13,6 +13,7 @@ const badgeVariantsLight = cva(
         danger: "bg-danger-light",
         warning: "bg-warning-light",
         outline: "bg-transparent border border-border",
+        info: "bg-purple-100",
       },
     },
     defaultVariants: {
@@ -31,6 +32,7 @@ const badgeVariantsDark = cva(
         danger: "bg-dark-danger-bg",
         warning: "bg-dark-warning-bg",
         outline: "bg-transparent border border-dark-border",
+        info: "bg-dark-lavender/20",
       },
     },
     defaultVariants: {
@@ -49,6 +51,7 @@ const badgeTextVariantsLight = cva(
         danger: "text-danger",
         warning: "text-warning",
         outline: "text-text-light",
+        info: "text-purple-700",
       },
     },
     defaultVariants: {
@@ -67,6 +70,7 @@ const badgeTextVariantsDark = cva(
         danger: "text-dark-danger",
         warning: "text-dark-warning",
         outline: "text-dark-text-secondary",
+        info: "text-dark-lavender",
       },
     },
     defaultVariants: {
