@@ -1,9 +1,10 @@
 import { View, Text, Pressable, ScrollView, SafeAreaView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useAuth } from "../../context/auth";
 import { useTheme, ThemeMode } from "../../context/theme";
-import { User, Bell, Shield, HelpCircle, LogOut, ChevronRight, ChevronLeft, Mail, Trash2, Activity, Moon, Sun, Smartphone } from "lucide-react-native";
+import { User, Bell, Shield, HelpCircle, LogOut, ChevronRight, ChevronLeft, Mail, Trash2, Activity, Moon, Sun, Smartphone, Heart } from "lucide-react-native";
 import { useProfile } from "../../lib/hooks";
 import { RiskAssessment } from "../../components/RiskAssessment";
+import { KnownConditionsModal } from "../../components/KnownConditionsModal";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications } from "../../lib/notifications";
@@ -21,12 +22,13 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Moon }[] = 
 export default function Settings() {
   const router = useRouter();
   const { signOut, session } = useAuth();
-  const { profile, refetch: refetchProfile } = useProfile();
+  const { profile, refetch: refetchProfile, addKnownCondition, removeKnownCondition } = useProfile();
   const { theme, setTheme, isDark } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [showKnownConditions, setShowKnownConditions] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -180,6 +182,27 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
+          Your status
+        </Text>
+
+        <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
+          <SettingsItem
+            icon={<Heart size={20} color={isDark ? "#C9A0DC" : "#7C3AED"} />}
+            title="Known Conditions"
+            onPress={() => setShowKnownConditions(true)}
+            rightElement={
+              (profile?.known_conditions?.length ?? 0) > 0 ? (
+                <Text className={`font-inter-medium mr-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                  {profile?.known_conditions?.length}
+                </Text>
+              ) : null
+            }
+            showChevron
+            isDark={isDark}
+          />
+        </View>
+
+        <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
           Your data
         </Text>
 
@@ -320,6 +343,14 @@ export default function Settings() {
         visible={showRiskAssessment}
         onClose={() => setShowRiskAssessment(false)}
         onComplete={() => refetchProfile()}
+      />
+
+      <KnownConditionsModal
+        visible={showKnownConditions}
+        onClose={() => setShowKnownConditions(false)}
+        conditions={profile?.known_conditions || []}
+        onAdd={addKnownCondition}
+        onRemove={removeKnownCondition}
       />
     </SafeAreaView>
   );

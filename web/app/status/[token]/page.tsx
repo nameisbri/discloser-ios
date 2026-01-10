@@ -7,6 +7,7 @@ interface STIStatus {
   result: string;
   testDate: string;
   isVerified: boolean;
+  isKnownCondition?: boolean;
 }
 
 async function getSharedStatus(token: string) {
@@ -83,10 +84,10 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const statusColor = (s: string) =>
-    s === "negative" ? "text-accent-mint" : s === "positive" ? "text-danger" : "text-warning";
-  const statusBg = (s: string) =>
-    s === "negative" ? "bg-accent-mint/20" : s === "positive" ? "bg-danger/20" : "bg-warning/20";
+  const statusColor = (s: string, isKnown?: boolean) =>
+    isKnown ? "text-accent-lavender" : s === "negative" ? "text-accent-mint" : s === "positive" ? "text-danger" : "text-warning";
+  const statusBg = (s: string, isKnown?: boolean) =>
+    isKnown ? "bg-accent-lavender/20" : s === "negative" ? "bg-accent-mint/20" : s === "positive" ? "bg-danger/20" : "bg-warning/20";
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8">
@@ -126,8 +127,8 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
                         )}
                       </div>
                     </div>
-                    <span className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${statusBg(sti.status)} ${statusColor(sti.status)}`}>
-                      {sti.result}
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${statusBg(sti.status, sti.isKnownCondition)} ${statusColor(sti.status, sti.isKnownCondition)}`}>
+                      {sti.isKnownCondition ? "Known" : sti.result}
                     </span>
                   </div>
                 </div>
