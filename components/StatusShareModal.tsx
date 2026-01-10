@@ -80,6 +80,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     dangerLight: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
     warning: "#F59E0B",
     warningLight: isDark ? "rgba(245, 158, 11, 0.15)" : "#FEF3C7",
+    info: isDark ? "#C9A0DC" : "#7C3AED",
+    infoLight: isDark ? "rgba(201, 160, 220, 0.2)" : "#F3E8FF",
   };
 
   useEffect(() => {
@@ -126,6 +128,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       result: s.result,
       testDate: s.testDate,
       isVerified: s.isVerified,
+      isKnownCondition: s.isKnownCondition,
     }));
 
     const { data, error } = await supabase
@@ -185,13 +188,15 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     return `${days}d left`;
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, isKnown?: boolean) => {
+    if (isKnown) return colors.info;
     if (status === "negative") return colors.success;
     if (status === "positive") return colors.danger;
     return colors.warning;
   };
 
-  const getStatusBg = (status: string) => {
+  const getStatusBg = (status: string, isKnown?: boolean) => {
+    if (isKnown) return colors.infoLight;
     if (status === "negative") return colors.successLight;
     if (status === "positive") return colors.dangerLight;
     return colors.warningLight;
@@ -249,9 +254,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                           )}
                         </View>
                       </View>
-                      <View style={{ backgroundColor: getStatusBg(sti.status), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-                        <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status) }}>
-                          {sti.result}
+                      <View style={{ backgroundColor: getStatusBg(sti.status, sti.isKnownCondition), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                        <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status, sti.isKnownCondition) }}>
+                          {sti.isKnownCondition ? "Known" : sti.result}
                         </Text>
                       </View>
                     </View>
@@ -474,9 +479,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                         )}
                       </View>
                     </View>
-                    <View style={{ backgroundColor: getStatusBg(sti.status), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status) }}>
-                        {sti.result}
+                    <View style={{ backgroundColor: getStatusBg(sti.status, sti.isKnownCondition), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status, sti.isKnownCondition) }}>
+                        {sti.isKnownCondition ? "Known" : sti.result}
                       </Text>
                     </View>
                   </View>

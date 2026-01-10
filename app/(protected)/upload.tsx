@@ -32,6 +32,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
 import { parseDocument } from "../../lib/parsing";
+import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 
 // Risk level to testing interval in days
 const RISK_INTERVALS: Record<RiskLevel, number> = {
@@ -108,7 +109,7 @@ export default function Upload() {
   const { isDark } = useTheme();
   const { results, createResult } = useTestResults();
   const { activeReminders, createReminder, updateReminder } = useReminders();
-  const { profile } = useProfile();
+  const { profile, addKnownCondition, hasKnownCondition } = useProfile();
 
   const [step, setStep] = useState<Step>("select");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -291,6 +292,14 @@ export default function Upload() {
       });
 
       if (result) {
+        // Auto-add positive status STIs to known conditions
+        const newStatusPositives = stiResults.filter(
+          (sti) => sti.status === "positive" && isStatusSTI(sti.name) && !hasKnownCondition(sti.name)
+        );
+        for (const sti of newStatusPositives) {
+          await addKnownCondition(sti.name);
+        }
+
         // Only update reminder if results contain routine tests (HIV, Syphilis, Chlamydia, Gonorrhea)
         const hasRoutine = stiResults.some((sti) =>
           ROUTINE_TESTS.some((r) => sti.name.toLowerCase().includes(r))

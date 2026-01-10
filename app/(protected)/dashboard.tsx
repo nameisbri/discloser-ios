@@ -38,8 +38,8 @@ export default function Dashboard() {
   const { isDark } = useTheme();
   const { results, loading, refetch } = useTestResults();
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
-  const { aggregatedStatus } = useSTIStatus();
-  const { profile, refetch: refetchProfile, updateRiskLevel } = useProfile();
+  const { routineStatus, knownConditionsStatus } = useSTIStatus();
+  const { profile, refetch: refetchProfile, updateRiskLevel, hasKnownCondition } = useProfile();
   const recommendation = useTestingRecommendations(results);
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
@@ -124,8 +124,8 @@ export default function Dashboard() {
             Looking good out there
           </Text>
 
-          {/* Status pill */}
-          {results.length > 0 && results[0].status === "negative" && (
+          {/* Status pill - based on routine tests only */}
+          {routineStatus.length > 0 && routineStatus.every((s) => s.status === "negative") && (
             <View className={`flex-row items-center self-start px-4 py-2 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-white/20"}`}>
               <ShieldCheck size={16} color={isDark ? "#00E5A0" : "#10B981"} />
               <Text className="text-white font-inter-semibold ml-2 text-sm">
@@ -273,6 +273,33 @@ export default function Dashboard() {
             </Pressable>
           )}
 
+          {/* Known Conditions Section */}
+          {knownConditionsStatus.length > 0 && (
+            <View className="mb-6">
+              <Text className={`text-xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-text"}`}>
+                Your Status
+              </Text>
+              <Card className="p-4">
+                {knownConditionsStatus.map((sti, index) => (
+                  <View
+                    key={sti.name}
+                    className={`flex-row items-center justify-between ${index > 0 ? "mt-3 pt-3 border-t" : ""} ${isDark ? "border-dark-border" : "border-border"}`}
+                  >
+                    <View>
+                      <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                        {sti.name}
+                      </Text>
+                      <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                        Last tested: {formatDate(sti.testDate)}
+                      </Text>
+                    </View>
+                    <Badge label="Known" variant="info" />
+                  </View>
+                ))}
+              </Card>
+            </View>
+          )}
+
           {/* Results Section */}
           <View className="flex-row items-center justify-between mb-4">
             <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-text"}`}>
@@ -309,7 +336,7 @@ export default function Dashboard() {
           ) : (
             <View className="gap-3 mb-8">
               {results.slice(0, 5).map((result, index) => (
-                <ResultCard key={result.id} result={result} index={index} isDark={isDark} />
+                <ResultCard key={result.id} result={result} index={index} isDark={isDark} hasKnownCondition={hasKnownCondition} />
               ))}
               {results.length > 5 && (
                 <Pressable className={`py-4 items-center rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-primary-muted"}`}>
@@ -349,8 +376,14 @@ export default function Dashboard() {
   );
 }
 
-function ResultCard({ result, index, isDark }: { result: TestResult; index: number; isDark: boolean }) {
+function ResultCard({ result, index, isDark, hasKnownCondition }: { result: TestResult; index: number; isDark: boolean; hasKnownCondition: (name: string) => boolean }) {
   const router = useRouter();
+
+  // Check if all positive STIs in this result are known conditions
+  const allPositivesAreKnown = result.sti_results?.length > 0 &&
+    result.sti_results
+      .filter((sti) => sti.status === "positive")
+      .every((sti) => hasKnownCondition(sti.name));
 
   const statusConfig = {
     negative: {
@@ -381,9 +414,18 @@ function ResultCard({ result, index, isDark }: { result: TestResult; index: numb
       label: "Inconclusive",
       icon: isDark ? "#C9A0DC" : "#6B7280",
     },
+    known: {
+      bgLight: "bg-purple-100",
+      bgDark: "bg-dark-lavender/20",
+      text: isDark ? "text-dark-lavender" : "text-purple-700",
+      label: "Known",
+      icon: isDark ? "#C9A0DC" : "#7C3AED",
+    },
   };
 
-  const status = statusConfig[result.status];
+  // Use "known" status if positive but all positives are known conditions
+  const effectiveStatus = result.status === "positive" && allPositivesAreKnown ? "known" : result.status;
+  const status = statusConfig[effectiveStatus];
 
   const formatDate = (dateStr: string) => {
     // Parse YYYY-MM-DD without timezone shift

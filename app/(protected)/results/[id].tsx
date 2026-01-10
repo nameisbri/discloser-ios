@@ -21,7 +21,7 @@ import {
   Trash2,
   X,
 } from "lucide-react-native";
-import { useTestResult, useTestResults } from "../../../lib/hooks";
+import { useTestResult, useTestResults, useProfile } from "../../../lib/hooks";
 import { useTheme } from "../../../context/theme";
 import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
@@ -36,6 +36,7 @@ export default function ResultDetail() {
   const { isDark } = useTheme();
   const { result, loading, error } = useTestResult(id);
   const { deleteResult } = useTestResults();
+  const { hasKnownCondition } = useProfile();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -238,6 +239,7 @@ export default function ResultDetail() {
                     name={sti.name}
                     result={sti.result}
                     status={sti.status}
+                    isKnown={hasKnownCondition(sti.name)}
                     isDark={isDark}
                   />
                 </View>
@@ -313,23 +315,34 @@ function STILineItem({
   name,
   result,
   status,
+  isKnown,
   isDark,
 }: {
   name: string;
   result: string;
   status: STIResult["status"];
+  isKnown: boolean;
   isDark: boolean;
 }) {
-  const textColor =
-    status === "negative"
-      ? isDark ? "text-dark-mint" : "text-success"
-      : status === "positive"
-      ? "text-danger"
-      : isDark ? "text-dark-warning" : "text-warning";
+  // Known conditions use purple instead of red for positive
+  const textColor = isKnown
+    ? isDark ? "text-dark-lavender" : "text-purple-600"
+    : status === "negative"
+    ? isDark ? "text-dark-mint" : "text-success"
+    : status === "positive"
+    ? "text-danger"
+    : isDark ? "text-dark-warning" : "text-warning";
 
   return (
     <View className="flex-row items-center justify-between p-4">
-      <Text className={`font-inter-medium ${isDark ? "text-dark-text" : "text-text"}`}>{name}</Text>
+      <View className="flex-row items-center">
+        <Text className={`font-inter-medium ${isDark ? "text-dark-text" : "text-text"}`}>{name}</Text>
+        {isKnown && (
+          <View className={`ml-2 px-2 py-0.5 rounded-full ${isDark ? "bg-dark-lavender/20" : "bg-purple-100"}`}>
+            <Text className={`text-[10px] font-inter-bold uppercase ${isDark ? "text-dark-lavender" : "text-purple-700"}`}>Known</Text>
+          </View>
+        )}
+      </View>
       <Text className={`${textColor} font-inter-semibold`}>{result}</Text>
     </View>
   );

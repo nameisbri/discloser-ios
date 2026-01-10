@@ -12,6 +12,7 @@ create table if not exists public.profiles (
   display_name text,
   risk_level risk_level,
   risk_assessed_at timestamptz,
+  known_conditions jsonb default '[]'::jsonb,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
