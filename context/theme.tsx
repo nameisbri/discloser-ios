@@ -52,7 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     theme === "system"
       ? systemColorScheme === "dark"
         ? "dark"
-        : "dark" // Default to dark if system can't be determined
+        : "light"
       : theme;
 
   const isDark = resolvedTheme === "dark";

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
 import type { Profile, RiskLevel, KnownCondition } from "../types";
-import { normalizeTestName } from "../parsing/testNormalizer";
 
 export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);

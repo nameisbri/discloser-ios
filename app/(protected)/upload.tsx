@@ -33,6 +33,7 @@ import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
 import { parseDocument } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
+import { ROUTINE_TESTS } from "../../lib/constants";
 
 // Risk level to testing interval in days
 const RISK_INTERVALS: Record<RiskLevel, number> = {
@@ -46,9 +47,6 @@ const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "
   moderate: "biannual",
   high: "quarterly",
 };
-
-// Routine tests that drive reminder calculations
-const ROUTINE_TESTS = ["hiv", "syphilis", "chlamydia", "gonorrhea"];
 
 type Step = "select" | "preview" | "details";
 
