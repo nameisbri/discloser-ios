@@ -92,10 +92,8 @@ export function useShareLinks(testResultId?: string) {
 
 // Utility to generate share URL
 export function getShareUrl(token: string): string {
-  // This would be your web domain for the share page
-  // For now, we'll use a placeholder that can be configured
-  const baseUrl = process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app/share";
-  return `${baseUrl}/${token}`;
+  const baseUrl = process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app";
+  return `${baseUrl}/share/${token}`;
 }
 
 // Hook for fetching shared result (public, no auth required)
