@@ -15,8 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.discloser.app",
-      "usesAppleSignIn": true
+      "bundleIdentifier": "com.discloser-ios.app",
+      "buildNumber": "3",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -37,6 +41,12 @@
           "sounds": []
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c984b7de-8d07-4be0-8ae6-2ce32b514a05"
+      }
+    }
   }
 }
