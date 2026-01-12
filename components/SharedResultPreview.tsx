@@ -10,6 +10,7 @@ import {
 import { useSharedResult } from "../lib/hooks/useShareLinks";
 import { useProfile } from "../lib/hooks/useProfile";
 import { useTheme } from "../context/theme";
+import { formatDate } from "../lib/utils/date";
 import type { STIResult } from "../lib/types";
 
 interface SharedResultPreviewProps {
@@ -41,16 +42,6 @@ export function SharedResultPreview({ token }: SharedResultPreviewProps) {
     gray50: isDark ? "#0D0B0E" : "#F9FAFB",
     gray100: isDark ? "#1A1520" : "#F3F4F6",
   }), [isDark]);
-
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return (

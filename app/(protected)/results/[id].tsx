@@ -24,6 +24,7 @@ import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { ShareModal } from "../../../components/ShareModal";
 import type { STIResult } from "../../../lib/types";
+import { formatDate } from "../../../lib/utils/date";
 
 export default function ResultDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,16 +34,6 @@ export default function ResultDetail() {
   const { deleteResult } = useTestResults();
   const { hasKnownCondition } = useProfile();
   const [showShareModal, setShowShareModal] = useState(false);
-
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   const handleDelete = () => {
     Alert.alert(

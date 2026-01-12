@@ -30,6 +30,7 @@ import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
 import { LinearGradient } from "expo-linear-gradient";
 import type { TestResult } from "../../lib/types";
+import { formatDate } from "../../lib/utils/date";
 import { useState, useCallback } from "react";
 
 export default function Dashboard() {
@@ -59,17 +60,6 @@ export default function Dashboard() {
     await Promise.all([refetch(), refetchReminders(), refetchProfile()]);
     setRefreshing(false);
   }, [refetch, refetchReminders, refetchProfile]);
-
-  const formatDate = (dateStr: string) => {
-    // Parse YYYY-MM-DD without timezone shift
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -426,17 +416,6 @@ function ResultCard({ result, index, isDark, hasKnownCondition }: { result: Test
   // Use "known" status if positive but all positives are known conditions
   const effectiveStatus = result.status === "positive" && allPositivesAreKnown ? "known" : result.status;
   const status = statusConfig[effectiveStatus];
-
-  const formatDate = (dateStr: string) => {
-    // Parse YYYY-MM-DD without timezone shift
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   return (
     <Pressable

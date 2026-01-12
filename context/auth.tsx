@@ -75,19 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Apple Sign In error:", error);
         Alert.alert("Sign In Failed", error.message || "Failed to sign in with Apple. Please try again.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Apple Sign In error:", error);
-      
+
       // Handle user cancellation gracefully
-      if (error.code === "ERR_REQUEST_CANCELED") {
-        // User canceled, don't show an error
+      if (error && typeof error === "object" && "code" in error && error.code === "ERR_REQUEST_CANCELED") {
         return;
       }
-      
-      Alert.alert(
-        "Sign In Failed",
-        error.message || "An error occurred while signing in. Please try again."
-      );
+
+      const message = error instanceof Error ? error.message : "An error occurred while signing in. Please try again.";
+      Alert.alert("Sign In Failed", message);
     }
   };
 

@@ -30,6 +30,7 @@ import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import type { Reminder, ReminderFrequency } from "../../lib/types";
+import { formatDate } from "../../lib/utils/date";
 
 const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
   { value: "monthly", label: "Monthly" },
@@ -70,16 +71,6 @@ export default function Reminders() {
     await refetch();
     setRefreshing(false);
   }, [refetch]);
-
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   const getNextDate = (frequency: ReminderFrequency): string => {
     const date = new Date();
@@ -402,16 +393,6 @@ function ReminderItem({
   onDelete: () => void;
   isDark: boolean;
 }) {
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   const frequencyLabels: Record<ReminderFrequency, string> = {
     monthly: "Monthly",
     quarterly: "Every 3 months",

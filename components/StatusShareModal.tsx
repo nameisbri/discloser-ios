@@ -27,6 +27,7 @@ import { useSTIStatus } from "../lib/hooks";
 import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { supabase } from "../lib/supabase";
+import { formatDate } from "../lib/utils/date";
 
 const EXPIRY_OPTIONS = [
   { label: "1 hour", hours: 1 },
@@ -168,15 +169,6 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     await Clipboard.setStringAsync(getShareUrl(link.token));
     setCopiedId(link.id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   };
 
   const formatExpiry = (dateStr: string) => {
