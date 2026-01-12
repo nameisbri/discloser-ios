@@ -92,7 +92,7 @@ export function useShareLinks(testResultId?: string) {
 
 // Utility to generate share URL
 export function getShareUrl(token: string): string {
-  const baseUrl = process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app";
+  const baseUrl = (process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app").trim();
   return `${baseUrl}/share/${token}`;
 }
 
