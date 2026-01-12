@@ -12,6 +12,7 @@ import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/Button";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
+const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Moon }[] = [
   { value: "dark", label: "Dark", icon: Moon },
@@ -29,34 +30,80 @@ export default function Settings() {
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [showKnownConditions, setShowKnownConditions] = useState(false);
-  const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Profile fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [alias, setAlias] = useState("");
+  const [dob, setDob] = useState("");
+  const [pronouns, setPronouns] = useState("");
 
   useEffect(() => {
     getNotificationsEnabled().then(setNotifications);
-    loadProfile();
   }, []);
 
-  const loadProfile = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", session?.user?.id)
-      .single();
-    if (data?.display_name) setDisplayName(data.display_name);
-  };
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setAlias(profile.alias || "");
+      setDob(profile.date_of_birth || "");
+      setPronouns(profile.pronouns || "");
+    }
+  }, [profile]);
 
   const handleToggleNotifications = (value: boolean) => {
     setNotifications(value);
     setNotificationsEnabled(value);
   };
 
+  const validateProfile = () => {
+    if (!firstName.trim()) {
+      Alert.alert("Required", "Please enter your first name");
+      return false;
+    }
+    if (!lastName.trim()) {
+      Alert.alert("Required", "Please enter your last name");
+      return false;
+    }
+    if (!alias.trim()) {
+      Alert.alert("Required", "Please choose an alias");
+      return false;
+    }
+    if (!dob.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+      Alert.alert("Required", "Please enter date of birth (YYYY-MM-DD)");
+      return false;
+    }
+    return true;
+  };
+
   const handleSaveProfile = async () => {
+    if (!validateProfile()) return;
+    if (!session?.user?.id) return;
     setSaving(true);
-    await supabase
-      .from("profiles")
-      .update({ display_name: displayName })
-      .eq("id", session?.user?.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase
+      .from("profiles") as any)
+      .update({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        alias: alias.trim(),
+        date_of_birth: dob,
+        pronouns: pronouns || null,
+      })
+      .eq("id", session.user.id);
+
+    if (error) {
+      if (error.code === "23505") {
+        Alert.alert("Alias Taken", "This alias is already in use.");
+      } else {
+        Alert.alert("Error", "Failed to save profile");
+      }
+      setSaving(false);
+      return;
+    }
+    await refetchProfile();
     setSaving(false);
     setShowProfileModal(false);
   };
@@ -103,7 +150,7 @@ export default function Settings() {
             <User size={48} color={isDark ? "#FF2D7A" : "#923D5C"} />
           </View>
           <Text className={`text-2xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-            {displayName || session?.user?.email?.split('@')[0] || "User"}
+            {profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : session?.user?.email?.split('@')[0] || "User"}
           </Text>
           <View className="flex-row items-center mt-1">
             <Mail size={14} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
@@ -308,33 +355,119 @@ export default function Settings() {
       <Modal visible={showProfileModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
           <View className="flex-1 bg-black/50 justify-end">
-            <View className={`rounded-t-3xl p-6 ${isDark ? "bg-dark-surface" : "bg-white"}`}>
-              <View className="flex-row justify-between items-center mb-6">
-                <Pressable onPress={() => setShowProfileModal(false)}>
-                  <Text className={`font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>Cancel</Text>
-                </Pressable>
-                <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-                  Edit Profile
-                </Text>
-                <View className="w-12" />
+            <ScrollView className={`rounded-t-3xl max-h-[85%] ${isDark ? "bg-dark-surface" : "bg-white"}`}>
+              <View className="p-6">
+                <View className="flex-row justify-between items-center mb-6">
+                  <Pressable onPress={() => setShowProfileModal(false)}>
+                    <Text className={`font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>Cancel</Text>
+                  </Pressable>
+                  <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
+                    Edit Profile
+                  </Text>
+                  <View className="w-12" />
+                </View>
+
+                <View className="gap-4">
+                  <View>
+                    <Text className={`font-inter-medium text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                      First Name <Text className="text-danger">*</Text>
+                    </Text>
+                    <TextInput
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      placeholder="Enter first name"
+                      placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                      className={`border rounded-xl p-4 font-inter-regular ${isDark ? "bg-dark-surface-light border-dark-border text-dark-text" : "border-border text-text"}`}
+                    />
+                  </View>
+
+                  <View>
+                    <Text className={`font-inter-medium text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                      Last Name <Text className="text-danger">*</Text>
+                    </Text>
+                    <TextInput
+                      value={lastName}
+                      onChangeText={setLastName}
+                      placeholder="Enter last name"
+                      placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                      className={`border rounded-xl p-4 font-inter-regular ${isDark ? "bg-dark-surface-light border-dark-border text-dark-text" : "border-border text-text"}`}
+                    />
+                  </View>
+
+                  <View>
+                    <Text className={`font-inter-medium text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                      Alias <Text className="text-danger">*</Text>
+                    </Text>
+                    <TextInput
+                      value={alias}
+                      onChangeText={setAlias}
+                      placeholder="Choose an alias"
+                      placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                      autoCapitalize="none"
+                      className={`border rounded-xl p-4 font-inter-regular ${isDark ? "bg-dark-surface-light border-dark-border text-dark-text" : "border-border text-text"}`}
+                    />
+                  </View>
+
+                  <View>
+                    <Text className={`font-inter-medium text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                      Date of Birth <Text className="text-danger">*</Text>
+                    </Text>
+                    <TextInput
+                      value={dob}
+                      onChangeText={setDob}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                      keyboardType="numbers-and-punctuation"
+                      className={`border rounded-xl p-4 font-inter-regular ${isDark ? "bg-dark-surface-light border-dark-border text-dark-text" : "border-border text-text"}`}
+                    />
+                  </View>
+
+                  <View>
+                    <Text className={`font-inter-medium text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                      Pronouns
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {PRONOUNS_OPTIONS.map((p) => {
+                        const isOther = p === "other";
+                        const isSelected = isOther
+                          ? pronouns !== "" && !["he/him", "she/her", "they/them"].includes(pronouns)
+                          : pronouns === p;
+                        return (
+                          <Pressable
+                            key={p}
+                            onPress={() => setPronouns(isSelected && !isOther ? "" : (isOther ? "other" : p))}
+                            className={`px-4 py-2 rounded-full border ${
+                              isSelected
+                                ? isDark ? "bg-dark-accent border-dark-accent" : "bg-primary border-primary"
+                                : isDark ? "bg-dark-surface-light border-dark-border" : "bg-gray-50 border-border"
+                            }`}
+                          >
+                            <Text className={isSelected ? "text-white font-inter-semibold" : isDark ? "text-dark-text" : "text-text"}>
+                              {p}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    {pronouns !== "" && !["he/him", "she/her", "they/them", ""].includes(pronouns) && (
+                      <TextInput
+                        value={pronouns === "other" ? "" : pronouns}
+                        onChangeText={setPronouns}
+                        placeholder="Enter your pronouns"
+                        placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                        autoCapitalize="none"
+                        className={`mt-3 border rounded-xl p-4 font-inter-regular ${isDark ? "bg-dark-surface-light border-dark-border text-dark-text" : "border-border text-text"}`}
+                      />
+                    )}
+                  </View>
+                </View>
+
+                <View className="mt-6">
+                  <Button label={saving ? "Saving..." : "Save"} onPress={handleSaveProfile} disabled={saving} />
+                </View>
+                <View className="h-8" />
               </View>
-              <Text className={`font-inter-medium text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                Display Name
-              </Text>
-              <TextInput
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="Enter your name"
-                placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
-                className={`border rounded-xl p-4 font-inter-regular mb-6 ${
-                  isDark
-                    ? "bg-dark-surface-light border-dark-border text-dark-text"
-                    : "border-border text-text"
-                }`}
-              />
-              <Button label={saving ? "Saving..." : "Save"} onPress={handleSaveProfile} disabled={saving} />
-              <View className="h-8" />
-            </View>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>

@@ -8,8 +8,8 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   conditions: KnownCondition[];
-  onAdd: (condition: string) => Promise<void>;
-  onRemove: (condition: string) => Promise<void>;
+  onAdd: (condition: string, notes?: string) => Promise<boolean | void>;
+  onRemove: (condition: string) => Promise<boolean | void>;
 }
 
 export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRemove }: Props) {
