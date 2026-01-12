@@ -1,7 +1,7 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter, useSegments } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Platform, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 
@@ -48,20 +48,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, loading, segments]);
 
   const signInWithApple = async () => {
-    if (Platform.OS !== "ios") return;
+    if (Platform.OS !== "ios") {
+      Alert.alert("Error", "Apple Sign In is only available on iOS");
+      return;
+    }
 
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
 
-    if (credential.identityToken) {
-      await supabase.auth.signInWithIdToken({
+      if (!credential.identityToken) {
+        Alert.alert("Error", "Failed to get identity token from Apple");
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
         provider: "apple",
         token: credential.identityToken,
       });
+
+      if (error) {
+        console.error("Apple Sign In error:", error);
+        Alert.alert("Sign In Failed", error.message || "Failed to sign in with Apple. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("Apple Sign In error:", error);
+      
+      // Handle user cancellation gracefully
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        // User canceled, don't show an error
+        return;
+      }
+      
+      Alert.alert(
+        "Sign In Failed",
+        error.message || "An error occurred while signing in. Please try again."
+      );
     }
   };
 
@@ -70,17 +96,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const devBypass = async () => {
-    if (__DEV__) {
-      // Use Supabase anonymous auth for dev testing
-      // Enable "Allow anonymous sign-ins" in Supabase Auth settings
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.error("Dev bypass failed:", error.message);
-        // Fallback: try to show what went wrong
-        if (error.message.includes("Anonymous sign-ins are disabled")) {
-          console.error("Enable anonymous sign-ins in Supabase Dashboard > Auth > Providers");
-        }
-      }
+    // Use Supabase anonymous auth for testing
+    // Enable "Allow anonymous sign-ins" in Supabase Auth settings
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      console.error("Anonymous sign-in failed:", error.message);
+      Alert.alert(
+        "Sign In Failed",
+        error.message.includes("Anonymous sign-ins are disabled")
+          ? "Anonymous sign-ins are disabled. Please enable them in Supabase Dashboard > Auth > Providers"
+          : error.message || "Failed to sign in anonymously. Please try again."
+      );
     }
   };
 

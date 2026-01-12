@@ -77,13 +77,11 @@ export default function Login() {
           </View>
         )}
 
-        {__DEV__ && (
-          <Pressable onPress={devBypass} className="mt-4 py-3">
-            <Text className={`text-center font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>
-              Skip Login (Dev)
-            </Text>
-          </Pressable>
-        )}
+        <Pressable onPress={devBypass} className="mt-4 py-3">
+          <Text className={`text-center font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>
+            Skip Login
+          </Text>
+        </Pressable>
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
           Your data stays yours. Always encrypted.{"\n"}
