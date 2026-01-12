@@ -9,7 +9,11 @@ A mobile app for managing and sharing STI test results securely.
 - **Track History** - View all your test results in one place
 - **Share Securely** - Generate time-limited links or QR codes to share results
 - **Share Status** - Share your aggregated STI status across all tests
+- **Risk Assessment** - 4-question questionnaire based on CDC guidelines to calculate your risk level
+- **Testing Recommendations** - Personalized testing frequency recommendations based on risk level (Low: yearly, Moderate: 6 months, High: 3 months)
+- **Known Conditions** - Track chronic STI conditions (HIV, Herpes, Hepatitis B/C) in your profile
 - **Reminders** - Set recurring reminders for regular testing with push notifications
+- **Onboarding Flow** - Guided setup for new users (profile info, known conditions, risk assessment)
 - **Dark Mode** - Toggle between light, dark, or system preference
 - **Privacy First** - Your data stays private with row-level security
 
@@ -44,9 +48,10 @@ EXPO_PUBLIC_SHARE_BASE_URL=https://your-share-domain.com
 ### Database Setup
 
 Run the SQL in `supabase/schema.sql` in your Supabase SQL Editor to create:
-- Tables: profiles, test_results, reminders, share_links, status_share_links
-- Storage bucket: test-documents
+- Tables: `profiles`, `test_results`, `reminders`, `share_links`, `status_share_links`
+- Storage bucket: `test-documents`
 - RLS policies and helper functions
+- Database functions: `get_shared_result()`, `get_shared_status()`, `increment_share_view()`
 
 ### Installation
 
@@ -67,26 +72,67 @@ npx expo run:ios
 ```
 app/                    # Expo Router screens
   (auth)/              # Login/signup screens
+  (onboarding)/        # Onboarding flow for new users
   (protected)/         # Authenticated screens
+    dashboard.tsx      # Main dashboard with recent results
+    upload.tsx         # Test result upload flow
+    results/[id].tsx   # Individual test result detail
+    reminders.tsx      # Testing reminder management
+    settings.tsx       # Profile, risk assessment, known conditions
 components/            # Reusable UI components
+  Badge.tsx           # Status badges
+  Button.tsx          # Button component
+  Card.tsx            # Card container
+  KnownConditionsModal.tsx  # Manage known conditions
+  RiskAssessment.tsx  # Risk assessment questionnaire
+  ShareModal.tsx      # Share individual results
+  StatusShareModal.tsx # Share aggregated status
+  SharedResultPreview.tsx  # Preview shared results
+context/               # React contexts
+  auth.tsx            # Authentication context
+  theme.tsx           # Theme (light/dark) context
 lib/
-  hooks/               # React hooks for data fetching
-  parsing/             # Document OCR and LLM parsing
-  supabase.ts          # Supabase client
-  notifications.ts     # Push notification helpers
-context/               # Auth context
-supabase/              # Database schema
-web/                   # Next.js web app for share pages
+  hooks/              # React hooks for data fetching
+    useProfile.ts     # User profile management
+    useTestResults.ts # Test results CRUD
+    useReminders.ts   # Reminder management
+    useShareLinks.ts  # Share link generation
+    useSTIStatus.ts   # Aggregated STI status
+    useTestingRecommendations.ts  # Personalized recommendations
+  parsing/            # Document OCR and LLM parsing
+    documentParser.ts    # Main parsing orchestrator
+    llmParser.ts         # LLM-based extraction
+    testNormalizer.ts    # Normalize STI names
+    resultStandardizer.ts # Standardize results
+  supabase.ts         # Supabase client
+  storage.ts           # File upload helpers
+  notifications.ts    # Push notification helpers
+  types.ts            # TypeScript types
+  utils/              # Utility functions
+    date.ts           # Date formatting
+    stiMatching.ts    # STI name matching
+supabase/             # Database schema and migrations
+  schema.sql          # Main database schema
+  migrations/        # Database migrations
+web/                  # Next.js web app for share pages
+  app/
+    page.tsx          # Landing page with waitlist
+    share/[token]/    # Individual test result share page
+    status/[token]/   # Aggregated status share page
+    test/             # Test/demo page
+    api/waitlist/     # Waitlist signup endpoint
 ```
 
 ## Web Share Pages
 
 **Live at:** https://discloser.app
 
-The `web/` directory contains a Next.js app for displaying shared results:
+The `web/` directory contains a Next.js app with:
 
-- `/share/[token]` - Individual test result
-- `/status/[token]` - Aggregated STI status
+- `/` - Landing page with waitlist signup
+- `/share/[token]` - Individual test result share page
+- `/status/[token]` - Aggregated STI status share page
+- `/test` - Demo/test page for status display
 
 ### Local Development
 
