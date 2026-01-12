@@ -8,6 +8,6 @@ Sitemap: https://discloser.app/sitemap.xml
 Disallow: /api/
 Disallow: /test/
 
-# Allow share pages (they're public)
-Allow: /share/
-Allow: /status/
+# Disallow private share pages (they contain sensitive health information)
+Disallow: /share/
+Disallow: /status/

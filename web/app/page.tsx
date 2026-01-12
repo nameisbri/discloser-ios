@@ -302,12 +302,13 @@ export default function Home() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-accent to-primary hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-accent/25"
-                  aria-label="Join waitlist for early access"
+                  aria-label={status === "loading" ? "Joining waitlist" : "Join waitlist for early access"}
                 >
                   {status === "loading" ? (
                     <motion.span
                       animate={{ opacity: [1, 0.5, 1] }}
                       transition={{ duration: 1, repeat: Infinity }}
+                      aria-hidden="true"
                     >
                       Joining...
                     </motion.span>
@@ -640,7 +641,7 @@ export default function Home() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-accent to-primary hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-accent/25"
-                  aria-label="Join waitlist for early access"
+                  aria-label={status === "loading" ? "Joining waitlist" : "Join waitlist for early access"}
                 >
                   {status === "loading" ? "Joining..." : "Get early access"}
                 </motion.button>
@@ -688,6 +689,7 @@ export default function Home() {
               width={28}
               height={28}
               className="rounded-lg"
+              loading="lazy"
             />
             <span className="text-white/60 text-sm">Discloser</span>
           </div>
