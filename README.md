@@ -53,6 +53,60 @@ Run the SQL in `supabase/schema.sql` in your Supabase SQL Editor to create:
 - RLS policies and helper functions
 - Database functions: `get_shared_result()`, `get_shared_status()`, `increment_share_view()`
 
+### Apple Sign-In Setup
+
+The app uses Apple Sign-In for authentication. To enable it:
+
+#### 1. Apple Developer Account Setup
+
+1. **Create App ID**:
+   - Go to [Apple Developer Portal](https://developer.apple.com) > Certificates, Identifiers & Profiles > Identifiers
+   - Create a new App ID with bundle identifier: `com.discloser-ios.app`
+   - Enable "Sign in with Apple" capability
+
+2. **Create Service ID**:
+   - Create a new Service ID (e.g., `com.discloser-ios.app.service`)
+   - Enable "Sign in with Apple"
+   - Configure domains and redirect URLs:
+     - Domain: `<your-project-id>.supabase.co`
+     - Redirect URL: `https://<your-project-id>.supabase.co/auth/v1/callback`
+
+3. **Create Private Key**:
+   - Go to Keys section
+   - Create a new key with "Sign in with Apple" capability
+   - Download the `.p8` file (you can only download it once!)
+   - Note the Key ID
+
+4. **Get Team ID**:
+   - Find your Team ID in the membership section
+
+#### 2. Generate Client Secret
+
+Apple requires a JWT client secret. You can generate it using:
+- [Supabase's JWT generator](https://supabase.com/docs/guides/auth/social-login/auth-apple#generate-a-client-secret)
+- Or use a script/library to generate the JWT with your Team ID, Service ID, Key ID, and private key
+
+**Important**: The client secret expires every 6 months and must be regenerated.
+
+#### 3. Configure Supabase
+
+1. Go to your Supabase project dashboard > Authentication > Providers
+2. Enable the Apple provider
+3. Enter:
+   - **Client ID**: Your Service ID (e.g., `com.discloser-ios.app.service`)
+   - **Client Secret**: The generated JWT
+4. Save the configuration
+
+#### 4. Verify App Configuration
+
+The app is already configured with:
+- ✅ `expo-apple-authentication` package installed
+- ✅ Plugin configured in `app.json`
+- ✅ `usesAppleSignIn: true` in iOS config
+- ✅ Bundle identifier: `com.discloser-ios.app`
+
+**Note**: For development builds, you can use the "Skip Login" option which uses anonymous authentication (must be enabled in Supabase Auth settings).
+
 ### Installation
 
 ```bash

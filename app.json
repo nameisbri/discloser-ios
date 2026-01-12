@@ -11,12 +11,12 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "##EAC4CE"
+      "backgroundColor": "#EAC4CE"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.discloser-ios.app",
-      "buildNumber": "12",
+      "buildNumber": "13",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
