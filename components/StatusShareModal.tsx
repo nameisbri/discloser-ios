@@ -22,6 +22,7 @@ import {
   QrCode,
   Calendar,
   ShieldCheck,
+  ChevronDown,
 } from "lucide-react-native";
 import { useSTIStatus } from "../lib/hooks";
 import { useTheme } from "../context/theme";
@@ -35,6 +36,8 @@ const EXPIRY_OPTIONS = [
   { label: "7 days", hours: 168 },
   { label: "30 days", hours: 720 },
 ];
+
+type DisplayNameOption = "anonymous" | "alias" | "firstName";
 
 interface StatusShareLink {
   id: string;
@@ -53,16 +56,18 @@ interface StatusShareModalProps {
 
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const { isDark } = useTheme();
-  const { aggregatedStatus, loading: statusLoading } = useSTIStatus();
+  const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading } = useSTIStatus();
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedExpiry, setSelectedExpiry] = useState(EXPIRY_OPTIONS[1]);
-  const [showName, setShowName] = useState(false);
+  const [displayNameOption, setDisplayNameOption] = useState<DisplayNameOption>("anonymous");
+  const [excludeKnownConditions, setExcludeKnownConditions] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<StatusShareLink | null>(null);
   const [previewLink, setPreviewLink] = useState<StatusShareLink | null>(null);
+  const [userProfile, setUserProfile] = useState<{ first_name: string | null; alias: string | null; display_name: string | null } | null>(null);
 
   // Theme colors
   const colors = {
@@ -89,8 +94,35 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     if (visible) {
       setView("preview");
       fetchLinks();
+      fetchUserProfile();
     }
   }, [visible]);
+
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("first_name, alias, display_name")
+      .eq("id", user.id)
+      .single();
+    setUserProfile(data);
+  };
+
+  const getDisplayName = (): string | null => {
+    if (displayNameOption === "anonymous") return null;
+    if (displayNameOption === "alias") return userProfile?.alias || null;
+    if (displayNameOption === "firstName") return userProfile?.first_name || null;
+    return null;
+  };
+
+  const getStatusToShare = () => {
+    if (excludeKnownConditions) {
+      return routineStatus;
+    }
+    return aggregatedStatus;
+  };
 
   const fetchLinks = async () => {
     setLoading(true);
@@ -114,16 +146,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     if (!user) return;
 
     const expiresAt = new Date(Date.now() + selectedExpiry.hours * 60 * 60 * 1000).toISOString();
+    const displayName = getDisplayName();
 
-    // Get user's display name
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .single();
-
-    // Store snapshot of current status
-    const statusSnapshot = aggregatedStatus.map(s => ({
+    // Store snapshot of current status - respect excludeKnownConditions toggle
+    const statusSnapshot = getStatusToShare().map(s => ({
       name: s.name,
       status: s.status,
       result: s.result,
@@ -137,8 +163,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       .insert({
         user_id: user.id,
         expires_at: expiresAt,
-        show_name: showName,
-        display_name: showName ? profile?.display_name : null,
+        show_name: displayNameOption !== "anonymous",
+        display_name: displayName,
         status_snapshot: statusSnapshot,
       })
       .select()
@@ -196,6 +222,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
   if (!visible) return null;
 
+  const statusToDisplay = getStatusToShare();
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -217,7 +245,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
               {statusLoading ? (
                 <ActivityIndicator size="large" color={colors.primary} />
-              ) : aggregatedStatus.length === 0 ? (
+              ) : statusToDisplay.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 20 }}>
                   <ShieldCheck size={32} color={colors.textSecondary} style={{ marginBottom: 12 }} />
                   <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>Nothing to share yet</Text>
@@ -227,7 +255,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                   </Text>
                 </View>
               ) : (
-                aggregatedStatus.map((sti, index) => (
+                statusToDisplay.map((sti, index) => (
                   <View key={sti.name}>
                     {index > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />}
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -260,7 +288,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <Button
               label="Create a link"
               onPress={() => setView("create")}
-              disabled={aggregatedStatus.length === 0}
+              disabled={statusToDisplay.length === 0}
             />
 
             {links.length > 0 && (
@@ -300,38 +328,82 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               ))}
             </View>
 
-            {/* Show Name Toggle */}
-            <Pressable
-              onPress={() => setShowName(!showName)}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 16,
-                backgroundColor: colors.surface,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: colors.border,
-                marginBottom: 24,
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <User size={20} color={colors.textSecondary} />
-                <Text style={{ marginLeft: 12, color: colors.text, fontWeight: "500" }}>Let them know it's me</Text>
-              </View>
-              <View style={{
-                width: 24,
-                height: 24,
-                borderRadius: 6,
-                borderWidth: 2,
-                borderColor: showName ? colors.primary : colors.border,
-                backgroundColor: showName ? colors.primary : colors.surface,
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                {showName && <Check size={16} color="#fff" />}
-              </View>
-            </Pressable>
+            {/* Display Name Selection */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 8 }}>How to identify yourself</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+              <Pressable
+                onPress={() => setDisplayNameOption("anonymous")}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: displayNameOption === "anonymous" ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: displayNameOption === "anonymous" ? colors.primary : colors.border,
+                }}
+              >
+                <Text style={{ color: displayNameOption === "anonymous" ? "#fff" : colors.text, fontWeight: "500" }}>
+                  Anonymous
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setDisplayNameOption("alias")}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: displayNameOption === "alias" ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: displayNameOption === "alias" ? colors.primary : colors.border,
+                }}
+              >
+                <Text style={{ color: displayNameOption === "alias" ? "#fff" : colors.text, fontWeight: "500" }}>
+                  {userProfile?.alias || "Alias"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setDisplayNameOption("firstName")}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: displayNameOption === "firstName" ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: displayNameOption === "firstName" ? colors.primary : colors.border,
+                }}
+              >
+                <Text style={{ color: displayNameOption === "firstName" ? "#fff" : colors.text, fontWeight: "500" }}>
+                  First Name
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Exclude Known Conditions Toggle */}
+            {knownConditionsStatus.length > 0 && (
+              <Pressable
+                onPress={() => setExcludeKnownConditions(!excludeKnownConditions)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: 16,
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: 24,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: excludeKnownConditions ? colors.primary : colors.border, backgroundColor: excludeKnownConditions ? colors.primary : colors.surface, alignItems: "center", justifyContent: "center" }}>
+                    {excludeKnownConditions && <Check size={16} color="#fff" />}
+                  </View>
+                  <Text style={{ marginLeft: 12, color: colors.text, fontWeight: "500" }}>
+                    Hide chronic conditions (HIV, Herpes, Hepatitis)
+                  </Text>
+                </View>
+              </Pressable>
+            )}
 
             <Button
               label={creating ? "On it..." : "Make it happen"}
@@ -451,8 +523,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 </Text>
               </View>
 
-              {/* Status Items */}
-              {aggregatedStatus.map((sti, index) => (
+              {/* Status Items - Respect the toggle choice */}
+              {statusToDisplay.map((sti, index) => (
                 <View key={index}>
                   {index > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

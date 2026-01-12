@@ -23,11 +23,16 @@ export function useSTIStatus() {
     const stiMap = new Map<string, AggregatedSTI>();
     const knownConditions = profile?.known_conditions || [];
 
-    // Process all results, keeping the most recent per STI
+    // Process all results, keeping most recent per STI
     for (const result of results) {
-      if (!result.sti_results) continue;
+      // Handle sti_results that might be null, undefined, or invalid
+      const stiResults = result.sti_results;
+      if (!stiResults || !Array.isArray(stiResults) || stiResults.length === 0) continue;
 
-      for (const sti of result.sti_results) {
+      for (const sti of stiResults) {
+        // Validate required STI fields
+        if (!sti.name || !sti.status) continue;
+
         const existing = stiMap.get(sti.name);
         const testDate = result.test_date;
 
@@ -37,9 +42,9 @@ export function useSTIStatus() {
           stiMap.set(sti.name, {
             name: sti.name,
             status: sti.status,
-            result: sti.result,
+            result: sti.result || sti.status.charAt(0).toUpperCase() + sti.status.slice(1),
             testDate: testDate,
-            isVerified: result.is_verified,
+            isVerified: result.is_verified || false,
             isKnownCondition: isKnown,
             isStatusSTI: isStatusSTI(sti.name),
           });
