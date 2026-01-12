@@ -18,10 +18,16 @@ export interface KnownCondition {
 
 export interface Profile {
   id: string;
+  first_name: string | null;
+  last_name: string | null;
+  alias: string | null;
+  date_of_birth: string | null;
+  pronouns: string | null;
   display_name: string | null;
   risk_level: RiskLevel | null;
   risk_assessed_at: string | null;
   known_conditions: KnownCondition[];
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }

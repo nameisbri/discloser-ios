@@ -24,6 +24,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
   const segments = useSegments();
   const router = useRouter();
 
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setOnboardingChecked(false); // Reset on auth change
     });
 
     return () => subscription.unsubscribe();
@@ -42,10 +44,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
+
     const inAuthGroup = segments[0] === "(auth)";
-    if (!session && !inAuthGroup) router.replace("/login");
-    else if (session && inAuthGroup) router.replace("/dashboard");
-  }, [session, loading, segments]);
+    const inOnboarding = segments[0] === "(onboarding)";
+    const inProtected = segments[0] === "(protected)";
+
+    const checkOnboardingAndRoute = async () => {
+      if (!session) {
+        if (!inAuthGroup) router.replace("/login");
+        return;
+      }
+
+      // User is logged in
+      if (inAuthGroup) {
+        // Just signed in - check if onboarding is complete
+        const { data } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", session.user.id)
+          .single() as { data: { onboarding_completed: boolean } | null };
+
+        if (data?.onboarding_completed) {
+          router.replace("/dashboard");
+        } else {
+          router.replace("/(onboarding)");
+        }
+        setOnboardingChecked(true);
+        return;
+      }
+
+      // If in protected area, verify onboarding is complete
+      if (inProtected && !onboardingChecked) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", session.user.id)
+          .single() as { data: { onboarding_completed: boolean } | null };
+
+        if (!data?.onboarding_completed) {
+          router.replace("/(onboarding)");
+        }
+        setOnboardingChecked(true);
+      }
+    };
+
+    checkOnboardingAndRoute();
+  }, [session, loading, segments, onboardingChecked]);
 
   const signInWithApple = async () => {
     if (Platform.OS !== "ios") {
