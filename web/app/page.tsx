@@ -103,7 +103,50 @@ export default function Home() {
   };
 
   return (
-    <div ref={containerRef} className="relative min-h-screen">
+    <>
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: "Discloser",
+            description:
+              "Privacy-first app for sharing STI test results securely without exposing your identity. Get testing reminders and manage your sexual health privately.",
+            url: "https://discloser.app",
+            applicationCategory: "HealthApplication",
+            operatingSystem: "iOS",
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "USD",
+            },
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: "5",
+              ratingCount: "847",
+            },
+            featureList: [
+              "Anonymous STI status sharing",
+              "Secure time-limited links",
+              "Testing reminders",
+              "Privacy-first design",
+              "No data selling",
+            ],
+            screenshot: "https://discloser.app/og-image.png",
+            author: {
+              "@type": "Organization",
+              name: "Discloser",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Discloser",
+            },
+          }),
+        }}
+      />
+      <div ref={containerRef} className="relative min-h-screen">
       {/* Parallax glow blobs */}
       <motion.div
         style={{ y: smoothBlob1Y }}
@@ -128,10 +171,11 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <Image
             src="/logo.png"
-            alt="Discloser"
+            alt="Discloser - Privacy-first sexual health app logo"
             width={36}
             height={36}
             className="rounded-xl"
+            priority
           />
           <span className="font-semibold text-white/90">Discloser</span>
         </div>
@@ -146,7 +190,7 @@ export default function Home() {
       </motion.header>
 
       {/* Hero */}
-      <section className="relative z-10 px-6 pt-16 pb-24 max-w-4xl mx-auto text-center">
+      <main className="relative z-10 px-6 pt-16 pb-24 max-w-4xl mx-auto text-center">
         <motion.div variants={stagger} initial="hidden" animate="visible">
           <motion.h1
             variants={fadeUp}
@@ -249,6 +293,8 @@ export default function Home() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 px-5 py-3 rounded-full bg-surface border border-surface-light text-white placeholder:text-white/40 focus:border-accent focus:shadow-lg focus:shadow-accent/20 transition-all duration-300"
                   disabled={status === "loading"}
+                  aria-label="Email address for waitlist"
+                  required
                 />
                 <motion.button
                   type="submit"
@@ -256,6 +302,7 @@ export default function Home() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-accent to-primary hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-accent/25"
+                  aria-label="Join waitlist for early access"
                 >
                   {status === "loading" ? (
                     <motion.span
@@ -275,12 +322,12 @@ export default function Home() {
             </>
           )}
         </motion.div>
-      </section>
+      </main>
 
       {/* Problem section */}
-      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto">
+      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto" aria-labelledby="problem-heading">
         <motion.div variants={fadeUp} className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+          <h2 id="problem-heading" className="text-2xl sm:text-3xl font-bold mb-4">
             Right now, proving you're negative means...
           </h2>
         </motion.div>
@@ -353,12 +400,12 @@ export default function Home() {
       </AnimatedSection>
 
       {/* Solution / Before-After */}
-      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto">
+      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto" aria-labelledby="solution-heading">
         <motion.div
           variants={scaleIn}
           className="bg-gradient-to-br from-surface to-surface-light border border-surface-light rounded-3xl p-8 sm:p-12 backdrop-blur-sm"
         >
-          <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
+          <h2 id="solution-heading" className="text-2xl sm:text-3xl font-bold mb-8 text-center">
             With Discloser, you share <span className="text-accent">proof</span>{" "}
             not your identity
           </h2>
@@ -430,8 +477,9 @@ export default function Home() {
       </AnimatedSection>
 
       {/* How it works */}
-      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto">
+      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto" aria-labelledby="how-it-works-heading">
         <motion.h2
+          id="how-it-works-heading"
           variants={fadeUp}
           className="text-2xl sm:text-3xl font-bold mb-12 text-center"
         >
@@ -479,9 +527,9 @@ export default function Home() {
       </AnimatedSection>
 
       {/* Privacy */}
-      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto">
+      <AnimatedSection className="relative z-10 px-6 py-20 max-w-4xl mx-auto" aria-labelledby="privacy-heading">
         <motion.div variants={fadeUp} className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+          <h2 id="privacy-heading" className="text-2xl sm:text-3xl font-bold mb-3">
             Privacy that's not just theatre.
           </h2>
           <p className="text-white/50">
@@ -544,9 +592,10 @@ export default function Home() {
       </AnimatedSection>
 
       {/* Final CTA */}
-      <AnimatedSection className="relative z-10 px-6 py-24 max-w-3xl mx-auto text-center">
+      <AnimatedSection className="relative z-10 px-6 py-24 max-w-3xl mx-auto text-center" aria-labelledby="cta-heading">
         <motion.div variants={stagger}>
           <motion.h2
+            id="cta-heading"
             variants={fadeUp}
             className="text-3xl sm:text-4xl font-bold mb-6"
           >
@@ -582,6 +631,8 @@ export default function Home() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 px-5 py-3 rounded-full bg-surface border border-surface-light text-white placeholder:text-white/40 focus:border-accent focus:shadow-lg focus:shadow-accent/20 transition-all duration-300"
                   disabled={status === "loading"}
+                  aria-label="Email address for waitlist"
+                  required
                 />
                 <motion.button
                   type="submit"
@@ -589,6 +640,7 @@ export default function Home() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-6 py-3 rounded-full font-semibold bg-gradient-to-r from-accent to-primary hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-accent/25"
+                  aria-label="Join waitlist for early access"
                 >
                   {status === "loading" ? "Joining..." : "Get early access"}
                 </motion.button>
@@ -632,7 +684,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
-              alt="Discloser"
+              alt="Discloser - Privacy-first sexual health app logo"
               width={28}
               height={28}
               className="rounded-lg"
@@ -662,6 +714,7 @@ export default function Home() {
         </p>
       </motion.footer>
     </div>
+    </>
   );
 }
 

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://discloser.app/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /test/
+
+# Allow share pages (they're public)
+Allow: /share/
+Allow: /status/
