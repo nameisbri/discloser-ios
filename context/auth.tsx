@@ -1,6 +1,6 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter, useSegments } from "expo-router";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Platform, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
@@ -10,7 +10,6 @@ type AuthContextType = {
   loading: boolean;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
-  devBypass: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -27,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const segments = useSegments();
   const router = useRouter();
+  const isRouting = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setOnboardingChecked(false); // Reset on auth change
+      // Don't reset onboardingChecked here - it causes multiple route changes
     });
 
     return () => subscription.unsubscribe();
@@ -50,41 +50,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const inProtected = segments[0] === "(protected)";
 
     const checkOnboardingAndRoute = async () => {
-      if (!session) {
-        if (!inAuthGroup) router.replace("/login");
-        return;
-      }
+      // Prevent multiple simultaneous route changes
+      if (isRouting.current) return;
+      isRouting.current = true;
 
-      // User is logged in
-      if (inAuthGroup) {
-        // Just signed in - check if onboarding is complete
-        const { data } = await supabase
-          .from("profiles")
-          .select("onboarding_completed")
-          .eq("id", session.user.id)
-          .single() as { data: { onboarding_completed: boolean } | null };
-
-        if (data?.onboarding_completed) {
-          router.replace("/dashboard");
-        } else {
-          router.replace("/(onboarding)");
+      try {
+        if (!session) {
+          if (!inAuthGroup) router.replace("/login");
+          return;
         }
-        setOnboardingChecked(true);
-        return;
-      }
 
-      // If in protected area, verify onboarding is complete
-      if (inProtected && !onboardingChecked) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("onboarding_completed")
-          .eq("id", session.user.id)
-          .single() as { data: { onboarding_completed: boolean } | null };
+        // User is logged in
+        if (inAuthGroup) {
+          // Just signed in - check if onboarding is complete
+          const { data } = await supabase
+            .from("profiles")
+            .select("onboarding_completed")
+            .eq("id", session.user.id)
+            .single() as { data: { onboarding_completed: boolean } | null };
 
-        if (!data?.onboarding_completed) {
-          router.replace("/(onboarding)");
+          if (data?.onboarding_completed) {
+            router.replace("/dashboard");
+          } else {
+            router.replace("/(onboarding)");
+          }
+          setOnboardingChecked(true);
+          return;
         }
-        setOnboardingChecked(true);
+
+        // If in protected area, verify onboarding is complete
+        if (inProtected && !onboardingChecked) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("onboarding_completed")
+            .eq("id", session.user.id)
+            .single() as { data: { onboarding_completed: boolean } | null };
+
+          if (!data?.onboarding_completed) {
+            router.replace("/(onboarding)");
+          }
+          setOnboardingChecked(true);
+        }
+      } finally {
+        isRouting.current = false;
       }
     };
 
@@ -134,25 +142,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-  };
-
-  const devBypass = async () => {
-    // Use Supabase anonymous auth for testing
-    // Enable "Allow anonymous sign-ins" in Supabase Auth settings
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) {
-      console.error("Anonymous sign-in failed:", error.message);
-      Alert.alert(
-        "Sign In Failed",
-        error.message.includes("Anonymous sign-ins are disabled")
-          ? "Anonymous sign-ins are disabled. Please enable them in Supabase Dashboard > Auth > Providers"
-          : error.message || "Failed to sign in anonymously. Please try again."
-      );
-    }
+    // Reset state when signing out to ensure clean state for next sign in
+    setOnboardingChecked(false);
+    isRouting.current = false;
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut, devBypass }}>
+    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut }}>
       {children}
     </AuthContext.Provider>
   );

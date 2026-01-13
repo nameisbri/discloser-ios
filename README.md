@@ -105,7 +105,7 @@ The app is already configured with:
 - ✅ `usesAppleSignIn: true` in iOS config
 - ✅ Bundle identifier: `com.discloser-ios.app`
 
-**Note**: For development builds, you can use the "Skip Login" option which uses anonymous authentication (must be enabled in Supabase Auth settings).
+**Note**: The app requires Apple Sign-In for authentication on iOS.
 
 ### Installation
 

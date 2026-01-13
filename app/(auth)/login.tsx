@@ -6,7 +6,7 @@ import { Sparkles, Shield } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 export default function Login() {
-  const { signInWithApple, devBypass } = useAuth();
+  const { signInWithApple } = useAuth();
   const { isDark } = useTheme();
 
   // Gradient colors based on theme
@@ -76,12 +76,6 @@ export default function Login() {
             </Text>
           </View>
         )}
-
-        <Pressable onPress={devBypass} className="mt-4 py-3">
-          <Text className={`text-center font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>
-            Skip Login
-          </Text>
-        </Pressable>
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
           Your data stays yours. Always encrypted.{"\n"}
