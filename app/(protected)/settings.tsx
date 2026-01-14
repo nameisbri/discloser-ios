@@ -162,7 +162,11 @@ export default function Settings() {
         <View className={`rounded-3xl p-4 mb-6 mt-2 ${isDark ? "bg-dark-surface" : "bg-white"} border ${isDark ? "border-dark-border" : "border-border"}`}>
           <View className="flex-row items-center mb-4">
             <View className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
-              <User size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+              <Text className={`text-lg font-inter-bold ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                {profile?.first_name && profile?.last_name
+                  ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
+                  : profile?.first_name?.[0]?.toUpperCase() || "?"}
+              </Text>
             </View>
             <View className="ml-3 flex-1">
               <Text className={`text-lg font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
