@@ -62,6 +62,7 @@ export interface ShareLink {
   view_count: number;
   max_views: number | null;
   show_name: boolean;
+  display_name: string | null;
   created_at: string;
 }
 
@@ -102,8 +103,9 @@ export interface UpdateTestResultInput {
 export interface CreateShareLinkInput {
   test_result_id: string;
   expires_at: string;
-  max_views?: number;
+  max_views?: number | null;
   show_name?: boolean;
+  display_name?: string | null;
 }
 
 export interface CreateReminderInput {

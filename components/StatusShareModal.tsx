@@ -38,6 +38,13 @@ const EXPIRY_OPTIONS = [
   { label: "30 days", hours: 720 },
 ];
 
+const VIEW_LIMIT_OPTIONS = [
+  { label: "Unlimited", value: null },
+  { label: "1 view", value: 1 },
+  { label: "5 views", value: 5 },
+  { label: "10 views", value: 10 },
+];
+
 type DisplayNameOption = "anonymous" | "alias" | "firstName";
 
 interface StatusShareLink {
@@ -58,14 +65,12 @@ interface StatusShareModalProps {
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const { isDark } = useTheme();
   const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading } = useSTIStatus();
-
-  // Debug: log immediately after hook
-  console.log('[StatusShareModal] visible:', visible, 'statusLoading:', statusLoading, 'aggregatedStatus.length:', aggregatedStatus.length);
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedExpiry, setSelectedExpiry] = useState(EXPIRY_OPTIONS[1]);
+  const [selectedViewLimit, setSelectedViewLimit] = useState(VIEW_LIMIT_OPTIONS[0]);
   const [displayNameOption, setDisplayNameOption] = useState<DisplayNameOption>("anonymous");
   const [excludeKnownConditions, setExcludeKnownConditions] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -167,6 +172,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       .insert({
         user_id: user.id,
         expires_at: expiresAt,
+        max_views: selectedViewLimit.value,
         show_name: displayNameOption !== "anonymous",
         display_name: displayName,
         status_snapshot: statusSnapshot,
@@ -227,10 +233,6 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   if (!visible) return null;
 
   const statusToDisplay = getStatusToShare();
-
-  // Debug logging
-  console.log('[StatusShareModal] aggregatedStatus:', JSON.stringify(aggregatedStatus, null, 2));
-  console.log('[StatusShareModal] statusToDisplay length:', statusToDisplay.length);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -314,76 +316,105 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             </Pressable>
 
             {/* Expiry Selection */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 8 }}>Self-destructs in</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-              {EXPIRY_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.hours}
-                  onPress={() => setSelectedExpiry(opt)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 20,
-                    backgroundColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.surface,
-                    borderWidth: 1,
-                    borderColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.border,
-                  }}
-                >
-                  <Text style={{ color: selectedExpiry.hours === opt.hours ? "#fff" : colors.text, fontWeight: "500" }}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              ))}
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Self-destructs in</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {EXPIRY_OPTIONS.map((opt) => (
+                  <Pressable
+                    key={opt.hours}
+                    onPress={() => setSelectedExpiry(opt)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: 16,
+                      backgroundColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.surface,
+                      borderWidth: 1,
+                      borderColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: "500", color: selectedExpiry.hours === opt.hours ? "#fff" : colors.text }}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            {/* View Limit */}
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>View limit</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {VIEW_LIMIT_OPTIONS.map((opt) => (
+                  <Pressable
+                    key={opt.label}
+                    onPress={() => setSelectedViewLimit(opt)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: 16,
+                      backgroundColor: selectedViewLimit.value === opt.value ? colors.primary : colors.surface,
+                      borderWidth: 1,
+                      borderColor: selectedViewLimit.value === opt.value ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: "500", color: selectedViewLimit.value === opt.value ? "#fff" : colors.text }}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
 
             {/* Display Name Selection */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 8 }}>How to identify yourself</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-              <Pressable
-                onPress={() => setDisplayNameOption("anonymous")}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 20,
-                  backgroundColor: displayNameOption === "anonymous" ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: displayNameOption === "anonymous" ? colors.primary : colors.border,
-                }}
-              >
-                <Text style={{ color: displayNameOption === "anonymous" ? "#fff" : colors.text, fontWeight: "500" }}>
-                  Anonymous
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setDisplayNameOption("alias")}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 20,
-                  backgroundColor: displayNameOption === "alias" ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: displayNameOption === "alias" ? colors.primary : colors.border,
-                }}
-              >
-                <Text style={{ color: displayNameOption === "alias" ? "#fff" : colors.text, fontWeight: "500" }}>
-                  {userProfile?.alias || "Alias"}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setDisplayNameOption("firstName")}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 20,
-                  backgroundColor: displayNameOption === "firstName" ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: displayNameOption === "firstName" ? colors.primary : colors.border,
-                }}
-              >
-                <Text style={{ color: displayNameOption === "firstName" ? "#fff" : colors.text, fontWeight: "500" }}>
-                  First Name
-                </Text>
-              </Pressable>
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>How to identify yourself</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                <Pressable
+                  onPress={() => setDisplayNameOption("anonymous")}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: displayNameOption === "anonymous" ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: displayNameOption === "anonymous" ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "anonymous" ? "#fff" : colors.text }}>
+                    Anonymous
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDisplayNameOption("alias")}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: displayNameOption === "alias" ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: displayNameOption === "alias" ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "alias" ? "#fff" : colors.text }}>
+                    {userProfile?.alias || "Alias"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDisplayNameOption("firstName")}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: displayNameOption === "firstName" ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: displayNameOption === "firstName" ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "firstName" ? "#fff" : colors.text }}>
+                    First Name
+                  </Text>
+                </Pressable>
+              </View>
             </View>
 
             {/* Exclude Known Conditions Toggle */}
@@ -396,10 +427,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                   justifyContent: "space-between",
                   padding: 16,
                   backgroundColor: colors.surface,
-                  borderRadius: 12,
+                  borderRadius: 16,
                   borderWidth: 1,
                   borderColor: colors.border,
-                  marginBottom: 24,
+                  marginBottom: 32,
                 }}
               >
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -414,7 +445,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             )}
 
             <Button
-              label={creating ? "On it..." : "Make it happen"}
+              label={creating ? "Creating..." : "Create Link"}
               onPress={handleCreate}
               disabled={creating}
             />

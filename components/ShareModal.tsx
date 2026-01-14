@@ -26,8 +26,11 @@ import {
 } from "lucide-react-native";
 import { useShareLinks, getShareUrl } from "../lib/hooks/useShareLinks";
 import { useTheme } from "../context/theme";
+import { supabase } from "../lib/supabase";
 import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
+
+type DisplayNameOption = "anonymous" | "alias" | "firstName";
 import type { ShareLink } from "../lib/types";
 
 type ExpiryOption = {
@@ -63,10 +66,11 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   const [view, setView] = useState<"list" | "create" | "qr" | "preview">("list");
   const [selectedExpiry, setSelectedExpiry] = useState(EXPIRY_OPTIONS[1]);
   const [selectedViewLimit, setSelectedViewLimit] = useState(VIEW_LIMIT_OPTIONS[0]);
-  const [showName, setShowName] = useState(false);
+  const [displayNameOption, setDisplayNameOption] = useState<DisplayNameOption>("anonymous");
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<ShareLink | null>(null);
+  const [userProfile, setUserProfile] = useState<{ first_name: string | null; alias: string | null } | null>(null);
 
   // Theme colors
   const colors = useMemo(() => ({
@@ -88,9 +92,29 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   useEffect(() => {
     if (visible && testResultId) {
       fetchLinks();
+      fetchUserProfile();
       setView("list");
     }
   }, [visible, testResultId, fetchLinks]);
+
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("first_name, alias")
+      .eq("id", user.id)
+      .single();
+    setUserProfile(data);
+  };
+
+  const getDisplayName = (): string | null => {
+    if (displayNameOption === "anonymous") return null;
+    if (displayNameOption === "alias") return userProfile?.alias || null;
+    if (displayNameOption === "firstName") return userProfile?.first_name || null;
+    return null;
+  };
 
   const handleCreate = async () => {
     setCreating(true);
@@ -101,7 +125,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
     const link = await createShareLink({
       expires_at: expiresAt,
       max_views: selectedViewLimit.value,
-      show_name: showName,
+      show_name: displayNameOption !== "anonymous",
+      display_name: getDisplayName(),
     });
 
     setCreating(false);
@@ -109,7 +134,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       setView("list");
       setSelectedExpiry(EXPIRY_OPTIONS[1]);
       setSelectedViewLimit(VIEW_LIMIT_OPTIONS[0]);
-      setShowName(false);
+      setDisplayNameOption("anonymous");
     } else {
       Alert.alert("Error", "Failed to create share link");
     }
@@ -315,49 +340,60 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
               </View>
             </View>
 
-            {/* Show Name Toggle */}
-            <Pressable
-              onPress={() => setShowName(!showName)}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 16,
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.border,
-                marginBottom: 32,
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surfaceLight, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
-                  <User size={20} color={colors.text} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>Let them know it's you</Text>
-                  <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                    Your name shows on the shared result
+            {/* Display Name Selection */}
+            <View style={{ marginBottom: 32 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>How to identify yourself</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                <Pressable
+                  onPress={() => setDisplayNameOption("anonymous")}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: displayNameOption === "anonymous" ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: displayNameOption === "anonymous" ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "anonymous" ? "#fff" : colors.text }}>
+                    Anonymous
                   </Text>
-                </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDisplayNameOption("alias")}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: displayNameOption === "alias" ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: displayNameOption === "alias" ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "alias" ? "#fff" : colors.text }}>
+                    {userProfile?.alias || "Alias"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDisplayNameOption("firstName")}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: displayNameOption === "firstName" ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: displayNameOption === "firstName" ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "firstName" ? "#fff" : colors.text }}>
+                    First Name
+                  </Text>
+                </Pressable>
               </View>
-              <View
-                style={{
-                  width: 48,
-                  height: 28,
-                  borderRadius: 14,
-                  justifyContent: "center",
-                  padding: 2,
-                  backgroundColor: showName ? colors.primary : colors.surfaceLight,
-                  alignItems: showName ? "flex-end" : "flex-start",
-                }}
-              >
-                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "white" }} />
-              </View>
-            </Pressable>
+            </View>
 
             <Button
-              label={creating ? "On it..." : "Make it happen"}
+              label={creating ? "Creating..." : "Create Link"}
               onPress={handleCreate}
               disabled={creating}
               icon={
