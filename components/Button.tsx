@@ -114,8 +114,9 @@ export function Button({
   className,
   textClassName,
   icon,
+  disabled,
   ...props
-}: ButtonProps) {
+}: ButtonProps & { disabled?: boolean }) {
   const { isDark } = useTheme();
 
   const buttonVariants = isDark ? buttonVariantsDark : buttonVariantsLight;
@@ -124,6 +125,8 @@ export function Button({
   return (
     <Pressable
       className={cn(buttonVariants({ variant, size }), className)}
+      disabled={disabled}
+      style={disabled ? { opacity: 0.5 } : undefined}
       {...props}
     >
       {icon && <View className="mr-2">{icon}</View>}
