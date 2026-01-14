@@ -9,9 +9,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ChevronRight, ChevronLeft, User, Calendar, Heart, Activity } from "lucide-react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTheme } from "../../context/theme";
 import { useProfile } from "../../lib/hooks";
 import { Button } from "../../components/Button";
@@ -84,7 +86,8 @@ export default function Onboarding() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [alias, setAlias] = useState("");
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [pronouns, setPronouns] = useState("");
 
   // Step 2: Known conditions
@@ -111,8 +114,8 @@ export default function Onboarding() {
       Alert.alert("Required", "Please choose an alias");
       return false;
     }
-    if (!dob.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-      Alert.alert("Required", "Please enter your date of birth (YYYY-MM-DD)");
+    if (!dob) {
+      Alert.alert("Required", "Please select your date of birth");
       return false;
     }
     return true;
@@ -186,6 +189,9 @@ export default function Onboarding() {
         added_at: new Date().toISOString(),
       }));
 
+      // Format DOB as YYYY-MM-DD for database
+      const formattedDob = dob ? dob.toISOString().split("T")[0] : null;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase
         .from("profiles") as any)
@@ -193,7 +199,7 @@ export default function Onboarding() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           alias: alias.trim(),
-          date_of_birth: dob,
+          date_of_birth: formattedDob,
           pronouns: pronouns || null,
           known_conditions: knownConditions,
           risk_level: riskLevel,
@@ -317,14 +323,68 @@ export default function Onboarding() {
                   <Text className={`text-xs mb-2 ${textSecondary}`}>
                     Used to verify your test results match your records
                   </Text>
-                  <TextInput
-                    value={dob}
-                    onChangeText={setDob}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={isDark ? "#6B6B6B" : "#9CA3AF"}
-                    keyboardType="numbers-and-punctuation"
-                    className={`px-4 py-3 rounded-xl border ${inputBg} ${inputBorder} ${textColor}`}
-                  />
+                  <Pressable
+                    onPress={() => setShowDatePicker(true)}
+                    className={`px-4 py-3 rounded-xl border flex-row items-center justify-between ${inputBg} ${inputBorder}`}
+                  >
+                    <Text className={dob ? textColor : (isDark ? "text-[#6B6B6B]" : "text-[#9CA3AF]")}>
+                      {dob
+                        ? dob.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                        : "Select your date of birth"}
+                    </Text>
+                    <Calendar size={20} color={isDark ? "#6B6B6B" : "#9CA3AF"} />
+                  </Pressable>
+
+                  {/* Date Picker Modal for iOS / Direct picker for Android */}
+                  {Platform.OS === "ios" ? (
+                    <Modal
+                      visible={showDatePicker}
+                      transparent
+                      animationType="slide"
+                    >
+                      <Pressable
+                        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+                        onPress={() => setShowDatePicker(false)}
+                      >
+                        <View className={`rounded-t-3xl ${isDark ? "bg-dark-surface" : "bg-white"}`}>
+                          <View className="flex-row justify-between items-center px-4 py-3 border-b border-gray-200">
+                            <Pressable onPress={() => setShowDatePicker(false)}>
+                              <Text className={isDark ? "text-dark-accent" : "text-primary"}>Cancel</Text>
+                            </Pressable>
+                            <Text className={`font-inter-semibold ${textColor}`}>Date of Birth</Text>
+                            <Pressable onPress={() => setShowDatePicker(false)}>
+                              <Text className={`font-inter-semibold ${isDark ? "text-dark-accent" : "text-primary"}`}>Done</Text>
+                            </Pressable>
+                          </View>
+                          <DateTimePicker
+                            value={dob || new Date(2000, 0, 1)}
+                            mode="date"
+                            display="spinner"
+                            maximumDate={new Date()}
+                            minimumDate={new Date(1920, 0, 1)}
+                            onChange={(_, selectedDate) => {
+                              if (selectedDate) setDob(selectedDate);
+                            }}
+                            style={{ height: 200 }}
+                          />
+                        </View>
+                      </Pressable>
+                    </Modal>
+                  ) : (
+                    showDatePicker && (
+                      <DateTimePicker
+                        value={dob || new Date(2000, 0, 1)}
+                        mode="date"
+                        display="default"
+                        maximumDate={new Date()}
+                        minimumDate={new Date(1920, 0, 1)}
+                        onChange={(_, selectedDate) => {
+                          setShowDatePicker(false);
+                          if (selectedDate) setDob(selectedDate);
+                        }}
+                      />
+                    )
+                  )}
                 </View>
 
                 <View>
