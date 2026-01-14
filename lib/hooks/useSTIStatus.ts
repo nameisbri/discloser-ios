@@ -23,10 +23,14 @@ export function useSTIStatus() {
     const stiMap = new Map<string, AggregatedSTI>();
     const knownConditions = profile?.known_conditions || [];
 
+    // Debug: log what results we're processing
+    console.log('[useSTIStatus] Processing', results.length, 'results');
+
     // Process all results, keeping most recent per STI
     for (const result of results) {
       // Handle sti_results that might be null, undefined, or invalid
       const stiResults = result.sti_results;
+      console.log('[useSTIStatus] Result', result.id, 'sti_results:', typeof stiResults, Array.isArray(stiResults) ? stiResults.length : 'not array');
       if (!stiResults || !Array.isArray(stiResults) || stiResults.length === 0) continue;
 
       for (const sti of stiResults) {

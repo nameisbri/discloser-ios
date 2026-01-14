@@ -225,6 +225,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
   const statusToDisplay = getStatusToShare();
 
+  // Debug logging
+  console.log('[StatusShareModal] aggregatedStatus:', JSON.stringify(aggregatedStatus, null, 2));
+  console.log('[StatusShareModal] statusToDisplay length:', statusToDisplay.length);
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
