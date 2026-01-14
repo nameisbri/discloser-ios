@@ -58,6 +58,9 @@ interface StatusShareModalProps {
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const { isDark } = useTheme();
   const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading } = useSTIStatus();
+
+  // Debug: log immediately after hook
+  console.log('[StatusShareModal] visible:', visible, 'statusLoading:', statusLoading, 'aggregatedStatus.length:', aggregatedStatus.length);
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
   const [loading, setLoading] = useState(false);
