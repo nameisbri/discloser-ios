@@ -3,4 +3,4 @@
 export { parseDocument } from './documentParser';
 export { normalizeTestName, isStatusSTI } from './testNormalizer';
 export { standardizeResult } from './resultStandardizer';
-export type { ParsedDocument, ParsedTest, LLMResponse } from './types';
+export type { ParsedDocument, ParsedTest, LLMResponse, UserProfileForVerification } from './types';

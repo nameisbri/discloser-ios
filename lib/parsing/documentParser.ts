@@ -4,7 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { parseDocumentWithLLM } from './llmParser';
 import { normalizeTestName } from './testNormalizer';
 import { standardizeResult } from './resultStandardizer';
-import { ParsedDocument, ParsedTest, LLMResponse } from './types';
+import { ParsedDocument, ParsedTest, LLMResponse, UserProfileForVerification } from './types';
 
 // Recognized Canadian labs
 const CANADIAN_LABS = [
@@ -57,10 +57,14 @@ async function extractTextFromImage(uri: string): Promise<string> {
 
 /**
  * Main function to parse an image and extract STI test results
+ * @param uri - Image URI to parse
+ * @param mimeType - MIME type of the image
+ * @param userProfile - Optional user profile for name verification matching
  */
 export async function parseDocument(
   uri: string,
-  mimeType: string
+  mimeType: string,
+  userProfile?: UserProfileForVerification
 ): Promise<ParsedDocument> {
   try {
     // Step 1: Extract text from image using OCR
@@ -91,8 +95,8 @@ export async function parseDocument(
     // Step 5: Format collection date
     const collectionDate = formatDate(llmResponse.collection_date);
 
-    // Step 6: Verify document authenticity
-    const verification = verifyDocument(llmResponse);
+    // Step 6: Verify document authenticity (includes name matching if profile provided)
+    const verification = verifyDocument(llmResponse, userProfile);
 
     return {
       collectionDate,
@@ -174,17 +178,65 @@ function formatDate(dateString: string | null): string | null {
 }
 
 /**
- * Verifies document authenticity based on extracted fields
- * Requires: recognized lab + (health card OR accession number)
+ * Normalizes a name for comparison: lowercase, trim, remove extra spaces
  */
-function verifyDocument(llm: LLMResponse) {
+function normalizeName(name: string): string {
+  return name.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Checks if the extracted patient name matches the user's profile name
+ * Uses fuzzy matching - names don't need to be in exact order
+ */
+function matchNames(extractedName: string | undefined, userProfile?: UserProfileForVerification): boolean {
+  if (!extractedName || !userProfile) return false;
+  if (!userProfile.first_name && !userProfile.last_name) return false;
+
+  const normalizedExtracted = normalizeName(extractedName);
+  const extractedParts = normalizedExtracted.split(' ').filter(p => p.length > 0);
+
+  // Build user name parts
+  const userParts: string[] = [];
+  if (userProfile.first_name) {
+    userParts.push(...normalizeName(userProfile.first_name).split(' '));
+  }
+  if (userProfile.last_name) {
+    userParts.push(...normalizeName(userProfile.last_name).split(' '));
+  }
+
+  if (userParts.length === 0) return false;
+
+  // Check if all user name parts appear in the extracted name
+  // This handles name order differences (e.g., "Smith John" vs "John Smith")
+  const matchedParts = userParts.filter(part =>
+    extractedParts.some(extracted =>
+      extracted === part || extracted.includes(part) || part.includes(extracted)
+    )
+  );
+
+  // Require at least 2 parts to match (first + last), or all parts if user only has 1-2
+  const requiredMatches = Math.min(2, userParts.length);
+  return matchedParts.length >= requiredMatches;
+}
+
+/**
+ * Verifies document authenticity based on extracted fields
+ * Requires: recognized lab + (health card OR accession number) + name match (if profile provided)
+ */
+function verifyDocument(llm: LLMResponse, userProfile?: UserProfileForVerification) {
   const labName = llm.lab_name?.toLowerCase() || '';
   const isRecognizedLab = CANADIAN_LABS.some(lab => labName.includes(lab));
   const hasHealthCard = llm.health_card_present === true;
   const hasAccession = !!llm.accession_number;
+  const nameMatched = matchNames(llm.patient_name, userProfile);
 
-  // Verified if from recognized lab AND has at least one identifier
-  const isVerified = isRecognizedLab && (hasHealthCard || hasAccession);
+  // Verified if:
+  // 1. From recognized lab AND
+  // 2. Has at least one identifier (health card OR accession number) AND
+  // 3. Name matches user profile (if profile was provided)
+  const hasValidIdentifier = hasHealthCard || hasAccession;
+  const nameCheckPassed = userProfile ? nameMatched : true; // Skip name check if no profile
+  const isVerified = isRecognizedLab && hasValidIdentifier && nameCheckPassed;
 
   return {
     isVerified,
@@ -193,6 +245,7 @@ function verifyDocument(llm: LLMResponse) {
       patientName: llm.patient_name,
       hasHealthCard,
       hasAccessionNumber: hasAccession,
+      nameMatched,
     },
   };
 }

@@ -191,7 +191,11 @@ export default function Upload() {
       // Parse all selected files
       let verified = false;
       for (const file of selectedFiles) {
-        const parsed = await parseDocument(file.uri, "image/jpeg");
+        const parsed = await parseDocument(
+          file.uri,
+          "image/jpeg",
+          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined
+        );
 
         if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
         if (!testType && parsed.testType) testType = parsed.testType;
