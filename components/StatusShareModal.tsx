@@ -23,6 +23,7 @@ import {
   Calendar,
   ShieldCheck,
   ChevronDown,
+  Smartphone,
 } from "lucide-react-native";
 import { useSTIStatus } from "../lib/hooks";
 import { useTheme } from "../context/theme";
@@ -427,45 +428,71 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <Text style={{ color: colors.textSecondary, textAlign: "center", padding: 20 }}>No links yet. Create one above.</Text>
             ) : (
               links.map((link) => (
-                <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Clock size={14} color={colors.textSecondary} />
-                      <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
-                    </View>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <Eye size={14} color={colors.textSecondary} />
-                      <Text style={{ marginLeft: 4, fontSize: 12, color: colors.textSecondary }}>{link.view_count} views</Text>
+                <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                          <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
+                        </View>
+                        {link.show_name && (
+                          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight }}>
+                            <Text style={{ fontSize: 12, fontWeight: "500", color: colors.primary }}>Name visible</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+                        <Eye size={14} color={colors.textSecondary} />
+                        <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
+                          {link.view_count} view{link.view_count !== 1 ? "s" : ""}
+                          {link.max_views && ` / ${link.max_views} max`}
+                        </Text>
+                      </View>
                     </View>
                   </View>
 
                   <View style={{ flexDirection: "row", gap: 8 }}>
                     <Pressable
                       onPress={() => handleCopy(link)}
-                      style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 10, backgroundColor: colors.primaryLight, borderRadius: 8 }}
+                      style={{
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        backgroundColor: copiedId === link.id ? colors.successLight : colors.primaryLight,
+                      }}
                     >
-                      {copiedId === link.id ? <Check size={16} color={colors.primary} /> : <Copy size={16} color={colors.primary} />}
-                      <Text style={{ marginLeft: 6, color: colors.primary, fontWeight: "600" }}>
-                        {copiedId === link.id ? "Copied!" : "Copy"}
+                      {copiedId === link.id ? (
+                        <Check size={18} color={colors.success} />
+                      ) : (
+                        <Copy size={18} color={colors.primary} />
+                      )}
+                      <Text style={{ fontSize: 14, fontWeight: "500", color: copiedId === link.id ? colors.success : colors.primary, marginLeft: 8 }}>
+                        {copiedId === link.id ? "Copied" : "Copy"}
                       </Text>
                     </Pressable>
-                    <Pressable
-                      onPress={() => { setQrLink(link); setView("qr"); }}
-                      style={{ padding: 10, backgroundColor: colors.surfaceLight, borderRadius: 8 }}
-                    >
-                      <QrCode size={16} color={colors.primary} />
-                    </Pressable>
+
                     <Pressable
                       onPress={() => { setPreviewLink(link); setView("recipient"); }}
-                      style={{ padding: 10, backgroundColor: colors.surfaceLight, borderRadius: 8 }}
+                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
                     >
-                      <Eye size={16} color={colors.primary} />
+                      <Smartphone size={18} color={colors.text} />
                     </Pressable>
+
+                    <Pressable
+                      onPress={() => { setQrLink(link); setView("qr"); }}
+                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
+                    >
+                      <QrCode size={18} color={colors.text} />
+                    </Pressable>
+
                     <Pressable
                       onPress={() => handleDelete(link.id)}
-                      style={{ padding: 10, backgroundColor: colors.dangerLight, borderRadius: 8 }}
+                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight }}
                     >
-                      <Trash2 size={16} color={colors.danger} />
+                      <Trash2 size={18} color={colors.danger} />
                     </Pressable>
                   </View>
                 </View>
