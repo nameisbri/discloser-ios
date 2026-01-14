@@ -1,8 +1,8 @@
 import { View, Text, Pressable, ScrollView, SafeAreaView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useAuth } from "../../context/auth";
 import { useTheme, ThemeMode } from "../../context/theme";
-import { User, Bell, Shield, HelpCircle, LogOut, ChevronRight, ChevronLeft, Mail, Trash2, Activity, Moon, Sun, Smartphone, Heart } from "lucide-react-native";
-import { useProfile } from "../../lib/hooks";
+import { User, Bell, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock } from "lucide-react-native";
+import { useProfile, useTestResults, useReminders } from "../../lib/hooks";
 import { RiskAssessment } from "../../components/RiskAssessment";
 import { KnownConditionsModal } from "../../components/KnownConditionsModal";
 import { useRouter } from "expo-router";
@@ -24,7 +24,20 @@ export default function Settings() {
   const router = useRouter();
   const { signOut, session } = useAuth();
   const { profile, refetch: refetchProfile, addKnownCondition, removeKnownCondition } = useProfile();
+  const { results } = useTestResults();
+  const { activeReminders } = useReminders();
   const { theme, setTheme, isDark } = useTheme();
+
+  // Compute stats
+  const lastTestDate = results.length > 0
+    ? new Date(results.sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())[0].test_date)
+    : null;
+  const nextReminder = activeReminders.length > 0
+    ? new Date(activeReminders.sort((a, b) => new Date(a.next_date).getTime() - new Date(b.next_date).getTime())[0].next_date)
+    : null;
+  const testingFrequency = profile?.risk_level
+    ? { low: "Yearly", moderate: "Every 6 mo", high: "Every 3 mo" }[profile.risk_level]
+    : null;
   const [notifications, setNotifications] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -145,18 +158,58 @@ export default function Settings() {
         <View className="w-8" />
       </View>
       <ScrollView className="flex-1 px-6">
-        <View className="items-center py-4">
-          <View className={`w-24 h-24 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
-            <User size={48} color={isDark ? "#FF2D7A" : "#923D5C"} />
+        {/* Stats Header */}
+        <View className={`rounded-3xl p-4 mb-6 mt-2 ${isDark ? "bg-dark-surface" : "bg-white"} border ${isDark ? "border-dark-border" : "border-border"}`}>
+          <View className="flex-row items-center mb-4">
+            <View className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
+              <User size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className={`text-lg font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
+                {profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "User"}
+              </Text>
+              {profile?.alias && (
+                <Text className={`text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                  @{profile.alias}
+                </Text>
+              )}
+            </View>
           </View>
-          <Text className={`text-2xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-            {profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : session?.user?.email?.split('@')[0] || "User"}
-          </Text>
-          <View className="flex-row items-center mt-1">
-            <Mail size={14} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
-            <Text className={`font-inter-regular ml-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-              {session?.user?.email}
-            </Text>
+
+          <View className="flex-row gap-3">
+            <View className={`flex-1 p-3 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
+              <View className="flex-row items-center mb-1">
+                <Calendar size={14} color={isDark ? "#00E5A0" : "#10B981"} />
+                <Text className={`text-xs ml-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>Last test</Text>
+              </View>
+              <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                {lastTestDate
+                  ? lastTestDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : "None yet"}
+              </Text>
+            </View>
+
+            <View className={`flex-1 p-3 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
+              <View className="flex-row items-center mb-1">
+                <Clock size={14} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                <Text className={`text-xs ml-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>Next due</Text>
+              </View>
+              <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                {nextReminder
+                  ? nextReminder.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : "Not set"}
+              </Text>
+            </View>
+
+            <View className={`flex-1 p-3 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
+              <View className="flex-row items-center mb-1">
+                <Activity size={14} color={isDark ? "#C9A0DC" : "#7C3AED"} />
+                <Text className={`text-xs ml-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>Frequency</Text>
+              </View>
+              <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                {testingFrequency || "Not set"}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -250,35 +303,15 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Your data
+          Danger zone
         </Text>
 
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
-          <SettingsItem
-            icon={<Shield size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
-            title="Privacy Policy"
-            showChevron
-            isDark={isDark}
-          />
-          <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
           <SettingsItem
             icon={<Trash2 size={20} color="#DC3545" />}
             title="Start fresh"
             onPress={handleDeleteAllData}
             danger
-            isDark={isDark}
-          />
-        </View>
-
-        <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Need help?
-        </Text>
-
-        <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
-          <SettingsItem
-            icon={<HelpCircle size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
-            title="Get support"
-            showChevron
             isDark={isDark}
           />
         </View>
