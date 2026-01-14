@@ -19,7 +19,13 @@ export interface ParsedDocument {
     patientName?: string;
     hasHealthCard: boolean;
     hasAccessionNumber: boolean;
+    nameMatched: boolean;
   };
+}
+
+export interface UserProfileForVerification {
+  first_name: string | null;
+  last_name: string | null;
 }
 
 export interface LLMResponse {
