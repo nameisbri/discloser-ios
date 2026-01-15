@@ -211,8 +211,7 @@ export default function Home() {
             variants={fadeUp}
             className="text-lg sm:text-xl text-white/60 max-w-xl mx-auto mb-10"
           >
-            The smart way to share STI results without exposing your identity to
-            someone you just met.
+            Being responsible shouldn't cost you your privacy.
           </motion.p>
         </motion.div>
 
@@ -492,7 +491,7 @@ export default function Home() {
             {
               icon: "📸",
               title: "Upload",
-              desc: "Snap a photo of your results or import from files",
+              desc: "Take a photo of your results or import from files",
             },
             {
               icon: "⏱",

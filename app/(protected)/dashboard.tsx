@@ -63,9 +63,9 @@ export default function Dashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Rise and shine";
-    if (hour < 18) return "Hey there";
-    return "Evening, you";
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
   };
 
   // Dark mode gradient colors
@@ -119,7 +119,7 @@ export default function Dashboard() {
             <View className={`flex-row items-center self-start px-4 py-2 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-white/20"}`}>
               <ShieldCheck size={16} color={isDark ? "#00E5A0" : "#10B981"} />
               <Text className="text-white font-inter-semibold ml-2 text-sm">
-                All clear. Go be adventurous.
+                All clear. Share with confidence.
               </Text>
             </View>
           )}
@@ -214,7 +214,7 @@ export default function Dashboard() {
             >
               <Bell size={20} color={isDark ? "#FF6B8A" : "#FF6B8A"} />
               <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-coral" : "text-accent-dark"}`}>
-                Stay on top of it
+                No reminders set. Stay proactive with testing.
               </Text>
             </Pressable>
           )}
