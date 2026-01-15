@@ -85,7 +85,7 @@ export default function Login() {
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
           Your data stays yours. Always encrypted.{"\n"}
-          Share smart, not sorry.
+          Be adventurous. Stay anonymous.
         </Text>
       </View>
     </View>

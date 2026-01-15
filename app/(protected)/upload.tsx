@@ -396,15 +396,15 @@ export default function Upload() {
           <View className="gap-4">
             <UploadOption
               icon={<Camera size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Snap it"
+              title="Take a photo"
               description="Take a photo of your results"
               onPress={() => pickImage(true)}
               isDark={isDark}
             />
             <UploadOption
               icon={<ImageIcon size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Pick from photos"
-              description="Already got it saved? Perfect."
+              title="Choose from photos"
+              description="Already have it saved? Perfect."
               onPress={() => pickImage(false)}
               isDark={isDark}
             />
@@ -559,7 +559,7 @@ export default function Upload() {
             <View className={`p-6 rounded-3xl items-center mb-6 ${isDark ? "bg-dark-surface" : "bg-primary-light/20"}`}>
               <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
               <Text className={`mt-4 text-xl font-inter-bold text-center ${isDark ? "text-dark-text" : "text-primary-dark"}`}>
-                Working some magic...
+                Processing your results...
               </Text>
               <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
                 Reading {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''}
