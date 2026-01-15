@@ -119,11 +119,20 @@ export function useSharedResult(token: string | undefined) {
       if (fetchError) throw fetchError;
       
       if (data && data.length > 0) {
-        setResult(data[0]);
-        // Increment view count
-        await supabase.rpc("increment_share_view", { share_token: token });
+        const result = data[0];
+        if (result.is_valid) {
+          setResult(result);
+        } else {
+          setError(
+            result.is_expired
+              ? "This link has expired"
+              : result.is_over_limit
+              ? "Maximum views reached"
+              : "Invalid share link"
+          );
+        }
       } else {
-        setError("Share link is invalid or expired");
+        setError("Share link not found");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch shared result");

@@ -66,6 +66,19 @@ export interface ShareLink {
   created_at: string;
 }
 
+export interface StatusShareLink {
+  id: string;
+  user_id: string;
+  token: string;
+  expires_at: string;
+  view_count: number;
+  max_views: number | null;
+  show_name: boolean;
+  display_name: string | null;
+  status_snapshot: unknown[];
+  created_at: string;
+}
+
 export interface Reminder {
   id: string;
   user_id: string;
@@ -131,6 +144,9 @@ export interface SharedResult {
   is_verified: boolean;
   show_name: boolean;
   display_name: string | null;
+  is_valid: boolean;
+  is_expired: boolean;
+  is_over_limit: boolean;
 }
 
 // Supabase Database type helper
@@ -150,6 +166,11 @@ export interface Database {
       share_links: {
         Row: ShareLink;
         Insert: CreateShareLinkInput & { user_id: string };
+        Update: never;
+      };
+      status_share_links: {
+        Row: StatusShareLink;
+        Insert: Omit<StatusShareLink, "id" | "created_at">;
         Update: never;
       };
       reminders: {
