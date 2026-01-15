@@ -30,6 +30,7 @@ import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { supabase } from "../lib/supabase";
 import { formatDate } from "../lib/utils/date";
+import type { StatusShareLink, Database } from "../lib/types";
 
 const EXPIRY_OPTIONS = [
   { label: "1 hour", hours: 1 },
@@ -46,16 +47,6 @@ const VIEW_LIMIT_OPTIONS = [
 ];
 
 type DisplayNameOption = "anonymous" | "alias" | "firstName";
-
-interface StatusShareLink {
-  id: string;
-  token: string;
-  expires_at: string;
-  view_count: number;
-  max_views: number | null;
-  show_name: boolean;
-  created_at: string;
-}
 
 interface StatusShareModalProps {
   visible: boolean;
@@ -145,7 +136,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
 
-    setLinks(data || []);
+    // Filter out links at max_views
+    const activeLinks = (data || []).filter(
+      (link: StatusShareLink) => link.max_views === null || link.view_count < link.max_views
+    );
+
+    setLinks(activeLinks);
     setLoading(false);
   };
 
@@ -176,7 +172,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
         show_name: displayNameOption !== "anonymous",
         display_name: displayName,
         status_snapshot: statusSnapshot,
-      })
+      } as any)
       .select()
       .single();
 

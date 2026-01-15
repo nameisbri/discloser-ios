@@ -330,24 +330,81 @@ returns table (
   sti_results jsonb,
   is_verified boolean,
   show_name boolean,
-  display_name text
+  display_name text,
+  is_valid boolean,
+  is_expired boolean,
+  is_over_limit boolean
 ) as $$
+declare
+  link_record record;
 begin
-  return query
-  select 
+  -- First, find the link
+  select sl.* into link_record
+  from public.share_links sl
+  where sl.token = share_token;
+
+  -- If not found, return nothing
+  if link_record is null then
+    return;
+  end if;
+
+  -- Check if expired
+  if link_record.expires_at <= now() then
+    return query select
+      tr.test_date,
+      tr.status,
+      tr.test_type,
+      tr.sti_results,
+      tr.is_verified,
+      link_record.show_name,
+      case when link_record.show_name then p.display_name else null end,
+      false as is_valid,
+      true as is_expired,
+      false as is_over_limit
+    from public.test_results tr
+    left join public.profiles p on p.id = link_record.user_id
+    where tr.id = link_record.test_result_id;
+    return;
+  end if;
+
+  -- Check if over view limit
+  if link_record.max_views is not null and link_record.view_count >= link_record.max_views then
+    return query select
+      tr.test_date,
+      tr.status,
+      tr.test_type,
+      tr.sti_results,
+      tr.is_verified,
+      link_record.show_name,
+      case when link_record.show_name then p.display_name else null end,
+      false as is_valid,
+      false as is_expired,
+      true as is_over_limit
+    from public.test_results tr
+    left join public.profiles p on p.id = link_record.user_id
+    where tr.id = link_record.test_result_id;
+    return;
+  end if;
+
+  -- Valid link - increment view count and return
+  update public.share_links
+  set view_count = view_count + 1
+  where token = share_token;
+
+  return query select
     tr.test_date,
     tr.status,
     tr.test_type,
     tr.sti_results,
     tr.is_verified,
-    sl.show_name,
-    case when sl.show_name then p.display_name else null end
-  from public.share_links sl
-  join public.test_results tr on tr.id = sl.test_result_id
-  left join public.profiles p on p.id = sl.user_id
-  where sl.token = share_token
-    and sl.expires_at > now()
-    and (sl.max_views is null or sl.view_count < sl.max_views);
+    link_record.show_name,
+    case when link_record.show_name then p.display_name else null end,
+    true as is_valid,
+    false as is_expired,
+    false as is_over_limit
+  from public.test_results tr
+  left join public.profiles p on p.id = link_record.user_id
+  where tr.id = link_record.test_result_id;
 end;
 $$ language plpgsql security definer;
 
