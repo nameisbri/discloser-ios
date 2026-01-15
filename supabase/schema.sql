@@ -322,7 +322,8 @@ end;
 $$ language plpgsql security definer;
 
 -- Function to get share link with test result (for public share page)
-create or replace function public.get_shared_result(share_token text)
+drop function if exists public.get_shared_result(text);
+create function public.get_shared_result(share_token text)
 returns table (
   test_date date,
   status test_status,
