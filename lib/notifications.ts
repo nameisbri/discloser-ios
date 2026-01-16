@@ -11,6 +11,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -69,7 +71,7 @@ export async function scheduleReminderNotification(
       body: title,
       data: { reminderId },
     },
-    trigger: { type: "date", date: nextDate },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: nextDate },
     identifier: `reminder-${reminderId}`,
   });
 

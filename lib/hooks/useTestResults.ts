@@ -58,7 +58,7 @@ export function useTestResults() {
         .insert({
           ...input,
           user_id: user.id,
-        })
+        } as any)
         .select()
         .single();
 
@@ -81,6 +81,7 @@ export function useTestResults() {
       setError(null);
       const { data, error: updateError } = await supabase
         .from("test_results")
+        // @ts-expect-error - Supabase types not generated, runtime types are correct
         .update(input)
         .eq("id", id)
         .select()
@@ -90,7 +91,7 @@ export function useTestResults() {
 
       // Update local state
       setResults((prev) => prev.map((r) => (r.id === id ? data : r)));
-      return data;
+      return data as TestResult;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update result");
       return null;

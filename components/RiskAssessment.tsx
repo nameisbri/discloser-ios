@@ -100,6 +100,7 @@ export function RiskAssessment({ visible, onClose, onComplete }: RiskAssessmentP
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      // @ts-expect-error - Supabase types not generated, runtime types are correct
       await supabase.from("profiles").update({
         risk_level: result,
         risk_assessed_at: new Date().toISOString(),

@@ -157,28 +157,40 @@ export interface Database {
         Row: Profile;
         Insert: Omit<Profile, "created_at" | "updated_at">;
         Update: Partial<Omit<Profile, "id" | "created_at" | "updated_at">>;
+        Relationships: [];
       };
       test_results: {
         Row: TestResult;
         Insert: CreateTestResultInput & { user_id: string };
         Update: UpdateTestResultInput;
+        Relationships: [];
       };
       share_links: {
         Row: ShareLink;
         Insert: CreateShareLinkInput & { user_id: string };
-        Update: never;
+        Update: Partial<CreateShareLinkInput>;
+        Relationships: [];
       };
       status_share_links: {
         Row: StatusShareLink;
         Insert: Omit<StatusShareLink, "id" | "created_at">;
-        Update: never;
+        Update: Partial<Omit<StatusShareLink, "id" | "created_at">>;
+        Relationships: [];
       };
       reminders: {
         Row: Reminder;
         Insert: CreateReminderInput & { user_id: string };
         Update: UpdateReminderInput;
+        Relationships: [];
+      };
+      waitlist: {
+        Row: { id: string; email: string; source: string | null; created_at: string };
+        Insert: { email: string; source?: string | null };
+        Update: { email?: string; source?: string | null };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
     Functions: {
       get_shared_result: {
         Args: { share_token: string };
@@ -186,8 +198,10 @@ export interface Database {
       };
       increment_share_view: {
         Args: { share_token: string };
-        Returns: void;
+        Returns: undefined;
       };
     };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

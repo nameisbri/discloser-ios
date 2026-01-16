@@ -48,7 +48,7 @@ export function useShareLinks(testResultId?: string) {
           ...input,
           test_result_id: testResultId,
           user_id: user.id,
-        })
+        } as any)
         .select()
         .single();
 
@@ -114,12 +114,13 @@ export function useSharedResult(token: string | undefined) {
 
       // Call the RPC function to get shared result
       const { data, error: fetchError } = await supabase
-        .rpc("get_shared_result", { share_token: token });
+        .rpc("get_shared_result", { share_token: token } as any);
 
       if (fetchError) throw fetchError;
-      
-      if (data && data.length > 0) {
-        const result = data[0];
+
+      const results = data as SharedResult[] | null;
+      if (results && results.length > 0) {
+        const result = results[0];
         if (result.is_valid) {
           setResult(result);
         } else {

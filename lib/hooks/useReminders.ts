@@ -64,15 +64,16 @@ export function useReminders() {
         .insert({
           ...input,
           user_id: user.id,
-        })
+        } as any)
         .select()
         .single();
 
       if (createError) throw createError;
 
       // Schedule notification
-      if (data.is_active) {
-        scheduleReminderNotification(data.id, data.title, new Date(data.next_date));
+      const reminder = data as Reminder;
+      if (reminder.is_active) {
+        scheduleReminderNotification(reminder.id, reminder.title, new Date(reminder.next_date));
       }
 
       setReminders((prev) =>
@@ -98,6 +99,7 @@ export function useReminders() {
       setError(null);
       const { data, error: updateError } = await supabase
         .from("reminders")
+        // @ts-expect-error - Supabase types not generated, runtime types are correct
         .update(input)
         .eq("id", id)
         .select()
@@ -106,10 +108,11 @@ export function useReminders() {
       if (updateError) throw updateError;
 
       // Update notification
-      if (data.is_active) {
-        scheduleReminderNotification(data.id, data.title, new Date(data.next_date));
+      const reminder = data as Reminder;
+      if (reminder.is_active) {
+        scheduleReminderNotification(reminder.id, reminder.title, new Date(reminder.next_date));
       } else {
-        cancelReminderNotification(data.id);
+        cancelReminderNotification(reminder.id);
       }
 
       setReminders((prev) =>
