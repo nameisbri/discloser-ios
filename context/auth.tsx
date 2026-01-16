@@ -70,12 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq("id", session.user.id)
             .single() as { data: { onboarding_completed: boolean } | null };
 
+          // Set onboardingChecked BEFORE navigating to prevent race condition
+          // where segments change triggers effect again before state updates
+          setOnboardingChecked(true);
+
           if (data?.onboarding_completed) {
             router.replace("/dashboard");
           } else {
             router.replace("/(onboarding)");
           }
-          setOnboardingChecked(true);
           return;
         }
 
