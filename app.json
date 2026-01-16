@@ -19,7 +19,8 @@
       "buildNumber": "16",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsUsageDescription": "Discloser needs calendar access to add testing reminders to your calendar."
       }
     },
     "android": {
@@ -41,6 +42,7 @@
           "sounds": []
         }
       ],
+      "expo-calendar",
       "@react-native-community/datetimepicker"
     ],
     "extra": {

@@ -1,0 +1,127 @@
+import * as Calendar from "expo-calendar";
+import { Platform, Alert } from "react-native";
+
+/**
+ * Request calendar permissions
+ * @returns true if permissions granted, false otherwise
+ */
+export async function requestCalendarPermissions(): Promise<boolean> {
+  const { status } = await Calendar.requestCalendarPermissionsAsync();
+  return status === "granted";
+}
+
+/**
+ * Get the default calendar ID for the platform
+ * Creates a new calendar if none exists
+ */
+async function getDefaultCalendarId(): Promise<string | null> {
+  const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+
+  // Find the default calendar
+  const defaultCalendar = calendars.find(
+    (cal) =>
+      cal.allowsModifications &&
+      (Platform.OS === "ios"
+        ? cal.source?.name === "iCloud" || cal.source?.name === "Default"
+        : cal.isPrimary)
+  );
+
+  if (defaultCalendar) {
+    return defaultCalendar.id;
+  }
+
+  // Fall back to any calendar that allows modifications
+  const writableCalendar = calendars.find((cal) => cal.allowsModifications);
+  if (writableCalendar) {
+    return writableCalendar.id;
+  }
+
+  // Create a new calendar if needed (Android only)
+  if (Platform.OS === "android") {
+    const newCalendarId = await Calendar.createCalendarAsync({
+      title: "Discloser Reminders",
+      color: "#923D5C",
+      entityType: Calendar.EntityTypes.EVENT,
+      source: {
+        isLocalAccount: true,
+        name: "Discloser",
+        type: Calendar.SourceType.LOCAL,
+      },
+      name: "Discloser Reminders",
+      ownerAccount: "Discloser",
+      accessLevel: Calendar.CalendarAccessLevel.OWNER,
+    });
+    return newCalendarId;
+  }
+
+  return null;
+}
+
+/**
+ * Add a reminder to the device calendar
+ * @param title - Event title
+ * @param date - Event date
+ * @param notes - Optional notes for the event
+ * @returns true if event was created, false otherwise
+ */
+export async function addToCalendar(
+  title: string,
+  date: Date,
+  notes?: string
+): Promise<boolean> {
+  try {
+    const hasPermission = await requestCalendarPermissions();
+    if (!hasPermission) {
+      Alert.alert(
+        "Calendar Access Required",
+        "Please enable calendar access in Settings to add reminders to your calendar.",
+        [{ text: "OK" }]
+      );
+      return false;
+    }
+
+    const calendarId = await getDefaultCalendarId();
+    if (!calendarId) {
+      Alert.alert(
+        "No Calendar Found",
+        "Could not find a calendar to add the event to.",
+        [{ text: "OK" }]
+      );
+      return false;
+    }
+
+    // Create an all-day event
+    const startDate = new Date(date);
+    startDate.setHours(9, 0, 0, 0); // Set to 9 AM
+
+    const endDate = new Date(startDate);
+    endDate.setHours(10, 0, 0, 0); // 1 hour event
+
+    await Calendar.createEventAsync(calendarId, {
+      title,
+      startDate,
+      endDate,
+      notes: notes || "Testing reminder from Discloser",
+      alarms: [
+        { relativeOffset: -1440 }, // 1 day before
+        { relativeOffset: -60 }, // 1 hour before
+      ],
+    });
+
+    Alert.alert(
+      "Added to Calendar",
+      `"${title}" has been added to your calendar for ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`,
+      [{ text: "Nice!" }]
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Failed to add to calendar:", error);
+    Alert.alert(
+      "Error",
+      "Failed to add event to calendar. Please try again.",
+      [{ text: "OK" }]
+    );
+    return false;
+  }
+}

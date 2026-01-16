@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import {
   Bell,
   Calendar,
+  CalendarPlus,
   Plus,
   Clock,
   CheckCircle2,
@@ -31,6 +32,7 @@ import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import type { Reminder, ReminderFrequency } from "../../lib/types";
 import { formatDate } from "../../lib/utils/date";
+import { addToCalendar } from "../../lib/calendar";
 
 const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
   { value: "monthly", label: "Monthly" },
@@ -261,6 +263,7 @@ export default function Reminders() {
                       reminder={reminder}
                       onToggle={() => handleToggleActive(reminder)}
                       onDelete={() => handleDelete(reminder)}
+                      onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date))}
                       isDark={isDark}
                     />
                   </View>
@@ -281,6 +284,7 @@ export default function Reminders() {
                         reminder={reminder}
                         onToggle={() => handleToggleActive(reminder)}
                         onDelete={() => handleDelete(reminder)}
+                        onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date))}
                         isDark={isDark}
                       />
                     </View>
@@ -386,11 +390,13 @@ function ReminderItem({
   reminder,
   onToggle,
   onDelete,
+  onAddToCalendar,
   isDark,
 }: {
   reminder: Reminder;
   onToggle: () => void;
   onDelete: () => void;
+  onAddToCalendar: () => void;
   isDark: boolean;
 }) {
   const frequencyLabels: Record<ReminderFrequency, string> = {
@@ -403,32 +409,32 @@ function ReminderItem({
   const isPast = new Date(reminder.next_date) < new Date();
 
   return (
-    <View className="flex-row items-center">
-      <View
-        className={`p-3 rounded-2xl mr-4 ${
-          reminder.is_active
-            ? isDark ? "bg-dark-accent-muted" : "bg-primary-light"
-            : isDark ? "bg-dark-surface-light" : "bg-gray-100"
-        }`}
-      >
-        <Calendar
-          size={24}
-          color={reminder.is_active ? (isDark ? "#FF2D7A" : "#923D5C") : "#9CA3AF"}
-        />
-      </View>
-      <View className="flex-1">
-        <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>
-          {reminder.title}
-        </Text>
-        <View className="flex-row items-center">
-          <Clock size={12} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
-          <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-            {frequencyLabels[reminder.frequency]} • Next:{" "}
-            {formatDate(reminder.next_date)}
-          </Text>
+    <View>
+      <View className="flex-row items-center">
+        <View
+          className={`p-3 rounded-2xl mr-4 ${
+            reminder.is_active
+              ? isDark ? "bg-dark-accent-muted" : "bg-primary-light"
+              : isDark ? "bg-dark-surface-light" : "bg-gray-100"
+          }`}
+        >
+          <Calendar
+            size={24}
+            color={reminder.is_active ? (isDark ? "#FF2D7A" : "#923D5C") : "#9CA3AF"}
+          />
         </View>
-      </View>
-      <View className="flex-row items-center gap-2">
+        <View className="flex-1">
+          <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>
+            {reminder.title}
+          </Text>
+          <View className="flex-row items-center">
+            <Clock size={12} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
+            <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+              {frequencyLabels[reminder.frequency]} • Next:{" "}
+              {formatDate(reminder.next_date)}
+            </Text>
+          </View>
+        </View>
         <Badge
           label={
             reminder.is_active ? (isPast ? "Overdue" : "Active") : "Paused"
@@ -437,8 +443,26 @@ function ReminderItem({
             reminder.is_active ? (isPast ? "warning" : "success") : "outline"
           }
         />
-        <Pressable onPress={onDelete} className="p-2">
-          <Trash2 size={16} color="#DC3545" />
+      </View>
+      {/* Action buttons */}
+      <View className="flex-row items-center justify-end mt-3 gap-2">
+        <Pressable
+          onPress={onAddToCalendar}
+          className={`flex-row items-center px-3 py-2 rounded-xl ${isDark ? "bg-dark-surface-light active:bg-dark-border" : "bg-gray-100 active:bg-gray-200"}`}
+        >
+          <CalendarPlus size={14} color={isDark ? "#00E5A0" : "#10B981"} />
+          <Text className={`text-xs font-inter-medium ml-1.5 ${isDark ? "text-dark-mint" : "text-success"}`}>
+            Add to Calendar
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onDelete}
+          className={`flex-row items-center px-3 py-2 rounded-xl ${isDark ? "bg-danger/10 active:bg-danger/20" : "bg-danger/5 active:bg-danger/10"}`}
+        >
+          <Trash2 size={14} color="#DC3545" />
+          <Text className="text-xs font-inter-medium ml-1.5 text-danger">
+            Delete
+          </Text>
         </Pressable>
       </View>
     </View>
