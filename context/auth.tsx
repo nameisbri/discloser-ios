@@ -10,7 +10,6 @@ type AuthContextType = {
   loading: boolean;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
-  devBypass: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -151,23 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isRouting.current = false;
   };
 
-  const devBypass = async () => {
-    // Use Supabase anonymous auth for testing
-    // Enable "Allow anonymous sign-ins" in Supabase Auth settings
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) {
-      console.error("Anonymous sign-in failed:", error.message);
-      Alert.alert(
-        "Sign In Failed",
-        error.message.includes("Anonymous sign-ins are disabled")
-          ? "Anonymous sign-ins are disabled. Please enable them in Supabase Dashboard > Auth > Providers"
-          : error.message || "Failed to sign in anonymously. Please try again."
-      );
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut, devBypass }}>
+    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut }}>
       {children}
     </AuthContext.Provider>
   );

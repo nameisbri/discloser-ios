@@ -124,7 +124,7 @@ export default function Settings() {
   const handleDeleteAllData = () => {
     Alert.alert(
       "Start fresh?",
-      "This wipes everything - results, reminders, links. No going back.",
+      "This wipes everything - results, reminders, links, and your profile. You'll go through setup again.",
       [
         { text: "Never mind", style: "cancel" },
         {
@@ -136,8 +136,23 @@ export default function Settings() {
             await supabase.from("share_links").delete().eq("user_id", userId);
             await supabase.from("test_results").delete().eq("user_id", userId);
             await supabase.from("reminders").delete().eq("user_id", userId);
+            // Reset profile to trigger onboarding again
+            // @ts-expect-error - Supabase types not generated, runtime types are correct
+            await supabase.from("profiles").update({
+              first_name: null,
+              last_name: null,
+              alias: null,
+              date_of_birth: null,
+              pronouns: null,
+              display_name: null,
+              risk_level: null,
+              risk_assessed_at: null,
+              known_conditions: [],
+              onboarding_completed: false,
+            }).eq("id", userId);
             await cancelAllReminderNotifications();
-            Alert.alert("Done", "Clean slate. You're good to go.");
+            // Sign out to force re-authentication and onboarding flow
+            await signOut();
           },
         },
       ]
