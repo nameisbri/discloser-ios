@@ -1,0 +1,8 @@
+---
+   description: Agentic AI development methodology
+   globs: ["**/*"]
+---
+
+Always follow the methodology in /skills/SKILL.md
+Reference /skills/PROMPTS.md for prompt templates
+Enforce /skills/FAIL-HARD.md policy
