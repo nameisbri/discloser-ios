@@ -70,9 +70,12 @@ export default function Login() {
             onPress={signInWithApple}
           />
         ) : (
-          <View className={`py-4 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-secondary-dark"}`}>
-            <Text className="text-white text-center font-inter-semibold">
-              Apple Sign-In requires iOS
+          <View className={`py-5 px-6 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-secondary/20"}`}>
+            <Text className={`text-center font-inter-semibold text-base mb-2 ${isDark ? "text-dark-text" : "text-primary"}`}>
+              Android Support Coming Soon
+            </Text>
+            <Text className={`text-center font-inter-regular text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+              Google Sign-In and email login will be available in the next update.
             </Text>
           </View>
         )}
