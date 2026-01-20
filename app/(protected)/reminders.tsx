@@ -95,7 +95,7 @@ export default function Reminders() {
 
   const handleCreateReminder = async () => {
     if (!newTitle.trim()) {
-      Alert.alert("Error", "Please enter a title for the reminder");
+      Alert.alert("Title Required", "Give your reminder a name so you know what it's for.");
       return;
     }
 
@@ -111,7 +111,7 @@ export default function Reminders() {
       setNewTitle("Routine Checkup");
       setNewFrequency("quarterly");
     } else {
-      Alert.alert("Error", "Failed to create reminder");
+      Alert.alert("Couldn't Save Reminder", "Something went wrong. Please check your connection and try again.");
     }
   };
 

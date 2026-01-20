@@ -166,7 +166,7 @@ export default function Upload() {
         setStep("preview");
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to select image. Please try again.");
+      Alert.alert("Couldn't Open Photos", "We couldn't access your photos. Please try again or check your permissions in Settings.");
     }
   };
 
@@ -343,12 +343,12 @@ export default function Upload() {
           },
         ]);
       } else {
-        Alert.alert("Error", "Failed to save test result. Please try again.");
+        Alert.alert("Couldn't Save", "Something went wrong while saving your test result. Please try again.");
       }
     } catch (error) {
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Upload failed"
+        "Upload Failed",
+        error instanceof Error ? error.message : "Something went wrong. Please check your connection and try again."
       );
     } finally {
       setUploading(false);

@@ -136,7 +136,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       setSelectedViewLimit(VIEW_LIMIT_OPTIONS[0]);
       setDisplayNameOption("anonymous");
     } else {
-      Alert.alert("Error", "Failed to create share link");
+      Alert.alert("Couldn't Create Link", "Something went wrong while creating your share link. Please check your connection and try again.");
     }
   };
 

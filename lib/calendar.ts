@@ -118,8 +118,8 @@ export async function addToCalendar(
   } catch (error) {
     console.error("Failed to add to calendar:", error);
     Alert.alert(
-      "Error",
-      "Failed to add event to calendar. Please try again.",
+      "Couldn't Add to Calendar",
+      "Something went wrong. Please try again or add the event manually.",
       [{ text: "OK" }]
     );
     return false;

@@ -111,7 +111,7 @@ export default function Settings() {
       if (error.code === "23505") {
         Alert.alert("Alias Taken", "This alias is already in use.");
       } else {
-        Alert.alert("Error", "Failed to save profile");
+        Alert.alert("Couldn't Save", "Something went wrong while saving your profile. Please try again.");
       }
       setSaving(false);
       return;

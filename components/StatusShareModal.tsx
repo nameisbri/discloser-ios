@@ -179,7 +179,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     setCreating(false);
 
     if (error) {
-      Alert.alert("Error", "Failed to create share link");
+      Alert.alert("Couldn't Create Link", "Something went wrong while creating your share link. Please check your connection and try again.");
       return;
     }
 
