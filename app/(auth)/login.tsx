@@ -4,9 +4,10 @@ import { useAuth } from "../../context/auth";
 import { useTheme } from "../../context/theme";
 import { Sparkles, Shield } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 
 export default function Login() {
-  const { signInWithApple } = useAuth();
+  const { signInWithApple, signInWithGoogle } = useAuth();
   const { isDark } = useTheme();
 
   // Gradient colors based on theme
@@ -61,7 +62,7 @@ export default function Login() {
           Your results. Your rules.
         </Text>
 
-        {Platform.OS === "ios" ? (
+        {Platform.OS === "ios" && (
           <AppleAuthentication.AppleAuthenticationButton
             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
             buttonStyle={isDark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
@@ -69,16 +70,17 @@ export default function Login() {
             style={{ width: "100%", height: 56 }}
             onPress={signInWithApple}
           />
-        ) : (
-          <View className={`py-5 px-6 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-secondary/20"}`}>
-            <Text className={`text-center font-inter-semibold text-base mb-2 ${isDark ? "text-dark-text" : "text-primary"}`}>
-              Android Support Coming Soon
-            </Text>
-            <Text className={`text-center font-inter-regular text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              Google Sign-In and email login will be available in the next update.
-            </Text>
+        )}
+
+        {Platform.OS === "ios" && (
+          <View className="flex-row items-center my-4">
+            <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
+            <Text className={`mx-4 text-sm ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>or</Text>
+            <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
           </View>
         )}
+
+        <GoogleSignInButton onPress={signInWithGoogle} isDark={isDark} />
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
           Your data stays yours. Always encrypted.{"\n"}
