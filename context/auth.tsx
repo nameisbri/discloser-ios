@@ -13,6 +13,7 @@ type AuthContextType = {
   loading: boolean;
   signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 };
 
@@ -31,6 +32,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
   const isRouting = useRef(false);
+
+  // Handle deep links for magic link authentication
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+      if (url.includes("access_token") || url.includes("refresh_token")) {
+        try {
+          // Parse tokens from URL hash
+          const hashIndex = url.indexOf("#");
+          if (hashIndex !== -1) {
+            const hash = url.substring(hashIndex + 1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get("access_token");
+            const refreshToken = params.get("refresh_token");
+
+            if (accessToken) {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || "",
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error handling magic link:", error);
+        }
+      }
+    };
+
+    // Listen for incoming links
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+
+    // Check if app was opened with a link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -218,6 +257,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithMagicLink = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const redirectUrl = Linking.createURL("auth/callback");
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+
+      if (error) {
+        console.error("Magic link error:", error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Magic link error:", error);
+      const message = error instanceof Error ? error.message : "Failed to send magic link";
+      return { success: false, error: message };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     await signOutGoogle();
@@ -227,7 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, signInWithApple, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ session, loading, signInWithApple, signInWithGoogle, signInWithMagicLink, signOut }}>
       {children}
     </AuthContext.Provider>
   );
