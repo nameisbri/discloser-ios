@@ -1,10 +1,11 @@
 import * as AppleAuthentication from "expo-apple-authentication";
-import { View, Text, Platform, Image } from "react-native";
+import { View, Text, Platform, Image, ScrollView } from "react-native";
 import { useAuth } from "../../context/auth";
 import { useTheme } from "../../context/theme";
 import { Sparkles, Shield } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
+import { MagicLinkForm } from "../../components/MagicLinkForm";
 
 export default function Login() {
   const { signInWithApple, signInWithGoogle } = useAuth();
@@ -81,6 +82,14 @@ export default function Login() {
         )}
 
         <GoogleSignInButton onPress={signInWithGoogle} isDark={isDark} />
+
+        <View className="flex-row items-center my-4">
+          <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
+          <Text className={`mx-4 text-sm ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>or</Text>
+          <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
+        </View>
+
+        <MagicLinkForm />
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
           Your data stays yours. Always encrypted.{"\n"}
