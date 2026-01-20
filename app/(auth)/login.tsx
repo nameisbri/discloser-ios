@@ -81,13 +81,16 @@ export default function Login() {
           </View>
         )}
 
-        <GoogleSignInButton onPress={signInWithGoogle} isDark={isDark} />
-
-        <View className="flex-row items-center my-4">
-          <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
-          <Text className={`mx-4 text-sm ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>or</Text>
-          <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
-        </View>
+        {Platform.OS === "android" && (
+          <>
+            <GoogleSignInButton onPress={signInWithGoogle} isDark={isDark} />
+            <View className="flex-row items-center my-4">
+              <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
+              <Text className={`mx-4 text-sm ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>or</Text>
+              <View className={`flex-1 h-px ${isDark ? "bg-dark-border" : "bg-border"}`} />
+            </View>
+          </>
+        )}
 
         <MagicLinkForm />
 
