@@ -3,12 +3,14 @@ import { useRouter, useSegments } from "expo-router";
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Platform, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
+import { getGoogleIdToken, signOutGoogle } from "../lib/google-auth";
 import type { Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
   session: Session | null;
   loading: boolean;
   signInWithApple: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -143,15 +145,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const result = await getGoogleIdToken();
+
+      if (!result.success) {
+        if (result.cancelled) return;
+        Alert.alert("Sign In Failed", result.error.message);
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: result.idToken,
+      });
+
+      if (error) {
+        console.error("Google Sign In error:", error);
+        Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google. Please try again.");
+      }
+    } catch (error) {
+      console.error("Google Sign In error:", error);
+      const message = error instanceof Error ? error.message : "An error occurred while signing in. Please try again.";
+      Alert.alert("Sign In Failed", message);
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
+    await signOutGoogle();
     // Reset state when signing out to ensure clean state for next sign in
     setOnboardingChecked(false);
     isRouting.current = false;
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, signInWithApple, signOut }}>
+    <AuthContext.Provider value={{ session, loading, signInWithApple, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
