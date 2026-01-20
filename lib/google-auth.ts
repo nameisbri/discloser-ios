@@ -4,6 +4,7 @@ import {
   isErrorWithCode,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
+import { Platform } from "react-native";
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
@@ -18,10 +19,13 @@ export function configureGoogleSignIn() {
     );
   }
 
-  GoogleSignin.configure({
-    webClientId: WEB_CLIENT_ID,
-    offlineAccess: false,
-  });
+  // Only configure native Google Sign-In for Android
+  if (Platform.OS === "android") {
+    GoogleSignin.configure({
+      webClientId: WEB_CLIENT_ID,
+      offlineAccess: false,
+    });
+  }
 
   isConfigured = true;
 }
@@ -32,9 +36,19 @@ export type GoogleSignInResult =
   | { success: false; cancelled: false; error: Error };
 
 export async function getGoogleIdToken(): Promise<GoogleSignInResult> {
-  try {
-    configureGoogleSignIn();
+  configureGoogleSignIn();
 
+  // iOS uses Supabase OAuth flow directly (called from auth context)
+  if (Platform.OS === "ios") {
+    return {
+      success: false,
+      cancelled: false,
+      error: new Error("Use Supabase OAuth flow for iOS"),
+    };
+  }
+
+  // Android: Use native Google Sign-In
+  try {
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
 
@@ -88,7 +102,9 @@ export async function getGoogleIdToken(): Promise<GoogleSignInResult> {
 
 export async function signOutGoogle(): Promise<void> {
   try {
-    await GoogleSignin.signOut();
+    if (Platform.OS === "android") {
+      await GoogleSignin.signOut();
+    }
   } catch {
     // Ignore sign out errors
   }

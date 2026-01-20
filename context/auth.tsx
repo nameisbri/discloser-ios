@@ -1,4 +1,6 @@
 import * as AppleAuthentication from "expo-apple-authentication";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { useRouter, useSegments } from "expo-router";
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Platform, Alert } from "react-native";
@@ -147,22 +149,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const result = await getGoogleIdToken();
+      if (Platform.OS === "ios") {
+        // iOS: Use Supabase OAuth flow with browser
+        WebBrowser.maybeCompleteAuthSession();
+        const redirectUrl = Linking.createURL("auth/callback");
 
-      if (!result.success) {
-        if (result.cancelled) return;
-        Alert.alert("Sign In Failed", result.error.message);
-        return;
-      }
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: true,
+          },
+        });
 
-      const { error } = await supabase.auth.signInWithIdToken({
-        provider: "google",
-        token: result.idToken,
-      });
+        if (error) {
+          console.error("Google Sign In error:", error);
+          Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google. Please try again.");
+          return;
+        }
 
-      if (error) {
-        console.error("Google Sign In error:", error);
-        Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google. Please try again.");
+        if (data?.url) {
+          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+          if (result.type === "success" && result.url) {
+            // Extract the auth tokens from the URL
+            const url = new URL(result.url);
+            const params = new URLSearchParams(url.hash.substring(1)); // Remove the #
+            const accessToken = params.get("access_token");
+            const refreshToken = params.get("refresh_token");
+
+            if (accessToken) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || "",
+              });
+
+              if (sessionError) {
+                console.error("Session error:", sessionError);
+                Alert.alert("Sign In Failed", "Failed to complete sign in. Please try again.");
+              }
+            }
+          }
+        }
+      } else {
+        // Android: Use native Google Sign-In
+        const result = await getGoogleIdToken();
+
+        if (!result.success) {
+          if (result.cancelled) return;
+          Alert.alert("Sign In Failed", result.error.message);
+          return;
+        }
+
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: result.idToken,
+        });
+
+        if (error) {
+          console.error("Google Sign In error:", error);
+          Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Google Sign In error:", error);
