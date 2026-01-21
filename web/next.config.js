@@ -6,18 +6,18 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  
+
   // Enable compression
   compress: true,
-  
+
   // Optimize production builds
   swcMinify: true,
-  
+
   // Reduce JavaScript bundle size
   experimental: {
     optimizePackageImports: ['framer-motion', 'lenis'],
   },
-  
+
   // Webpack optimizations
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -30,7 +30,25 @@ const nextConfig = {
     }
     return config;
   },
-  
+
+  // Redirects for SEO - www to non-www, consistent canonical URLs
+  async redirects() {
+    return [
+      // Redirect www to non-www
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.discloser.app',
+          },
+        ],
+        destination: 'https://discloser.app/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
   // Headers for caching and performance
   async headers() {
     return [
