@@ -703,6 +703,12 @@ export default function Home() {
               Privacy
             </a>
             <a
+              href="/terms"
+              className="hover:text-white/60 transition-colors"
+            >
+              Terms
+            </a>
+            <a
               href="mailto:hello@discloser.app"
               className="hover:text-white/60 transition-colors"
             >
