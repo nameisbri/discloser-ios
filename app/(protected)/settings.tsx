@@ -8,6 +8,7 @@ import { KnownConditionsModal } from "../../components/KnownConditionsModal";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications } from "../../lib/notifications";
+import * as Notifications from "expo-notifications";
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/Button";
 
@@ -71,6 +72,31 @@ export default function Settings() {
     setNotificationsEnabled(value);
   };
 
+  const handleCheckScheduledNotifications = async () => {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      if (scheduled.length === 0) {
+        Alert.alert(
+          "No Scheduled Notifications",
+          "There are no push notifications scheduled. Create a reminder to schedule one."
+        );
+      } else {
+        const details = scheduled.map(n => {
+          const trigger = n.trigger as { type?: string; date?: Date };
+          const date = trigger?.date ? new Date(trigger.date).toLocaleString() : "Unknown";
+          return `• ${n.content.body}\n  Scheduled: ${date}`;
+        }).join("\n\n");
+
+        Alert.alert(
+          `${scheduled.length} Notification(s) Scheduled`,
+          details
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not check scheduled notifications. Make sure you're on a physical device.");
+    }
+  };
+
   const validateProfile = () => {
     if (!firstName.trim()) {
       Alert.alert("Required", "Please enter your first name");
@@ -111,7 +137,7 @@ export default function Settings() {
       if (error.code === "23505") {
         Alert.alert("Alias Taken", "This alias is already in use.");
       } else {
-        Alert.alert("Error", "Failed to save profile");
+        Alert.alert("Couldn't Save", "Something went wrong while saving your profile. Please try again.");
       }
       setSaving(false);
       return;
@@ -264,17 +290,25 @@ export default function Settings() {
             isDark={isDark}
           />
           <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
-          <SettingsItem 
-            icon={<Bell size={20} color={isDark ? "#C9A0DC" : "#374151"} />} 
-            title="Push Notifications" 
+          <SettingsItem
+            icon={<Bell size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
+            title="Push Notifications"
             rightElement={
-              <Switch 
-                value={notifications} 
+              <Switch
+                value={notifications}
                 onValueChange={handleToggleNotifications}
                 trackColor={{ false: isDark ? "#3D3548" : "#E0E0E0", true: isDark ? "#FF2D7A" : "#923D5C" }}
                 thumbColor="#FFFFFF"
               />
             }
+            isDark={isDark}
+          />
+          <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
+          <SettingsItem
+            icon={<Clock size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
+            title="Check Scheduled Notifications"
+            onPress={handleCheckScheduledNotifications}
+            showChevron
             isDark={isDark}
           />
         </View>

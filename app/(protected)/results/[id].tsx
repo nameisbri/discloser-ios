@@ -50,7 +50,7 @@ export default function ResultDetail() {
               if (success) {
                 router.replace("/dashboard");
               } else {
-                Alert.alert("Error", "Failed to delete result");
+                Alert.alert("Couldn't Delete", "Something went wrong while deleting this result. Please try again.");
               }
             }
           },

@@ -161,6 +161,24 @@ npm run test:coverage
 echo $? # Should be 0
 ```
 
+### Pre-Platform-Specific Checklist
+
+**iOS (App Store):**
+- [ ] All features work on iOS devices (not just simulator)
+- [ ] Apple Sign-In works smoothly
+- [ ] Google Sign-In (iOS) works smoothly
+- [ ] Magic Link works smoothly
+- [ ] Push notifications deliver properly
+- [ ] Calendar integration works
+
+**Android (Play Store):**
+- [ ] All features work on Android devices/emulators
+- [ ] Google Sign-In works smoothly (native flow)
+- [ ] Magic Link works smoothly
+- [ ] Push notifications deliver properly (FCM)
+- [ ] Calendar integration works
+- [ ] App follows Android design guidelines
+
 ### Expected Results
 
 - **All tests passing**: 200+ tests

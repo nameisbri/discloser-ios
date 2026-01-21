@@ -105,6 +105,7 @@ create table if not exists public.share_links (
   view_count integer default 0,
   max_views integer,
   show_name boolean default false,
+  display_name text,
   created_at timestamptz default now() not null
 );
 

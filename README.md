@@ -38,10 +38,18 @@ A mobile app for managing and sharing STI test results securely.
 Create a `.env` file:
 
 ```
+# Supabase
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Document Parsing
 EXPO_PUBLIC_GOOGLE_CLOUD_API_KEY=your_google_cloud_api_key
 EXPO_PUBLIC_OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Google Sign-In
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
+
+# Share Links
 EXPO_PUBLIC_SHARE_BASE_URL=https://your-share-domain.com
 ```
 
@@ -53,9 +61,14 @@ Run the SQL in `supabase/schema.sql` in your Supabase SQL Editor to create:
 - RLS policies and helper functions
 - Database functions: `get_shared_result()`, `get_shared_status()`, `increment_share_view()`
 
-### Apple Sign-In Setup
+### Authentication Setup
 
-The app uses Apple Sign-In for authentication. To enable it:
+The app supports multiple authentication methods:
+
+**iOS:** Apple Sign-In, Google Sign-In, Magic Link (email)
+**Android:** Google Sign-In, Magic Link (email)
+
+#### Apple Sign-In Setup (iOS only)
 
 #### 1. Apple Developer Account Setup
 
@@ -105,7 +118,83 @@ The app is already configured with:
 - ✅ `usesAppleSignIn: true` in iOS config
 - ✅ Bundle identifier: `com.discloser-ios.app`
 
-**Note**: The app requires Apple Sign-In for authentication on iOS.
+#### Google Sign-In Setup (iOS + Android)
+
+1. **Create Google Cloud Project**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com)
+   - Create a new project or select existing
+
+2. **Enable Google Sign-In API**:
+   - Navigate to APIs & Services > Library
+   - Search for "Google Sign-In API" and enable it
+
+3. **Create OAuth Consent Screen**:
+   - Go to APIs & Services > OAuth consent screen
+   - Configure app information (required for production)
+   - For testing, you can use "External" user type
+
+4. **Create OAuth 2.0 Credentials**:
+
+   **Web Client ID (for Supabase)**:
+   - Go to APIs & Services > Credentials
+   - Create Credentials > OAuth client ID
+   - Application type: Web application
+   - Authorized redirect URIs:
+     - `https://<your-project-id>.supabase.co/auth/v1/callback`
+   - Copy the **Web Client ID** to your `.env` file
+
+   **iOS Client ID (optional, for native Google Sign-In)**:
+   - Create OAuth client ID
+   - Application type: iOS
+   - Bundle ID: `com.discloser-ios.app`
+   - Copy the **iOS Client ID**
+
+   **Android Client ID (for native Google Sign-In)**:
+   - Create OAuth client ID
+   - Application type: Android
+   - Package name: `com.discloser.app` (or your Android package)
+   - SHA-1 fingerprint: Get from your signing keystore
+   - Copy the **Android Client ID**
+
+5. **Configure Supabase**:
+   - Go to your Supabase project dashboard > Authentication > Providers
+   - Enable Google provider
+   - Enter:
+     - **Client ID**: Your Web Client ID
+     - **Client Secret**: Your Web Client Secret
+   - Save configuration
+
+The app is already configured with:
+- ✅ `@react-native-google-signin/google-signin` package installed
+- ✅ iOS: Uses Supabase OAuth flow with browser (`expo-web-browser`)
+- ✅ Android: Uses native Google Sign-In with credential manager
+- ✅ Environment variable: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+
+#### Magic Link Setup (Email-Based Passwordless Auth)
+
+1. **Configure Supabase**:
+   - Go to your Supabase project dashboard > Authentication > Providers
+   - Enable Email provider
+   - Disable "Confirm email" (magic links handle confirmation automatically)
+   - (Optional) Customize email template with your branding
+
+2. **Configure Redirect URL**:
+   - Add your app's deep link scheme to allowed redirect URLs
+   - Example: `exp+discloser://auth/callback` (for Expo Go) or `discloser://auth/callback` (for production)
+   - This is handled automatically via `Linking.createURL()` in the app
+
+**Note**: No additional setup needed - the app uses Supabase's built-in magic link functionality.
+
+#### Authentication Provider Priority
+
+**iOS:**
+- Primary: Apple Sign-In (native, best UX)
+- Secondary: Google Sign-In (browser-based OAuth)
+- Fallback: Magic Link (email)
+
+**Android:**
+- Primary: Google Sign-In (native, best UX)
+- Fallback: Magic Link (email)
 
 ### Installation
 
@@ -134,14 +223,16 @@ app/                    # Expo Router screens
     reminders.tsx      # Testing reminder management
     settings.tsx       # Profile, risk assessment, known conditions
 components/            # Reusable UI components
-  Badge.tsx           # Status badges
-  Button.tsx          # Button component
-  Card.tsx            # Card container
-  KnownConditionsModal.tsx  # Manage known conditions
-  RiskAssessment.tsx  # Risk assessment questionnaire
-  ShareModal.tsx      # Share individual results
-  StatusShareModal.tsx # Share aggregated status
-  SharedResultPreview.tsx  # Preview shared results
+   Badge.tsx           # Status badges
+   Button.tsx          # Button component
+   Card.tsx            # Card container
+   GoogleSignInButton.tsx   # Google Sign-In button
+   MagicLinkForm.tsx       # Email-based magic link form
+   KnownConditionsModal.tsx  # Manage known conditions
+   RiskAssessment.tsx  # Risk assessment questionnaire
+   ShareModal.tsx      # Share individual results
+   StatusShareModal.tsx # Share aggregated status
+   SharedResultPreview.tsx  # Preview shared results
 context/               # React contexts
   auth.tsx            # Authentication context
   theme.tsx           # Theme (light/dark) context
@@ -158,6 +249,7 @@ lib/
     llmParser.ts         # LLM-based extraction
     testNormalizer.ts    # Normalize STI names
     resultStandardizer.ts # Standardize results
+  google-auth.ts       # Google Sign-In helpers (Android native, iOS OAuth)
   supabase.ts         # Supabase client
   storage.ts           # File upload helpers
   notifications.ts    # Push notification helpers

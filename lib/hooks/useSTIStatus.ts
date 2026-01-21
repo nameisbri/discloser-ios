@@ -16,7 +16,7 @@ export interface AggregatedSTI {
 }
 
 export function useSTIStatus() {
-  const { results, loading, error } = useTestResults();
+  const { results, loading, error, refetch } = useTestResults();
   const { profile } = useProfile();
 
   const aggregatedStatus = useMemo(() => {
@@ -93,5 +93,6 @@ export function useSTIStatus() {
     lastTestedDate,
     loading,
     error,
+    refetch,
   };
 }
