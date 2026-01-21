@@ -42,6 +42,18 @@ export function useShareLinks(testResultId?: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Verify the test result exists and belongs to user before creating share link
+      const { data: testResult, error: verifyError } = await supabase
+        .from("test_results")
+        .select("id")
+        .eq("id", testResultId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (verifyError || !testResult) {
+        throw new Error("Test result not found. Please try again.");
+      }
+
       const { data, error: createError } = await supabase
         .from("share_links")
         .insert({
@@ -53,11 +65,13 @@ export function useShareLinks(testResultId?: string) {
         .single();
 
       if (createError) throw createError;
-      
+
       setLinks((prev) => [data, ...prev]);
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create share link");
+      const errorMessage = err instanceof Error ? err.message : "Failed to create share link";
+      setError(errorMessage);
+      console.error("Share link creation error:", err);
       return null;
     }
   };

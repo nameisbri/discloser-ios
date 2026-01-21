@@ -6,9 +6,66 @@
 
 ---
 
+## ✅ PROGRESS TRACKER
+
+### Day 1 Progress (2026-01-20 to 2026-01-21)
+
+**Build History:**
+- v18: Initial beta build
+- v19: After removing Google Sign-In from iOS
+- v20: Fixed EAS environment variables
+- v21: Fixed keyboard avoidance + magic link callback
+- v22: Current build - all Day 1 bug fixes
+
+**Bugs Found & Fixed:**
+| Bug | Status | Fix |
+|-----|--------|-----|
+| Keyboard covers email field on login | ✅ Fixed | Added KeyboardAvoidingView |
+| Magic link shows "Unmatched route" | ✅ Fixed | Created app/auth/callback.tsx |
+| Google Sign-In on iOS (removed) | ✅ Fixed | Wrapped in Platform.OS check |
+| Error messages too generic | ✅ Fixed | Improved 10+ Alert.alert calls |
+| HIV not consolidated with HIV-1/2 | ✅ Fixed | Updated testNormalizer.ts |
+| Share link creation fails | ✅ Fixed | Added verification + better errors |
+| Status share "Nothing to share" | ✅ Fixed | Added refetch on modal open |
+| Reminders Active tag covers date | ✅ Fixed | Replaced badge with icon |
+| Share links don't persist | 🔧 Migration | Missing display_name column |
+
+**Database Migration Required:**
+Run `supabase/migrations/003_add_share_links_display_name.sql` in Supabase SQL Editor
+
+**Testing Completed:**
+- [x] Apple Sign-In
+- [x] Magic Link login
+- [x] Session persistence
+- [x] Upload document (OCR + parsing)
+- [x] Manual entry
+- [x] View test results
+- [x] Create share link (needs migration for persistence)
+- [x] Create status share
+- [x] Create reminder
+- [x] Add to calendar
+- [ ] Push notifications (debug button added to Settings)
+- [x] Delete reminder
+
+**Files Modified:**
+- app.json (build number 17 → 22)
+- app/(auth)/login.tsx (keyboard avoidance, removed Google on iOS)
+- app/auth/callback.tsx (NEW - magic link handler)
+- app/(protected)/reminders.tsx (UI fix)
+- app/(protected)/settings.tsx (notification debug button)
+- components/ShareModal.tsx (error handling)
+- components/StatusShareModal.tsx (refetch on open)
+- lib/hooks/useShareLinks.ts (verification + logging)
+- lib/hooks/useSTIStatus.ts (expose refetch)
+- lib/parsing/testNormalizer.ts (HIV normalization)
+- supabase/schema.sql (added display_name)
+- supabase/migrations/003_add_share_links_display_name.sql (NEW)
+
+---
+
 ## 🎯 EXECUTION CHECKLIST (Quick Reference)
 
-**Day 1:** Real device testing, bug fixes
+**Day 1:** ✅ Real device testing, bug fixes (COMPLETE - pending migration)
 **Day 2:** Edge cases, error handling
 **Day 3:** Loading states, accessibility
 **Day 4:** TestFlight build, distribution
@@ -1208,16 +1265,16 @@ git push origin v1.0-beta
 ## 🎯 SUMMARY CHECKLIST
 
 **Before Starting:**
-- [ ] Real iOS device available
-- [ ] Apple Developer account ready
-- [ ] TestFlight access confirmed
+- [x] Real iOS device available
+- [x] Apple Developer account ready
+- [x] TestFlight access confirmed
 - [ ] Bug tracker spreadsheet created
 
 **After Day 1:**
-- [ ] TestFlight build created
-- [ ] All auth flows tested
-- [ ] All core features tested
-- [ ] Critical bugs identified and fixed
+- [x] TestFlight build created (v22)
+- [x] All auth flows tested (Apple Sign-In, Magic Link)
+- [x] All core features tested
+- [x] Critical bugs identified and fixed (9 bugs fixed, 1 pending migration)
 
 **After Day 2:**
 - [ ] Edge cases tested

@@ -1,8 +1,8 @@
 // Maps lab-specific test names to standardized names
 
 const TEST_NAME_MAPPING: Record<string, string> = {
-  // HIV tests
-  'HIV': 'HIV',
+  // HIV tests - all normalize to HIV-1/2 for consistency
+  'HIV': 'HIV-1/2',
   'HIV 1/2 AG/AB COMBO SCREEN': 'HIV-1/2',
   'HIV1/2 AG/AB COMBO SCREEN': 'HIV-1/2',
   'HIV 1/2 ANTIBODY': 'HIV-1/2',

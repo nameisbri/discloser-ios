@@ -55,7 +55,7 @@ interface StatusShareModalProps {
 
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const { isDark } = useTheme();
-  const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading } = useSTIStatus();
+  const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading, refetch: refetchStatus } = useSTIStatus();
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
   const [loading, setLoading] = useState(false);
@@ -93,10 +93,11 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   useEffect(() => {
     if (visible) {
       setView("preview");
+      refetchStatus(); // Refresh STI status data when modal opens
       fetchLinks();
       fetchUserProfile();
     }
-  }, [visible]);
+  }, [visible, refetchStatus]);
 
   const fetchUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -125,24 +126,42 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   };
 
   const fetchLinks = async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log("fetchLinks: No user found");
+        setLoading(false);
+        return;
+      }
 
-    const { data } = await supabase
-      .from("status_share_links")
-      .select("*")
-      .eq("user_id", user.id)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
+      console.log("fetchLinks: Fetching for user", user.id);
+      const { data, error } = await supabase
+        .from("status_share_links")
+        .select("*")
+        .eq("user_id", user.id)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false });
 
-    // Filter out links at max_views
-    const activeLinks = (data || []).filter(
-      (link: StatusShareLink) => link.max_views === null || link.view_count < link.max_views
-    );
+      if (error) {
+        console.error("fetchLinks error:", error);
+        setLoading(false);
+        return;
+      }
 
-    setLinks(activeLinks);
-    setLoading(false);
+      console.log("fetchLinks: Found", data?.length || 0, "links");
+
+      // Filter out links at max_views
+      const activeLinks = (data || []).filter(
+        (link: StatusShareLink) => link.max_views === null || link.view_count < link.max_views
+      );
+
+      setLinks(activeLinks);
+    } catch (err) {
+      console.error("fetchLinks exception:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async () => {

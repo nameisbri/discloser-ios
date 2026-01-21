@@ -410,7 +410,7 @@ function ReminderItem({
 
   return (
     <View>
-      <View className="flex-row items-center">
+      <View className="flex-row items-start">
         <View
           className={`p-3 rounded-2xl mr-4 ${
             reminder.is_active
@@ -424,25 +424,43 @@ function ReminderItem({
           />
         </View>
         <View className="flex-1">
-          <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>
-            {reminder.title}
-          </Text>
-          <View className="flex-row items-center">
+          <View className="flex-row items-center justify-between mb-1">
+            <Text className={`font-inter-semibold flex-1 ${isDark ? "text-dark-text" : "text-text"}`}>
+              {reminder.title}
+            </Text>
+            {/* Status indicator - icon instead of badge to save space */}
+            <View className={`flex-row items-center ml-2 px-2 py-1 rounded-full ${
+              reminder.is_active
+                ? isPast
+                  ? isDark ? "bg-dark-warning-bg" : "bg-warning-light"
+                  : isDark ? "bg-dark-success-bg" : "bg-success-light/50"
+                : isDark ? "bg-dark-surface-light" : "bg-gray-100"
+            }`}>
+              <CheckCircle2
+                size={12}
+                color={
+                  reminder.is_active
+                    ? isPast ? "#F59E0B" : (isDark ? "#00E5A0" : "#10B981")
+                    : "#9CA3AF"
+                }
+              />
+            </View>
+          </View>
+          <View className="flex-row items-center flex-wrap">
             <Clock size={12} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
             <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              {frequencyLabels[reminder.frequency]} • Next:{" "}
+              {frequencyLabels[reminder.frequency]}
+            </Text>
+            <Text className={`text-xs mx-1 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>•</Text>
+            <Text className={`text-xs font-inter-medium ${
+              isPast
+                ? "text-warning"
+                : isDark ? "text-dark-text" : "text-text"
+            }`}>
               {formatDate(reminder.next_date)}
             </Text>
           </View>
         </View>
-        <Badge
-          label={
-            reminder.is_active ? (isPast ? "Overdue" : "Active") : "Paused"
-          }
-          variant={
-            reminder.is_active ? (isPast ? "warning" : "success") : "outline"
-          }
-        />
       </View>
       {/* Action buttons */}
       <View className="flex-row items-center justify-end mt-3 gap-2">

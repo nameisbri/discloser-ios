@@ -60,7 +60,7 @@ interface ShareModalProps {
 
 export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) {
   const { isDark } = useTheme();
-  const { links, loading, fetchLinks, createShareLink, deleteShareLink } =
+  const { links, loading, error, fetchLinks, createShareLink, deleteShareLink } =
     useShareLinks(testResultId);
 
   const [view, setView] = useState<"list" | "create" | "qr" | "preview">("list");
@@ -136,7 +136,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       setSelectedViewLimit(VIEW_LIMIT_OPTIONS[0]);
       setDisplayNameOption("anonymous");
     } else {
-      Alert.alert("Couldn't Create Link", "Something went wrong while creating your share link. Please check your connection and try again.");
+      Alert.alert("Couldn't Create Link", error || "Something went wrong while creating your share link. Please check your connection and try again.");
     }
   };
 
