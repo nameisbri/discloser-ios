@@ -1,5 +1,5 @@
 import * as AppleAuthentication from "expo-apple-authentication";
-import { View, Text, Platform, Image, ScrollView } from "react-native";
+import { View, Text, Platform, Image, ScrollView, KeyboardAvoidingView } from "react-native";
 import { useAuth } from "../../context/auth";
 import { useTheme } from "../../context/theme";
 import { Sparkles, Shield } from "lucide-react-native";
@@ -17,7 +17,10 @@ export default function Login() {
     : ["#923D5C", "#6B2D45", "#2D2438"];
 
   return (
-    <View className="flex-1">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1"
+    >
       {/* Hero Section with Gradient */}
       <LinearGradient
         colors={gradientColors}
@@ -99,7 +102,7 @@ export default function Login() {
           Be adventurous. Stay anonymous.
         </Text>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
