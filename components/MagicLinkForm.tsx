@@ -38,7 +38,10 @@ export function MagicLinkForm({ onSuccess }: MagicLinkFormProps) {
       setSent(true);
       onSuccess?.();
     } else {
-      Alert.alert("Error", result.error || "Failed to send magic link. Please try again.");
+      Alert.alert(
+        "Couldn't Send Magic Link",
+        result.error || "We couldn't send your magic link. Please check your internet connection and try again."
+      );
     }
   };
 

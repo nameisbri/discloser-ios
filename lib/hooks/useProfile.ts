@@ -23,7 +23,7 @@ export function useProfile() {
       if (fetchError) throw fetchError;
       setProfile(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch profile");
+      setError(err instanceof Error ? err.message : "We couldn't load your profile. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export function useProfile() {
       setProfile((prev) => prev ? { ...prev, risk_level: level, risk_assessed_at: new Date().toISOString() } : null);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update risk level");
+      setError(err instanceof Error ? err.message : "We couldn't update your risk level. Please check your internet connection and try again.");
       return false;
     }
   };
@@ -73,7 +73,7 @@ export function useProfile() {
       setProfile((prev) => prev ? { ...prev, known_conditions: updated } : null);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add condition");
+      setError(err instanceof Error ? err.message : "We couldn't add this condition. Please check your internet connection and try again.");
       return false;
     }
   };
@@ -92,7 +92,7 @@ export function useProfile() {
       setProfile((prev) => prev ? { ...prev, known_conditions: updated } : null);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove condition");
+      setError(err instanceof Error ? err.message : "We couldn't remove this condition. Please check your internet connection and try again.");
       return false;
     }
   };

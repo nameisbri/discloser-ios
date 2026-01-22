@@ -33,6 +33,31 @@
 **Database Migration Required:**
 Run `supabase/migrations/003_add_share_links_display_name.sql` in Supabase SQL Editor
 
+### Day 2 Progress (2026-01-21)
+
+**Error Message Improvements:**
+All generic error messages replaced with user-friendly, actionable messages:
+- ✅ context/auth.tsx - 6 error messages improved
+- ✅ app/(protected)/upload.tsx - 2 error messages improved
+- ✅ components/MagicLinkForm.tsx - 1 error message improved
+- ✅ app/(onboarding)/index.tsx - 1 error message improved
+- ✅ lib/hooks/useTestResults.ts - 5 error messages improved
+- ✅ lib/hooks/useProfile.ts - 4 error messages improved
+- ✅ lib/hooks/useShareLinks.ts - 3 error messages improved
+- ✅ lib/hooks/useReminders.ts - 4 error messages improved
+
+**Pattern Applied:**
+- Before: "Failed to [action]"
+- After: "We couldn't [action]. Please check your internet connection and try again."
+
+**Documentation Created:**
+- EDGE_CASE_TESTING.md - Comprehensive edge case testing guide for device testing
+
+**Next Steps:**
+- Run migration in Supabase
+- Test edge cases on physical device (see EDGE_CASE_TESTING.md)
+- Move to Day 3: Loading states and accessibility
+
 **Testing Completed:**
 - [x] Apple Sign-In
 - [x] Magic Link login
@@ -66,7 +91,7 @@ Run `supabase/migrations/003_add_share_links_display_name.sql` in Supabase SQL E
 ## 🎯 EXECUTION CHECKLIST (Quick Reference)
 
 **Day 1:** ✅ Real device testing, bug fixes (COMPLETE - pending migration)
-**Day 2:** Edge cases, error handling
+**Day 2:** ✅ Error message improvements, edge case documentation (COMPLETE - device testing pending)
 **Day 3:** Loading states, accessibility
 **Day 4:** TestFlight build, distribution
 **Day 5:** App Store assets, metadata
