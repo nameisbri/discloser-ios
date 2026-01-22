@@ -77,3 +77,5 @@ BETA_TESTING.md
 # AI/Agent planning and context (local only)
 .cursor-plans/
 .ai-context/
+.beads/
+.claude/
