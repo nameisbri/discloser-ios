@@ -9,6 +9,7 @@ import {
   scheduleReminderNotification,
   cancelReminderNotification,
 } from "../notifications";
+import { getNotificationDate } from "../utils/notifications";
 
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -73,7 +74,7 @@ export function useReminders() {
       // Schedule notification
       const reminder = data as Reminder;
       if (reminder.is_active) {
-        scheduleReminderNotification(reminder.id, reminder.title, new Date(reminder.next_date));
+        scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
       }
 
       setReminders((prev) =>
@@ -110,7 +111,7 @@ export function useReminders() {
       // Update notification
       const reminder = data as Reminder;
       if (reminder.is_active) {
-        scheduleReminderNotification(reminder.id, reminder.title, new Date(reminder.next_date));
+        scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
       } else {
         cancelReminderNotification(reminder.id);
       }
