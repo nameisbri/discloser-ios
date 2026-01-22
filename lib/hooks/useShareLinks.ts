@@ -23,7 +23,7 @@ export function useShareLinks(testResultId?: string) {
       if (fetchError) throw fetchError;
       setLinks(data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch share links");
+      setError(err instanceof Error ? err.message : "We couldn't load your share links. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -85,11 +85,11 @@ export function useShareLinks(testResultId?: string) {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
-      
+
       setLinks((prev) => prev.filter((l) => l.id !== id));
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete share link");
+      setError(err instanceof Error ? err.message : "We couldn't delete this share link. Please check your internet connection and try again.");
       return false;
     }
   };
@@ -150,7 +150,7 @@ export function useSharedResult(token: string | undefined) {
         setError("Share link not found");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch shared result");
+      setError(err instanceof Error ? err.message : "We couldn't load this shared result. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
     }

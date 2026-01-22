@@ -33,7 +33,7 @@ export function useTestResults() {
       if (fetchError) throw fetchError;
       setResults(data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch results");
+      setError(err instanceof Error ? err.message : "We couldn't load your test results. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export function useTestResults() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) throw new Error("You need to be signed in to save test results. Please sign in and try again.");
 
       const { data, error: createError } = await supabase
         .from("test_results")
@@ -68,7 +68,7 @@ export function useTestResults() {
       setResults((prev) => [data, ...prev]);
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create result");
+      setError(err instanceof Error ? err.message : "We couldn't save your test result. Please check your internet connection and try again.");
       return null;
     }
   };
@@ -93,7 +93,7 @@ export function useTestResults() {
       setResults((prev) => prev.map((r) => (r.id === id ? data : r)));
       return data as TestResult;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update result");
+      setError(err instanceof Error ? err.message : "We couldn't update your test result. Please check your internet connection and try again.");
       return null;
     }
   };
@@ -112,7 +112,7 @@ export function useTestResults() {
       setResults((prev) => prev.filter((r) => r.id !== id));
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete result");
+      setError(err instanceof Error ? err.message : "We couldn't delete your test result. Please check your internet connection and try again.");
       return false;
     }
   };
@@ -154,7 +154,7 @@ export function useTestResult(id: string | undefined) {
         if (fetchError) throw fetchError;
         setResult(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch result");
+        setError(err instanceof Error ? err.message : "We couldn't load this test result. Please check your internet connection and try again.");
       } finally {
         setLoading(false);
       }

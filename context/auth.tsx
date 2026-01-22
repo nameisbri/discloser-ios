@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!credential.identityToken) {
-        Alert.alert("Error", "Failed to get identity token from Apple");
+        Alert.alert("Sign In Failed", "We couldn't verify your Apple ID. Please try signing in again.");
         return;
       }
 
@@ -171,7 +171,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error("Apple Sign In error:", error);
-        Alert.alert("Sign In Failed", error.message || "Failed to sign in with Apple. Please try again.");
+        Alert.alert(
+          "Sign In Failed",
+          error.message || "We couldn't sign you in with Apple. Please check your internet connection and try again."
+        );
       }
     } catch (error: unknown) {
       console.error("Apple Sign In error:", error);
@@ -181,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const message = error instanceof Error ? error.message : "An error occurred while signing in. Please try again.";
+      const message = error instanceof Error ? error.message : "We couldn't sign you in. Please check your internet connection and try again.";
       Alert.alert("Sign In Failed", message);
     }
   };
@@ -203,7 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error("Google Sign In error:", error);
-          Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google. Please try again.");
+          Alert.alert(
+            "Sign In Failed",
+            error.message || "We couldn't sign you in with Google. Please check your internet connection and try again."
+          );
           return;
         }
 
@@ -225,7 +231,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               if (sessionError) {
                 console.error("Session error:", sessionError);
-                Alert.alert("Sign In Failed", "Failed to complete sign in. Please try again.");
+                Alert.alert(
+                  "Sign In Failed",
+                  "We couldn't complete your sign in. Please close the app and try again. If the problem continues, check your internet connection."
+                );
               }
             }
           }
@@ -247,12 +256,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error("Google Sign In error:", error);
-          Alert.alert("Sign In Failed", error.message || "Failed to sign in with Google. Please try again.");
+          Alert.alert(
+            "Sign In Failed",
+            error.message || "We couldn't sign you in with Google. Please check your internet connection and try again."
+          );
         }
       }
     } catch (error) {
       console.error("Google Sign In error:", error);
-      const message = error instanceof Error ? error.message : "An error occurred while signing in. Please try again.";
+      const message = error instanceof Error ? error.message : "We couldn't sign you in. Please check your internet connection and try again.";
       Alert.alert("Sign In Failed", message);
     }
   };

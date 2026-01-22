@@ -343,12 +343,17 @@ export default function Upload() {
           },
         ]);
       } else {
-        Alert.alert("Couldn't Save", "Something went wrong while saving your test result. Please try again.");
+        Alert.alert(
+          "Couldn't Save",
+          "We couldn't save your test result. This might be a connection issue. Please check your internet and try again."
+        );
       }
     } catch (error) {
       Alert.alert(
         "Upload Failed",
-        error instanceof Error ? error.message : "Something went wrong. Please check your connection and try again."
+        error instanceof Error
+          ? error.message
+          : "We couldn't upload your test result. Please check your internet connection and try again. If this keeps happening, try entering the details manually instead."
       );
     } finally {
       setUploading(false);

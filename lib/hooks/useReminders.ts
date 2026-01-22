@@ -9,6 +9,7 @@ import {
   scheduleReminderNotification,
   cancelReminderNotification,
 } from "../notifications";
+import { getNotificationDate } from "../utils/notifications";
 
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -38,7 +39,7 @@ export function useReminders() {
       setReminders(data || []);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch reminders"
+        err instanceof Error ? err.message : "We couldn't load your reminders. Please check your internet connection and try again."
       );
     } finally {
       setLoading(false);
@@ -57,7 +58,7 @@ export function useReminders() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) throw new Error("You need to be signed in to create reminders. Please sign in and try again.");
 
       const { data, error: createError } = await supabase
         .from("reminders")
@@ -73,7 +74,7 @@ export function useReminders() {
       // Schedule notification
       const reminder = data as Reminder;
       if (reminder.is_active) {
-        scheduleReminderNotification(reminder.id, reminder.title, new Date(reminder.next_date));
+        scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
       }
 
       setReminders((prev) =>
@@ -85,7 +86,7 @@ export function useReminders() {
       return data;
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to create reminder"
+        err instanceof Error ? err.message : "We couldn't create your reminder. Please check your internet connection and try again."
       );
       return null;
     }
@@ -110,7 +111,7 @@ export function useReminders() {
       // Update notification
       const reminder = data as Reminder;
       if (reminder.is_active) {
-        scheduleReminderNotification(reminder.id, reminder.title, new Date(reminder.next_date));
+        scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
       } else {
         cancelReminderNotification(reminder.id);
       }
@@ -126,7 +127,7 @@ export function useReminders() {
       return data;
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to update reminder"
+        err instanceof Error ? err.message : "We couldn't update your reminder. Please check your internet connection and try again."
       );
       return null;
     }
@@ -149,7 +150,7 @@ export function useReminders() {
       return true;
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to delete reminder"
+        err instanceof Error ? err.message : "We couldn't delete your reminder. Please check your internet connection and try again."
       );
       return false;
     }

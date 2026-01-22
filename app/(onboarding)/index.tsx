@@ -220,7 +220,10 @@ export default function Onboarding() {
       await refetch();
       router.replace("/dashboard");
     } catch (error) {
-      Alert.alert("Error", error instanceof Error ? error.message : "Failed to save profile");
+      Alert.alert(
+        "Couldn't Save Profile",
+        error instanceof Error ? error.message : "We couldn't save your profile. Please check your internet connection and try again."
+      );
     } finally {
       setLoading(false);
     }
