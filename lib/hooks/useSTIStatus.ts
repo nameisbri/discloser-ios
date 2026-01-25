@@ -75,11 +75,13 @@ export function useSTIStatus() {
 
       // If no matching test result found, add placeholder entry
       if (!foundMatch) {
+        // Convert ISO timestamp to YYYY-MM-DD format for display
+        const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : new Date().toISOString().split('T')[0];
         stiMap.set(kc.condition, {
           name: kc.condition,
           status: "pending",
           result: "Not recently tested",
-          testDate: kc.added_at,
+          testDate: dateOnly,
           isVerified: false,
           isKnownCondition: true,
           isStatusSTI: isStatusSTI(kc.condition),

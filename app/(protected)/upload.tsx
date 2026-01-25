@@ -25,7 +25,6 @@ import {
   Plus,
   Image as ImageIcon,
 } from "lucide-react-native";
-import { uploadTestDocument } from "../../lib/storage";
 import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
 import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
@@ -125,6 +124,13 @@ export default function Upload() {
   const [selectedPreset, setSelectedPreset] = useState<string>("full");
   const [notes, setNotes] = useState("");
   const [isVerified, setIsVerified] = useState(false);
+  const [verificationDetails, setVerificationDetails] = useState<{
+    labName?: string;
+    patientName?: string;
+    hasHealthCard: boolean;
+    hasAccessionNumber: boolean;
+    nameMatched: boolean;
+  } | null>(null);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -190,6 +196,7 @@ export default function Upload() {
 
       // Parse all selected files
       let verified = false;
+      let vDetails = null;
       for (const file of selectedFiles) {
         const parsed = await parseDocument(
           file.uri,
@@ -201,6 +208,7 @@ export default function Upload() {
         if (!testType && parsed.testType) testType = parsed.testType;
         if (parsed.notes) extractedNotes.push(parsed.notes);
         if (parsed.isVerified) verified = true;
+        if (parsed.verificationDetails && !vDetails) vDetails = parsed.verificationDetails;
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -212,6 +220,7 @@ export default function Upload() {
         }
       }
       setIsVerified(verified);
+      setVerificationDetails(vDetails);
 
       if (collectionDate) setTestDate(collectionDate);
       if (testType) setTestType(testType);
@@ -252,25 +261,9 @@ export default function Upload() {
     try {
       setUploading(true);
 
-      let fileUrl: string | undefined;
-      let fileName: string | undefined;
-
-      // Upload first file (for now, we store the first file URL)
-      // TODO: Support multiple file URLs in the future
-      if (selectedFiles.length > 0) {
-        const firstFile = selectedFiles[0];
-        const uploadResult = await uploadTestDocument(
-          firstFile.uri,
-          firstFile.name
-        );
-        fileUrl = uploadResult.path;
-        fileName = firstFile.name;
-
-        // Upload additional files (they're stored but not linked to result yet)
-        for (let i = 1; i < selectedFiles.length; i++) {
-          await uploadTestDocument(selectedFiles[i].uri, selectedFiles[i].name);
-        }
-      }
+      // NOTE: For privacy, we do NOT store medical document files in cloud storage.
+      // Images are only used locally for OCR text extraction during upload.
+      // Only structured test data (dates, results) is saved to the database.
 
       // Build STI results array - use extracted results if available, otherwise create from selected tests
       const stiResults: STIResult[] = extractedResults.length > 0
@@ -287,8 +280,6 @@ export default function Upload() {
         status: overallStatus,
         test_type: testType,
         sti_results: stiResults,
-        file_url: fileUrl,
-        file_name: fileName,
         notes: notes || undefined,
         is_verified: isVerified,
       });
@@ -545,18 +536,75 @@ export default function Upload() {
             </View>
           )}
 
-          {/* Show verification status */}
-          {isVerified && (
-            <View className={`p-4 rounded-2xl mb-3 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/50"}`}>
-              <View className="flex-row items-center mb-1">
-                <Check size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                  Document verified
+          {/* Show verification status with detailed feedback */}
+          {verificationDetails && (
+            <View className={`p-4 rounded-2xl mb-3 ${isVerified ? (isDark ? "bg-dark-accent-muted" : "bg-primary-light/50") : (isDark ? "bg-dark-warning-bg" : "bg-warning-light/50")}`}>
+              <View className="flex-row items-center mb-2">
+                {isVerified ? (
+                  <Check size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                ) : (
+                  <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
+                )}
+                <Text className={`font-inter-semibold ml-2 ${isVerified ? (isDark ? "text-dark-accent" : "text-primary") : (isDark ? "text-dark-warning" : "text-warning-dark")}`}>
+                  {isVerified ? "Document verified" : "Document not verified"}
                 </Text>
               </View>
-              <Text className={`text-xs font-inter-regular ml-7 ${isDark ? "text-dark-accent/70" : "text-primary/70"}`}>
-                From a recognized Canadian lab with valid identifiers
-              </Text>
+
+              {/* Lab name */}
+              {verificationDetails.labName && (
+                <View className="flex-row items-center ml-7 mb-1">
+                  <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                    From: {verificationDetails.labName}
+                  </Text>
+                </View>
+              )}
+
+              {/* Identifiers */}
+              {(verificationDetails.hasHealthCard || verificationDetails.hasAccessionNumber) ? (
+                <View className="flex-row items-center ml-7 mb-1">
+                  <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                    {verificationDetails.hasHealthCard && verificationDetails.hasAccessionNumber
+                      ? "Health card & accession number present"
+                      : verificationDetails.hasHealthCard
+                      ? "Health card present"
+                      : "Accession number present"}
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center ml-7 mb-1">
+                  <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                    Missing health card or accession number
+                  </Text>
+                </View>
+              )}
+
+              {/* Name match */}
+              {verificationDetails.patientName && profile && (
+                verificationDetails.nameMatched ? (
+                  <View className="flex-row items-center ml-7 mb-1">
+                    <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                    <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                      Name matches your profile
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="flex-row items-center ml-7 mb-1">
+                    <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+                    <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                      Name doesn't match your profile ({verificationDetails.patientName})
+                    </Text>
+                  </View>
+                )
+              )}
+
+              {!isVerified && (
+                <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                  You can still save this result, but it won't be marked as verified.
+                </Text>
+              )}
             </View>
           )}
 
