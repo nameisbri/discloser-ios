@@ -280,7 +280,10 @@ export default function Dashboard() {
                         {sti.name}
                       </Text>
                       <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                        Last tested: {formatDate(sti.testDate)}
+                        {sti.hasTestData
+                          ? `Last tested: ${formatDate(sti.testDate)}`
+                          : `Declared: ${formatDate(sti.testDate)}`
+                        }
                       </Text>
                     </View>
                     <Badge label="Known" variant="info" />

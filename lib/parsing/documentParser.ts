@@ -5,13 +5,7 @@ import { parseDocumentWithLLM } from './llmParser';
 import { normalizeTestName } from './testNormalizer';
 import { standardizeResult } from './resultStandardizer';
 import { ParsedDocument, ParsedTest, LLMResponse, UserProfileForVerification } from './types';
-
-// Recognized Canadian labs
-const CANADIAN_LABS = [
-  'lifelabs', 'public health ontario', 'dynacare', 'bc cdc',
-  'alberta precision labs', 'gamma-dynacare', 'medlabs',
-  'bio-test', 'idexx', 'hassle free clinic', 'mapletree medical',
-];
+import { matchesCanadianLab } from '../utils/labNameNormalizer';
 
 /**
  * Extracts text from an image using Google Cloud Vision OCR
@@ -224,8 +218,7 @@ function matchNames(extractedName: string | undefined, userProfile?: UserProfile
  * Requires: recognized lab + (health card OR accession number) + name match (if profile provided)
  */
 function verifyDocument(llm: LLMResponse, userProfile?: UserProfileForVerification) {
-  const labName = llm.lab_name?.toLowerCase() || '';
-  const isRecognizedLab = CANADIAN_LABS.some(lab => labName.includes(lab));
+  const isRecognizedLab = matchesCanadianLab(llm.lab_name || '');
   const hasHealthCard = llm.health_card_present === true;
   const hasAccession = !!llm.accession_number;
   const nameMatched = matchNames(llm.patient_name, userProfile);

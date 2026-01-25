@@ -13,6 +13,13 @@ export interface AggregatedSTI {
   isVerified: boolean;
   isKnownCondition: boolean;
   isStatusSTI: boolean;
+  /**
+   * Indicates whether this STI entry is derived from actual test result data.
+   * - true: STI comes from a test result (sti_results array)
+   * - false: STI comes from profile's known_conditions without corresponding test data
+   * This distinction allows UI to display known conditions even when they lack recent test results.
+   */
+  hasTestData?: boolean;
 }
 
 export function useSTIStatus() {
@@ -47,8 +54,37 @@ export function useSTIStatus() {
             isVerified: result.is_verified || false,
             isKnownCondition: isKnown,
             isStatusSTI: isStatusSTI(sti.name),
+            hasTestData: true,
           });
         }
+      }
+    }
+
+    // Add known conditions that don't have test results
+    for (const kc of knownConditions) {
+      // Check if this known condition matches any existing STI in the map
+      let foundMatch = false;
+      for (const [stiName, stiData] of stiMap.entries()) {
+        if (matchesKnownCondition(stiName, [kc])) {
+          // Found a test result that matches this known condition
+          stiMap.set(stiName, { ...stiData, hasTestData: true });
+          foundMatch = true;
+          break;
+        }
+      }
+
+      // If no matching test result found, add placeholder entry
+      if (!foundMatch) {
+        stiMap.set(kc.condition, {
+          name: kc.condition,
+          status: "pending",
+          result: "Not recently tested",
+          testDate: kc.added_at,
+          isVerified: false,
+          isKnownCondition: true,
+          isStatusSTI: isStatusSTI(kc.condition),
+          hasTestData: false,
+        });
       }
     }
 

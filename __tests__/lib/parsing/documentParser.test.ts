@@ -4,6 +4,8 @@
  * Tests document verification, test type determination, and name matching.
  */
 
+import { matchesCanadianLab } from '../../../lib/utils/labNameNormalizer';
+
 interface ParsedTest {
   name: string;
   result: string;
@@ -26,13 +28,6 @@ interface UserProfileForVerification {
   first_name: string | null;
   last_name: string | null;
 }
-
-// Recognized Canadian labs
-const CANADIAN_LABS = [
-  'lifelabs', 'public health ontario', 'dynacare', 'bc cdc',
-  'alberta precision labs', 'gamma-dynacare', 'medlabs',
-  'bio-test', 'idexx', 'hassle free clinic', 'mapletree medical',
-];
 
 function normalizeName(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, ' ');
@@ -66,8 +61,7 @@ function matchNames(extractedName: string | undefined, userProfile?: UserProfile
 }
 
 function verifyDocument(llm: LLMResponse, userProfile?: UserProfileForVerification) {
-  const labName = llm.lab_name?.toLowerCase() || '';
-  const isRecognizedLab = CANADIAN_LABS.some(lab => labName.includes(lab));
+  const isRecognizedLab = matchesCanadianLab(llm.lab_name || '');
   const hasHealthCard = llm.health_card_present === true;
   const hasAccession = !!llm.accession_number;
   const nameMatched = matchNames(llm.patient_name, userProfile);
