@@ -270,20 +270,28 @@ export default function Onboarding() {
                 <Text className={`text-2xl font-inter-bold text-center ${textColor}`}>
                   Let's get to know you
                 </Text>
-                <Text className={`text-center mt-2 ${textSecondary}`}>
-                  This info helps verify your test results
+                <Text className={`text-center mt-2 px-4 ${textSecondary}`}>
+                  Use your legal name as it appears on your health card or ID. This helps us verify that lab results belong to you.
                 </Text>
+                <View className={`mt-3 px-4 py-3 rounded-xl ${isDark ? "bg-dark-surface" : "bg-gray-50"}`}>
+                  <Text className={`text-xs text-center ${isDark ? "text-dark-text-muted" : "text-gray-600"}`}>
+                    🔒 Your real name is never shared without your permission
+                  </Text>
+                </View>
               </View>
 
               <View className="gap-4">
                 <View>
                   <Text className={`text-sm font-inter-semibold mb-2 ${textColor}`}>
-                    First Name <Text className="text-danger">*</Text>
+                    Legal First Name <Text className="text-danger">*</Text>
+                  </Text>
+                  <Text className={`text-xs mb-2 ${textSecondary}`}>
+                    As it appears on your health card or ID
                   </Text>
                   <TextInput
                     value={firstName}
                     onChangeText={setFirstName}
-                    placeholder="Enter your first name"
+                    placeholder="Enter your legal first name"
                     placeholderTextColor={isDark ? "#6B6B6B" : "#9CA3AF"}
                     className={`px-4 py-3 rounded-xl border ${inputBg} ${inputBorder} ${textColor}`}
                   />
@@ -291,12 +299,15 @@ export default function Onboarding() {
 
                 <View>
                   <Text className={`text-sm font-inter-semibold mb-2 ${textColor}`}>
-                    Last Name <Text className="text-danger">*</Text>
+                    Legal Last Name <Text className="text-danger">*</Text>
+                  </Text>
+                  <Text className={`text-xs mb-2 ${textSecondary}`}>
+                    As it appears on your health card or ID
                   </Text>
                   <TextInput
                     value={lastName}
                     onChangeText={setLastName}
-                    placeholder="Enter your last name"
+                    placeholder="Enter your legal last name"
                     placeholderTextColor={isDark ? "#6B6B6B" : "#9CA3AF"}
                     className={`px-4 py-3 rounded-xl border ${inputBg} ${inputBorder} ${textColor}`}
                   />
@@ -324,7 +335,7 @@ export default function Onboarding() {
                     Date of Birth <Text className="text-danger">*</Text>
                   </Text>
                   <Text className={`text-xs mb-2 ${textSecondary}`}>
-                    Used to verify your test results match your records
+                    Required for document verification. Labs include DOB on test results to confirm patient identity.
                   </Text>
                   <Pressable
                     onPress={() => setShowDatePicker(true)}
