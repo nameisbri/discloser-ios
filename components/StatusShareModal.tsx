@@ -180,6 +180,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       testDate: s.testDate,
       isVerified: s.isVerified,
       isKnownCondition: s.isKnownCondition,
+      hasTestData: s.hasTestData,
     }));
 
     const { data, error } = await supabase
@@ -289,9 +290,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
                           <Calendar size={12} color={colors.textSecondary} />
                           <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
-                            {formatDate(sti.testDate)}
+                            {sti.hasTestData ? `Last tested: ${formatDate(sti.testDate)}` : `Declared: ${formatDate(sti.testDate)}`}
                           </Text>
-                          {sti.isVerified && (
+                          {sti.isVerified && sti.hasTestData && (
                             <>
                               <ShieldCheck size={12} color={colors.success} style={{ marginLeft: 8 }} />
                               <Text style={{ fontSize: 12, color: colors.success, marginLeft: 2 }}>Verified</Text>
@@ -613,9 +614,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
                         <Calendar size={12} color={colors.textSecondary} />
                         <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
-                          {formatDate(sti.testDate)}
+                          {sti.hasTestData ? `Last tested: ${formatDate(sti.testDate)}` : `Declared: ${formatDate(sti.testDate)}`}
                         </Text>
-                        {sti.isVerified && (
+                        {sti.isVerified && sti.hasTestData && (
                           <>
                             <ShieldCheck size={12} color={colors.success} style={{ marginLeft: 8 }} />
                             <Text style={{ fontSize: 12, color: colors.success, marginLeft: 2 }}>Verified</Text>

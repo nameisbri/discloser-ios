@@ -36,6 +36,7 @@ interface AggregatedSTI {
   isVerified: boolean;
   isKnownCondition: boolean;
   isStatusSTI: boolean;
+  hasTestData?: boolean;
 }
 
 // Simplified matching logic
@@ -65,6 +66,7 @@ function isStatusSTI(testName: string): boolean {
 function aggregateSTIStatus(results: TestResult[], knownConditions: KnownCondition[]): AggregatedSTI[] {
   const stiMap = new Map<string, AggregatedSTI>();
 
+  // Process all results, keeping most recent per STI
   for (const result of results) {
     const stiResults = result.sti_results;
     if (!stiResults || !Array.isArray(stiResults) || stiResults.length === 0) continue;
@@ -86,8 +88,37 @@ function aggregateSTIStatus(results: TestResult[], knownConditions: KnownConditi
           isVerified: result.is_verified || false,
           isKnownCondition: isKnown,
           isStatusSTI: isStatusSTI(sti.name),
+          hasTestData: true,
         });
       }
+    }
+  }
+
+  // Add known conditions that don't have test results
+  for (const kc of knownConditions) {
+    // Check if this known condition matches any existing STI in the map
+    let foundMatch = false;
+    for (const [stiName, stiData] of stiMap.entries()) {
+      if (matchesKnownCondition(stiName, [kc])) {
+        // Found a test result that matches this known condition
+        stiMap.set(stiName, { ...stiData, hasTestData: true });
+        foundMatch = true;
+        break;
+      }
+    }
+
+    // If no matching test result found, add placeholder entry
+    if (!foundMatch) {
+      stiMap.set(kc.condition, {
+        name: kc.condition,
+        status: 'pending',
+        result: 'Not recently tested',
+        testDate: kc.added_at,
+        isVerified: false,
+        isKnownCondition: true,
+        isStatusSTI: isStatusSTI(kc.condition),
+        hasTestData: false,
+      });
     }
   }
 
@@ -419,5 +450,198 @@ describe('New Status Positives Detection', () => {
 
     const newPositives = getNewStatusPositives(aggregated);
     expect(newPositives).toHaveLength(0);
+  });
+});
+
+describe('Known Conditions Without Test Data', () => {
+  test('adds known condition without test results as placeholder', () => {
+    const results: TestResult[] = [];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01', notes: 'Diagnosed in 2020' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    expect(aggregated).toHaveLength(1);
+    expect(aggregated[0]).toEqual({
+      name: 'HIV-1/2',
+      status: 'pending',
+      result: 'Not recently tested',
+      testDate: '2020-01-01',
+      isVerified: false,
+      isKnownCondition: true,
+      isStatusSTI: true,
+      hasTestData: false,
+    });
+  });
+
+  test('adds multiple known conditions without test results', () => {
+    const results: TestResult[] = [];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01' },
+      { condition: 'Herpes (HSV-2)', added_at: '2019-06-15' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    expect(aggregated).toHaveLength(2);
+
+    const hiv = aggregated.find(s => s.name === 'HIV-1/2');
+    expect(hiv?.hasTestData).toBe(false);
+    expect(hiv?.isKnownCondition).toBe(true);
+    expect(hiv?.status).toBe('pending');
+
+    const hsv = aggregated.find(s => s.name === 'Herpes (HSV-2)');
+    expect(hsv?.hasTestData).toBe(false);
+    expect(hsv?.isKnownCondition).toBe(true);
+    expect(hsv?.status).toBe('pending');
+  });
+
+  test('sets hasTestData to true for known conditions with test results', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        test_date: '2024-01-15',
+        sti_results: [{ name: 'HIV', result: 'Positive', status: 'positive' }],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    expect(aggregated).toHaveLength(1);
+
+    const hiv = aggregated[0];
+    expect(hiv.hasTestData).toBe(true);
+    expect(hiv.isKnownCondition).toBe(true);
+    expect(hiv.status).toBe('positive');
+    expect(hiv.testDate).toBe('2024-01-15'); // Uses test date, not added_at
+  });
+
+  test('combines test results with known conditions without tests', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        test_date: '2024-01-15',
+        sti_results: [
+          { name: 'HIV', result: 'Positive', status: 'positive' },
+          { name: 'Chlamydia', result: 'Negative', status: 'negative' },
+        ],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01' },
+      { condition: 'Herpes (HSV-2)', added_at: '2019-06-15' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    expect(aggregated).toHaveLength(3);
+
+    // HIV has test data and is known
+    const hiv = aggregated.find(s => s.name === 'HIV');
+    expect(hiv?.hasTestData).toBe(true);
+    expect(hiv?.isKnownCondition).toBe(true);
+
+    // Chlamydia has test data but is not known
+    const chlamydia = aggregated.find(s => s.name === 'Chlamydia');
+    expect(chlamydia?.hasTestData).toBe(true);
+    expect(chlamydia?.isKnownCondition).toBe(false);
+
+    // HSV-2 is known but has no test data
+    const hsv = aggregated.find(s => s.name === 'Herpes (HSV-2)');
+    expect(hsv?.hasTestData).toBe(false);
+    expect(hsv?.isKnownCondition).toBe(true);
+    expect(hsv?.status).toBe('pending');
+    expect(hsv?.result).toBe('Not recently tested');
+  });
+
+  test('uses added_at as testDate for known conditions without tests', () => {
+    const results: TestResult[] = [];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-03-15' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    expect(aggregated[0].testDate).toBe('2020-03-15');
+  });
+
+  test('known conditions without tests are included in knownConditionsStatus', () => {
+    const results: TestResult[] = [];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    const knownConditionsStatus = aggregated.filter(s => s.isKnownCondition);
+
+    expect(knownConditionsStatus).toHaveLength(1);
+    expect(knownConditionsStatus[0].name).toBe('HIV-1/2');
+  });
+
+  test('known conditions without tests do not affect overall status', () => {
+    const aggregated: AggregatedSTI[] = [
+      // Known condition without test data
+      { name: 'HIV-1/2', status: 'pending', result: 'Not recently tested', testDate: '2020-01-01', isVerified: false, isKnownCondition: true, isStatusSTI: true, hasTestData: false },
+      // Regular negative result
+      { name: 'Chlamydia', status: 'negative', result: 'Negative', testDate: '2024-01-15', isVerified: true, isKnownCondition: false, isStatusSTI: false, hasTestData: true },
+    ];
+
+    // Should be negative because known conditions are excluded
+    expect(calculateOverallStatus(aggregated)).toBe('negative');
+  });
+
+  test('all test results have hasTestData set to true', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        sti_results: [
+          { name: 'HIV', result: 'Negative', status: 'negative' },
+          { name: 'Chlamydia', result: 'Negative', status: 'negative' },
+        ],
+      }),
+    ];
+
+    const aggregated = aggregateSTIStatus(results, []);
+    expect(aggregated.every(s => s.hasTestData === true)).toBe(true);
+  });
+
+  test('sorts known conditions without tests alphabetically with test results', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        sti_results: [
+          { name: 'Syphilis', result: 'Negative', status: 'negative' },
+        ],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01' },
+      { condition: 'Herpes (HSV-2)', added_at: '2019-06-15' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    expect(aggregated).toHaveLength(3);
+
+    // Should be alphabetically sorted
+    expect(aggregated[0].name).toBe('Herpes (HSV-2)');
+    expect(aggregated[1].name).toBe('HIV-1/2');
+    expect(aggregated[2].name).toBe('Syphilis');
+  });
+
+  test('handles known condition matching with test result variations', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        test_date: '2024-01-15',
+        sti_results: [{ name: 'HIV', result: 'Positive', status: 'positive' }],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'HIV-1/2', added_at: '2020-01-01' }, // Different format
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+
+    // Should match and mark the test result as known condition
+    const hiv = aggregated.find(s => s.name === 'HIV');
+    expect(hiv?.isKnownCondition).toBe(true);
+    expect(hiv?.hasTestData).toBe(true);
+
+    // Should NOT add duplicate placeholder because it matched
+    expect(aggregated).toHaveLength(1);
   });
 });
