@@ -189,20 +189,41 @@ export default function Upload() {
 
     try {
       setParsing(true);
+
+      // Parse all files in parallel
+      const parsePromises = selectedFiles.map((file) =>
+        parseDocument(
+          file.uri,
+          "image/jpeg",
+          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined
+        ).catch((error) => ({
+          // Handle individual file failures gracefully
+          collectionDate: null,
+          testType: null,
+          tests: [],
+          notes: undefined,
+          isVerified: false,
+          verificationDetails: undefined,
+          error: error.message,
+        }))
+      );
+
+      const parsedDocuments = await Promise.all(parsePromises);
+
+      // Aggregate results from all parsed documents
       let allResults: STIResult[] = [];
       let collectionDate: string | null = null;
       let testType: string | null = null;
       let extractedNotes: string[] = [];
-
-      // Parse all selected files
       let verified = false;
       let vDetails = null;
-      for (const file of selectedFiles) {
-        const parsed = await parseDocument(
-          file.uri,
-          "image/jpeg",
-          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined
-        );
+      let failedFiles = 0;
+
+      parsedDocuments.forEach((parsed) => {
+        if ('error' in parsed && parsed.error) {
+          failedFiles++;
+          return;
+        }
 
         if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
         if (!testType && parsed.testType) testType = parsed.testType;
@@ -218,7 +239,8 @@ export default function Upload() {
           }));
           allResults = [...allResults, ...results];
         }
-      }
+      });
+
       setIsVerified(verified);
       setVerificationDetails(vDetails);
 
@@ -232,7 +254,12 @@ export default function Upload() {
         setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
       }
 
-      Alert.alert("Success", `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`, [{ text: "OK" }]);
+      const successCount = selectedFiles.length - failedFiles;
+      const message = failedFiles > 0
+        ? `Processed ${successCount}/${selectedFiles.length} image(s), found ${allResults.length} test(s). ${failedFiles} failed.`
+        : `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`;
+
+      Alert.alert("Success", message, [{ text: "OK" }]);
     } catch (error) {
       Alert.alert("Auto-extraction Failed", error instanceof Error ? error.message : "Please enter manually.", [{ text: "OK" }]);
     } finally {
