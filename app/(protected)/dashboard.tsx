@@ -28,10 +28,11 @@ import { RiskAssessment } from "../../components/RiskAssessment";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
+import { ResultCard } from "../../components/ResultCard";
 import { LinearGradient } from "expo-linear-gradient";
 import type { TestResult } from "../../lib/types";
 import { formatDate } from "../../lib/utils/date";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -60,6 +61,12 @@ export default function Dashboard() {
     await Promise.all([refetch(), refetchReminders(), refetchProfile()]);
     setRefreshing(false);
   }, [refetch, refetchReminders, refetchProfile]);
+
+  // Memoize hasKnownCondition to maintain stable reference for ResultCard
+  const hasKnownConditionMemoized = useCallback(
+    (name: string) => hasKnownCondition(name),
+    [hasKnownCondition]
+  );
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -329,7 +336,7 @@ export default function Dashboard() {
           ) : (
             <View className="gap-3 mb-8">
               {results.slice(0, 5).map((result, index) => (
-                <ResultCard key={result.id} result={result} index={index} isDark={isDark} hasKnownCondition={hasKnownCondition} />
+                <ResultCard key={result.id} result={result} index={index} isDark={isDark} hasKnownCondition={hasKnownConditionMemoized} />
               ))}
               {results.length > 5 && (
                 <Pressable className={`py-4 items-center rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-primary-muted"}`}>
@@ -366,92 +373,5 @@ export default function Dashboard() {
         }}
       />
     </SafeAreaView>
-  );
-}
-
-function ResultCard({ result, index, isDark, hasKnownCondition }: { result: TestResult; index: number; isDark: boolean; hasKnownCondition: (name: string) => boolean }) {
-  const router = useRouter();
-
-  // Check if all positive STIs in this result are known conditions
-  const allPositivesAreKnown = result.sti_results?.length > 0 &&
-    result.sti_results
-      .filter((sti) => sti.status === "positive")
-      .every((sti) => hasKnownCondition(sti.name));
-
-  const statusConfig = {
-    negative: {
-      bgLight: "bg-success-light",
-      bgDark: "bg-dark-success-bg",
-      text: isDark ? "text-dark-success" : "text-success-dark",
-      label: "All Clear ✓",
-      icon: isDark ? "#00E5A0" : "#10B981",
-    },
-    positive: {
-      bgLight: "bg-danger-light",
-      bgDark: "bg-dark-danger-bg",
-      text: "text-danger",
-      label: "Positive",
-      icon: "#EF4444",
-    },
-    pending: {
-      bgLight: "bg-warning-light",
-      bgDark: "bg-dark-warning-bg",
-      text: isDark ? "text-dark-warning" : "text-warning",
-      label: "Pending",
-      icon: "#F59E0B",
-    },
-    inconclusive: {
-      bgLight: "bg-gray-100",
-      bgDark: "bg-dark-surface-light",
-      text: isDark ? "text-dark-text-secondary" : "text-gray-600",
-      label: "Inconclusive",
-      icon: isDark ? "#C9A0DC" : "#6B7280",
-    },
-    known: {
-      bgLight: "bg-purple-100",
-      bgDark: "bg-dark-lavender/20",
-      text: isDark ? "text-dark-lavender" : "text-purple-700",
-      label: "Known",
-      icon: isDark ? "#C9A0DC" : "#7C3AED",
-    },
-  };
-
-  // Use "known" status if positive but all positives are known conditions
-  const effectiveStatus = result.status === "positive" && allPositivesAreKnown ? "known" : result.status;
-  const status = statusConfig[effectiveStatus];
-
-  return (
-    <Pressable
-      onPress={() => router.push(`/results/${result.id}`)}
-      className="active:scale-[0.98]"
-      style={{ transform: [{ scale: 1 }] }}
-    >
-      <Card className="flex-row items-center">
-        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? status.bgDark : status.bgLight}`}>
-          <FileText size={22} color={status.icon} />
-        </View>
-        <View className="flex-1">
-          <Text className={`font-inter-bold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>
-            {result.test_type}
-          </Text>
-          <View className="flex-row items-center">
-            <Text className={`text-sm font-inter-regular ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              {formatDate(result.test_date)}
-            </Text>
-            {result.is_verified && (
-              <>
-                <Text className={`mx-2 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>•</Text>
-                <ShieldCheck size={14} color={isDark ? "#00E5A0" : "#10B981"} />
-              </>
-            )}
-          </View>
-        </View>
-        <View className={`px-3 py-1.5 rounded-full ${isDark ? status.bgDark : status.bgLight}`}>
-          <Text className={`${status.text} font-inter-bold text-xs`}>
-            {status.label}
-          </Text>
-        </View>
-      </Card>
-    </Pressable>
   );
 }

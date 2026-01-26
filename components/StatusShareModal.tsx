@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -69,8 +69,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const [previewLink, setPreviewLink] = useState<StatusShareLink | null>(null);
   const [userProfile, setUserProfile] = useState<{ first_name: string | null; alias: string | null; display_name: string | null } | null>(null);
 
-  // Theme colors
-  const colors = {
+  // Theme colors - Memoized to prevent recreation on every render
+  const colors = useMemo(() => ({
     bg: isDark ? "#0D0B0E" : "#FAFAFA",
     surface: isDark ? "#1A1520" : "#FFFFFF",
     surfaceLight: isDark ? "#2D2438" : "#F3F4F6",
@@ -88,18 +88,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     warningLight: isDark ? "rgba(245, 158, 11, 0.15)" : "#FEF3C7",
     info: isDark ? "#C9A0DC" : "#7C3AED",
     infoLight: isDark ? "rgba(201, 160, 220, 0.2)" : "#F3E8FF",
-  };
+  }), [isDark]);
 
-  useEffect(() => {
-    if (visible) {
-      setView("preview");
-      refetchStatus(); // Refresh STI status data when modal opens
-      fetchLinks();
-      fetchUserProfile();
-    }
-  }, [visible, refetchStatus]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -109,23 +100,24 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       .eq("id", user.id)
       .single();
     setUserProfile(data);
-  };
+  }, []);
 
-  const getDisplayName = (): string | null => {
+  const getDisplayName = useCallback((): string | null => {
     if (displayNameOption === "anonymous") return null;
     if (displayNameOption === "alias") return userProfile?.alias || null;
     if (displayNameOption === "firstName") return userProfile?.first_name || null;
     return null;
-  };
+  }, [displayNameOption, userProfile]);
 
-  const getStatusToShare = () => {
+  // Memoize status computation to prevent redundant recalculations
+  const statusToShare = useMemo(() => {
     if (excludeKnownConditions) {
       return routineStatus;
     }
     return aggregatedStatus;
-  };
+  }, [excludeKnownConditions, routineStatus, aggregatedStatus]);
 
-  const fetchLinks = async () => {
+  const fetchLinks = useCallback(async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -162,9 +154,18 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleCreate = async () => {
+  useEffect(() => {
+    if (visible) {
+      setView("preview");
+      refetchStatus(); // Refresh STI status data when modal opens
+      fetchLinks();
+      fetchUserProfile();
+    }
+  }, [visible, refetchStatus, fetchLinks, fetchUserProfile]);
+
+  const handleCreate = useCallback(async () => {
     setCreating(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -173,7 +174,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     const displayName = getDisplayName();
 
     // Store snapshot of current status - respect excludeKnownConditions toggle
-    const statusSnapshot = getStatusToShare().map(s => ({
+    const statusSnapshot = statusToShare.map(s => ({
       name: s.name,
       status: s.status,
       result: s.result,
@@ -205,50 +206,49 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
     await fetchLinks();
     setView("links");
-  };
+  }, [selectedExpiry, selectedViewLimit, displayNameOption, statusToShare, getDisplayName, fetchLinks]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     await supabase.from("status_share_links").delete().eq("id", id);
-    setLinks(links.filter(l => l.id !== id));
-  };
+    setLinks(prevLinks => prevLinks.filter(l => l.id !== id));
+  }, []);
 
-  const getShareUrl = (token: string) => {
+  const getShareUrl = useCallback((token: string) => {
     const baseUrl = process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app";
     return `${baseUrl}/status/${token}`;
-  };
+  }, []);
 
-  const handleCopy = async (link: StatusShareLink) => {
+  const handleCopy = useCallback(async (link: StatusShareLink) => {
     await Clipboard.setStringAsync(getShareUrl(link.token));
     setCopiedId(link.id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, [getShareUrl]);
 
-  const formatExpiry = (dateStr: string) => {
+  const formatExpiry = useCallback((dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const hours = Math.round((date.getTime() - now.getTime()) / (1000 * 60 * 60));
     if (hours < 24) return `${hours}h left`;
     const days = Math.round(hours / 24);
     return `${days}d left`;
-  };
+  }, []);
 
-  const getStatusColor = (status: string, isKnown?: boolean) => {
+  // Memoize color computation functions to prevent recreation on every render
+  const getStatusColor = useCallback((status: string, isKnown?: boolean) => {
     if (isKnown) return colors.info;
     if (status === "negative") return colors.success;
     if (status === "positive") return colors.danger;
     return colors.warning;
-  };
+  }, [colors.info, colors.success, colors.danger, colors.warning]);
 
-  const getStatusBg = (status: string, isKnown?: boolean) => {
+  const getStatusBg = useCallback((status: string, isKnown?: boolean) => {
     if (isKnown) return colors.infoLight;
     if (status === "negative") return colors.successLight;
     if (status === "positive") return colors.dangerLight;
     return colors.warningLight;
-  };
+  }, [colors.infoLight, colors.successLight, colors.dangerLight, colors.warningLight]);
 
   if (!visible) return null;
-
-  const statusToDisplay = getStatusToShare();
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -271,7 +271,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
               {statusLoading ? (
                 <ActivityIndicator size="large" color={colors.primary} />
-              ) : statusToDisplay.length === 0 ? (
+              ) : statusToShare.length === 0 ? (
                 <View style={{ alignItems: "center", paddingVertical: 20 }}>
                   <ShieldCheck size={32} color={colors.textSecondary} style={{ marginBottom: 12 }} />
                   <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>Nothing to share yet</Text>
@@ -281,7 +281,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                   </Text>
                 </View>
               ) : (
-                statusToDisplay.map((sti, index) => (
+                statusToShare.map((sti, index) => (
                   <View key={sti.name}>
                     {index > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />}
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -314,7 +314,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <Button
               label="Create a link"
               onPress={() => setView("create")}
-              disabled={statusToDisplay.length === 0}
+              disabled={statusToShare.length === 0}
             />
 
             {links.length > 0 && (
@@ -605,7 +605,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               </View>
 
               {/* Status Items - Respect the toggle choice */}
-              {statusToDisplay.map((sti, index) => (
+              {statusToShare.map((sti, index) => (
                 <View key={index}>
                   {index > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
