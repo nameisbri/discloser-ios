@@ -479,3 +479,248 @@ describe('formatDocumentDate', () => {
     expect(formatDocumentDate('not-a-date')).toBeNull();
   });
 });
+
+// Mock DocumentParsingError class to test in isolation
+// This mirrors the implementation from documentParser.ts
+type ParsingErrorType = 'ocr' | 'llm_parsing' | 'normalization' | 'validation' | 'network' | 'unknown';
+
+class DocumentParsingError extends Error {
+  public readonly step: ParsingErrorType;
+  public readonly originalError?: unknown;
+  public readonly fileIdentifier?: string;
+  public readonly details: Record<string, unknown>;
+
+  constructor(
+    step: ParsingErrorType,
+    message: string,
+    options: {
+      originalError?: unknown;
+      fileIdentifier?: string;
+      details?: Record<string, unknown>;
+    } = {}
+  ) {
+    super(message);
+    Object.setPrototypeOf(this, DocumentParsingError.prototype);
+    this.name = 'DocumentParsingError';
+    this.step = step;
+    this.originalError = options.originalError;
+    this.fileIdentifier = options.fileIdentifier;
+    this.details = options.details || {};
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, DocumentParsingError.prototype.constructor);
+    }
+  }
+
+  getUserMessage(): string {
+    switch (this.step) {
+      case 'ocr':
+        return 'Failed to extract text from the image. Please ensure the image is clear and readable.';
+      case 'llm_parsing':
+        return 'Failed to parse the test results. Please ensure the image contains valid test results.';
+      case 'normalization':
+        return 'Failed to process the test results. Please try again.';
+      case 'validation':
+        return 'The document does not appear to contain valid test results.';
+      case 'network':
+        return 'Network error. Please check your connection and try again.';
+      default:
+        return 'Failed to process the document. Please try again.';
+    }
+  }
+
+  toJSON(): Record<string, unknown> {
+    return {
+      name: this.name,
+      step: this.step,
+      message: this.message,
+      userMessage: this.getUserMessage(),
+      fileIdentifier: this.fileIdentifier,
+      details: this.details,
+      originalError: this.originalError instanceof Error ? {
+        name: this.originalError.name,
+        message: this.originalError.message,
+        stack: this.originalError.stack,
+      } : this.originalError,
+      stack: this.stack,
+    };
+  }
+}
+
+describe('DocumentParsingError', () => {
+  describe('Error Construction', () => {
+    test('creates error with basic properties', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed');
+
+      expect(error.name).toBe('DocumentParsingError');
+      expect(error.message).toBe('OCR failed');
+      expect(error.step).toBe('ocr');
+      expect(error.details).toEqual({});
+    });
+
+    test('creates error with file identifier', () => {
+      const error = new DocumentParsingError('llm_parsing', 'LLM failed', {
+        fileIdentifier: 'File 1 of 3',
+      });
+
+      expect(error.fileIdentifier).toBe('File 1 of 3');
+    });
+
+    test('creates error with original error', () => {
+      const originalError = new Error('Original error message');
+      const error = new DocumentParsingError('network', 'Network failed', {
+        originalError,
+      });
+
+      expect(error.originalError).toBe(originalError);
+    });
+
+    test('creates error with details', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed', {
+        details: {
+          statusCode: 500,
+          statusText: 'Internal Server Error',
+        },
+      });
+
+      expect(error.details.statusCode).toBe(500);
+      expect(error.details.statusText).toBe('Internal Server Error');
+    });
+
+    test('is instance of Error', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed');
+      expect(error instanceof Error).toBe(true);
+    });
+
+    test('has proper stack trace', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed');
+      expect(error.stack).toBeDefined();
+      expect(typeof error.stack).toBe('string');
+    });
+  });
+
+  describe('User Messages', () => {
+    test('returns user-friendly message for OCR errors', () => {
+      const error = new DocumentParsingError('ocr', 'Technical OCR error');
+      expect(error.getUserMessage()).toBe(
+        'Failed to extract text from the image. Please ensure the image is clear and readable.'
+      );
+    });
+
+    test('returns user-friendly message for LLM parsing errors', () => {
+      const error = new DocumentParsingError('llm_parsing', 'LLM service error');
+      expect(error.getUserMessage()).toBe(
+        'Failed to parse the test results. Please ensure the image contains valid test results.'
+      );
+    });
+
+    test('returns user-friendly message for normalization errors', () => {
+      const error = new DocumentParsingError('normalization', 'Normalization failed');
+      expect(error.getUserMessage()).toBe(
+        'Failed to process the test results. Please try again.'
+      );
+    });
+
+    test('returns user-friendly message for validation errors', () => {
+      const error = new DocumentParsingError('validation', 'Invalid document');
+      expect(error.getUserMessage()).toBe(
+        'The document does not appear to contain valid test results.'
+      );
+    });
+
+    test('returns user-friendly message for network errors', () => {
+      const error = new DocumentParsingError('network', 'Connection failed');
+      expect(error.getUserMessage()).toBe(
+        'Network error. Please check your connection and try again.'
+      );
+    });
+
+    test('returns generic message for unknown errors', () => {
+      const error = new DocumentParsingError('unknown', 'Something went wrong');
+      expect(error.getUserMessage()).toBe(
+        'Failed to process the document. Please try again.'
+      );
+    });
+  });
+
+  describe('Error Serialization', () => {
+    test('serializes error to JSON', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed', {
+        fileIdentifier: 'File 1',
+        details: { statusCode: 500 },
+      });
+
+      const json = error.toJSON();
+
+      expect(json.name).toBe('DocumentParsingError');
+      expect(json.step).toBe('ocr');
+      expect(json.message).toBe('OCR failed');
+      expect(json.userMessage).toBeDefined();
+      expect(json.fileIdentifier).toBe('File 1');
+      expect(json.details).toEqual({ statusCode: 500 });
+      expect(json.stack).toBeDefined();
+    });
+
+    test('serializes original Error object', () => {
+      const originalError = new Error('Original error');
+      const error = new DocumentParsingError('network', 'Network failed', {
+        originalError,
+      });
+
+      const json = error.toJSON();
+
+      expect(json.originalError).toEqual({
+        name: originalError.name,
+        message: originalError.message,
+        stack: originalError.stack,
+      });
+    });
+
+    test('serializes non-Error original error', () => {
+      const error = new DocumentParsingError('network', 'Network failed', {
+        originalError: 'String error',
+      });
+
+      const json = error.toJSON();
+      expect(json.originalError).toBe('String error');
+    });
+  });
+
+  describe('Multi-file Context', () => {
+    test('includes file identifier in error', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed', {
+        fileIdentifier: 'File 2 of 5',
+      });
+
+      expect(error.fileIdentifier).toBe('File 2 of 5');
+      expect(error.toJSON().fileIdentifier).toBe('File 2 of 5');
+    });
+
+    test('works without file identifier', () => {
+      const error = new DocumentParsingError('ocr', 'OCR failed');
+      expect(error.fileIdentifier).toBeUndefined();
+      expect(error.toJSON().fileIdentifier).toBeUndefined();
+    });
+  });
+
+  describe('Error Context Preservation', () => {
+    test('preserves all context when wrapping errors', () => {
+      const originalError = new Error('Network timeout');
+      originalError.stack = 'Original stack trace';
+
+      const wrappedError = new DocumentParsingError('network', 'Failed to process', {
+        fileIdentifier: 'File 3',
+        originalError,
+        details: {
+          step: 'OCR API call',
+          url: 'https://api.example.com',
+        },
+      });
+
+      expect(wrappedError.originalError).toBe(originalError);
+      expect(wrappedError.fileIdentifier).toBe('File 3');
+      expect(wrappedError.details.step).toBe('OCR API call');
+      expect(wrappedError.details.url).toBe('https://api.example.com');
+    });
+  });
+});

@@ -30,9 +30,10 @@ import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
-import { parseDocument } from "../../lib/parsing";
+import { parseDocument, DocumentParsingError } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../lib/constants";
+import { isRetryableError } from "../../lib/http/errors";
 
 // Risk level to testing interval in days
 const RISK_INTERVALS: Record<RiskLevel, number> = {
@@ -112,6 +113,11 @@ export default function Upload() {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [parsingErrors, setParsingErrors] = useState<Array<{
+    fileIndex: number;
+    fileName: string;
+    error: DocumentParsingError;
+  }>>([]);
 
   // Form state
   const [testDate, setTestDate] = useState(
@@ -189,13 +195,15 @@ export default function Upload() {
 
     try {
       setParsing(true);
+      setParsingErrors([]); // Reset errors on new parse attempt
 
-      // Parse all files in parallel
-      const parsePromises = selectedFiles.map((file) =>
+      // Parse all files in parallel with proper error tracking
+      const parsePromises = selectedFiles.map((file, index) =>
         parseDocument(
           file.uri,
           "image/jpeg",
-          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined
+          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
+          `File ${index + 1} of ${selectedFiles.length}`
         ).catch((error) => ({
           // Handle individual file failures gracefully
           collectionDate: null,
@@ -204,7 +212,8 @@ export default function Upload() {
           notes: undefined,
           isVerified: false,
           verificationDetails: undefined,
-          error: error.message,
+          error: error,
+          fileIndex: index,
         }))
       );
 
@@ -216,12 +225,51 @@ export default function Upload() {
       let testType: string | null = null;
       let extractedNotes: string[] = [];
       let verified = false;
-      let vDetails = null;
-      let failedFiles = 0;
+      let vDetails: {
+        labName?: string;
+        patientName?: string;
+        hasHealthCard: boolean;
+        hasAccessionNumber: boolean;
+        nameMatched: boolean;
+      } | null = null;
+      const errors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
 
-      parsedDocuments.forEach((parsed) => {
+      // Track error types for better messaging
+      const errorTypes = {
+        network: 0,
+        ocr: 0,
+        llm_parsing: 0,
+        other: 0,
+      };
+
+      parsedDocuments.forEach((parsed, index) => {
         if ('error' in parsed && parsed.error) {
-          failedFiles++;
+          // Track DocumentParsingError instances
+          if (parsed.error instanceof DocumentParsingError) {
+            errors.push({
+              fileIndex: index,
+              fileName: selectedFiles[index].name,
+              error: parsed.error,
+            });
+
+            // Count error types
+            if (parsed.error.step === 'network') errorTypes.network++;
+            else if (parsed.error.step === 'ocr') errorTypes.ocr++;
+            else if (parsed.error.step === 'llm_parsing') errorTypes.llm_parsing++;
+            else errorTypes.other++;
+          } else {
+            // Handle generic errors
+            errors.push({
+              fileIndex: index,
+              fileName: selectedFiles[index].name,
+              error: new DocumentParsingError(
+                'unknown',
+                parsed.error instanceof Error ? parsed.error.message : 'Unknown error',
+                { fileIdentifier: `File ${index + 1} of ${selectedFiles.length}` }
+              ),
+            });
+            errorTypes.other++;
+          }
           return;
         }
 
@@ -243,6 +291,7 @@ export default function Upload() {
 
       setIsVerified(verified);
       setVerificationDetails(vDetails);
+      setParsingErrors(errors);
 
       if (collectionDate) setTestDate(collectionDate);
       if (testType) setTestType(testType);
@@ -254,14 +303,181 @@ export default function Upload() {
         setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
       }
 
-      const successCount = selectedFiles.length - failedFiles;
-      const message = failedFiles > 0
-        ? `Processed ${successCount}/${selectedFiles.length} image(s), found ${allResults.length} test(s). ${failedFiles} failed.`
-        : `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`;
+      // Build success/failure message based on results
+      const successCount = selectedFiles.length - errors.length;
 
-      Alert.alert("Success", message, [{ text: "OK" }]);
+      if (errors.length === 0) {
+        // All files processed successfully
+        Alert.alert(
+          "Success",
+          `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`,
+          [{ text: "OK" }]
+        );
+      } else if (successCount > 0) {
+        // Partial success
+        const errorSummary = buildErrorSummary(errorTypes);
+        Alert.alert(
+          "Partial Success",
+          `Processed ${successCount}/${selectedFiles.length} image(s), found ${allResults.length} test(s).\n\n${errorSummary}`,
+          [{ text: "OK" }]
+        );
+      } else {
+        // All files failed
+        const errorSummary = buildErrorSummary(errorTypes);
+        Alert.alert(
+          "Processing Failed",
+          `Failed to process ${errors.length} image(s).\n\n${errorSummary}`,
+          [{ text: "OK" }]
+        );
+      }
     } catch (error) {
-      Alert.alert("Auto-extraction Failed", error instanceof Error ? error.message : "Please enter manually.", [{ text: "OK" }]);
+      Alert.alert(
+        "Auto-extraction Failed",
+        error instanceof Error ? error.message : "Please enter manually.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  /**
+   * Builds a user-friendly error summary based on error types
+   */
+  const buildErrorSummary = (errorTypes: Record<string, number>): string => {
+    const messages: string[] = [];
+
+    if (errorTypes.network > 0) {
+      messages.push(`${errorTypes.network} network error(s) - check your connection`);
+    }
+    if (errorTypes.ocr > 0) {
+      messages.push(`${errorTypes.ocr} image(s) could not be read - ensure clarity`);
+    }
+    if (errorTypes.llm_parsing > 0) {
+      messages.push(`${errorTypes.llm_parsing} document(s) could not be parsed`);
+    }
+    if (errorTypes.other > 0) {
+      messages.push(`${errorTypes.other} other error(s)`);
+    }
+
+    return messages.join('\n');
+  };
+
+  /**
+   * Retries parsing for failed files
+   */
+  const retryFailedFiles = async () => {
+    const failedIndices = parsingErrors.map((e) => e.fileIndex);
+    const filesToRetry = selectedFiles.filter((_, index) => failedIndices.includes(index));
+
+    if (filesToRetry.length === 0) return;
+
+    try {
+      setParsing(true);
+
+      // Retry parsing only failed files
+      const retryPromises = filesToRetry.map((file, arrayIndex) => {
+        const originalIndex = failedIndices[arrayIndex];
+        return parseDocument(
+          file.uri,
+          "image/jpeg",
+          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
+          `File ${originalIndex + 1} of ${selectedFiles.length}`
+        ).catch((error) => ({
+          collectionDate: null,
+          testType: null,
+          tests: [],
+          notes: undefined,
+          isVerified: false,
+          verificationDetails: undefined,
+          error: error,
+          fileIndex: originalIndex,
+        }));
+      });
+
+      const retryResults = await Promise.all(retryPromises);
+
+      // Process retry results and update state
+      let newResults: STIResult[] = [...extractedResults];
+      let collectionDate: string | null = testDate;
+      let testTypeValue: string | null = testType;
+      let extractedNotesArr: string[] = notes ? [notes] : [];
+      let verified = isVerified;
+      let vDetails: {
+        labName?: string;
+        patientName?: string;
+        hasHealthCard: boolean;
+        hasAccessionNumber: boolean;
+        nameMatched: boolean;
+      } | null = verificationDetails;
+      const remainingErrors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
+
+      retryResults.forEach((parsed, arrayIndex) => {
+        const originalIndex = failedIndices[arrayIndex];
+
+        if ('error' in parsed && parsed.error) {
+          // Still failed, keep error
+          if (parsed.error instanceof DocumentParsingError) {
+            remainingErrors.push({
+              fileIndex: originalIndex,
+              fileName: selectedFiles[originalIndex].name,
+              error: parsed.error,
+            });
+          }
+          return;
+        }
+
+        // Success! Add to results
+        if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
+        if (!testTypeValue && parsed.testType) testTypeValue = parsed.testType;
+        if (parsed.notes) extractedNotesArr.push(parsed.notes);
+        if (parsed.isVerified) verified = true;
+        if (parsed.verificationDetails && !vDetails) vDetails = parsed.verificationDetails;
+
+        if (parsed.tests.length > 0) {
+          const results: STIResult[] = parsed.tests.map((t) => ({
+            name: t.name,
+            result: t.result,
+            status: t.status,
+          }));
+          newResults = [...newResults, ...results];
+        }
+      });
+
+      // Update state with retry results
+      setExtractedResults(newResults);
+      if (collectionDate) setTestDate(collectionDate);
+      if (testTypeValue) setTestType(testTypeValue);
+      if (newResults.length > 0) {
+        const allNegative = newResults.every((t) => t.status === "negative");
+        const anyPositive = newResults.some((t) => t.status === "positive");
+        setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
+      }
+      setNotes(extractedNotesArr.join("\n\n"));
+      setIsVerified(verified);
+      setVerificationDetails(vDetails);
+      setParsingErrors(remainingErrors);
+
+      const successCount = filesToRetry.length - remainingErrors.length;
+      if (remainingErrors.length === 0) {
+        Alert.alert(
+          "Success",
+          `Successfully processed all ${successCount} file(s) on retry!`,
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Partial Success",
+          `Processed ${successCount}/${filesToRetry.length} file(s) on retry. ${remainingErrors.length} still failed.`,
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Retry Failed",
+        error instanceof Error ? error.message : "Please try again or enter manually.",
+        [{ text: "OK" }]
+      );
     } finally {
       setParsing(false);
     }
@@ -631,6 +847,64 @@ export default function Upload() {
                 <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                   You can still save this result, but it won't be marked as verified.
                 </Text>
+              )}
+            </View>
+          )}
+
+          {/* Parsing Errors Display */}
+          {!parsing && parsingErrors.length > 0 && (
+            <View className="mb-6">
+              <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
+                Processing Errors ({parsingErrors.length})
+              </Text>
+
+              {parsingErrors.map((errorInfo, idx) => {
+                const isRetryable = errorInfo.error.step === 'network' || errorInfo.error.step === 'ocr' || isRetryableError(errorInfo.error.originalError);
+
+                return (
+                  <View
+                    key={idx}
+                    className={`border rounded-2xl p-4 mb-3 ${isDark ? "bg-dark-danger-bg border-dark-border" : "bg-danger-light border-danger"}`}
+                  >
+                    <View className="flex-row items-start mb-2">
+                      <X size={18} color="#DC3545" className="mr-2 mt-1" />
+                      <View className="flex-1">
+                        <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                          {errorInfo.fileName}
+                        </Text>
+                        <Text className={`font-inter-regular text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                          {errorInfo.error.getUserMessage()}
+                        </Text>
+
+                        {/* Show error type badge */}
+                        <View className="mt-2">
+                          <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                            Error type: {errorInfo.error.step}
+                          </Text>
+                        </View>
+
+                        {/* Retryable indicator */}
+                        {isRetryable && (
+                          <View className={`mt-2 px-2 py-1 rounded-full self-start ${isDark ? "bg-dark-warning-bg" : "bg-warning-light"}`}>
+                            <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
+                              Can retry
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Retry Button - show if any errors are retryable */}
+              {parsingErrors.some((e) => e.error.step === 'network' || e.error.step === 'ocr' || isRetryableError(e.error.originalError)) && (
+                <Button
+                  label="Retry Auto-Extract"
+                  onPress={retryFailedFiles}
+                  variant="secondary"
+                  className="mt-2"
+                />
               )}
             </View>
           )}
