@@ -32,7 +32,7 @@ import { ResultCard } from "../../components/ResultCard";
 import { LinearGradient } from "expo-linear-gradient";
 import type { TestResult } from "../../lib/types";
 import { formatDate } from "../../lib/utils/date";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -46,18 +46,31 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const lastFetchRef = useRef<number>(0);
 
-  // Refetch data when screen comes into focus
+  // Optimized focus refetch: only refetch if data is stale (>10s old)
   useFocusEffect(
     useCallback(() => {
-      refetch();
-      refetchReminders();
-      refetchProfile();
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchRef.current;
+
+      // Only refetch if data is older than 10 seconds
+      if (timeSinceLastFetch > 10000) {
+        const timeoutId = setTimeout(() => {
+          lastFetchRef.current = now;
+          refetch();
+          refetchReminders();
+          refetchProfile();
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timeoutId);
+      }
     }, [refetch, refetchReminders, refetchProfile])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    lastFetchRef.current = Date.now();
     await Promise.all([refetch(), refetchReminders(), refetchProfile()]);
     setRefreshing(false);
   }, [refetch, refetchReminders, refetchProfile]);
