@@ -41,6 +41,19 @@ export const waitlistWelcomeEmail = (email: string) => ({
               </ul>
             </div>
 
+            <!-- Survey CTA -->
+            <div style="margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; text-align: center;">
+              <h3 style="color: white; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">
+                Help Us Build the Right Product
+              </h3>
+              <p style="color: rgba(255, 255, 255, 0.95); font-size: 14px; line-height: 1.7; margin: 0 0 20px 0;">
+                Take 2 minutes to share your thoughts. Your feedback will directly shape Discloser's features and design.
+              </p>
+              <a href="https://tally.so/r/Gx9WqQ" style="display: inline-block; background: white; color: #667eea; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                Take the Survey
+              </a>
+            </div>
+
             <!-- Why Discloser -->
             <div style="margin-bottom: 25px;">
               <h3 style="color: #2c3e50; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #667eea;">

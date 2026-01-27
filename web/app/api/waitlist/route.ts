@@ -90,16 +90,9 @@ export async function POST(req: Request) {
     }
 
     // Send welcome email
-    console.log("Attempting to send email to:", emailLower);
-    console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
-
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const emailData = waitlistWelcomeEmail(emailLower);
-      console.log("Email data prepared:", { from: emailData.from, to: emailData.to, subject: emailData.subject });
-
-      const result = await resend.emails.send(emailData);
-      console.log("Email sent successfully:", result);
+      await resend.emails.send(waitlistWelcomeEmail(emailLower));
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
       // Don't fail the request if email fails - user is still on waitlist
