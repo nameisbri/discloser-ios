@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { Resend } from "resend";
+import { waitlistWelcomeEmail } from "@/lib/emails/waitlist-welcome";
 
 // Simple in-memory rate limiting (per IP, resets on server restart)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -85,6 +87,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
       }
       throw error;
+    }
+
+    // Send welcome email
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send(waitlistWelcomeEmail(emailLower));
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+      // Don't fail the request if email fails - user is still on waitlist
     }
 
     return NextResponse.json({ success: true });
