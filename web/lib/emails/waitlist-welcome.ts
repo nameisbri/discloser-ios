@@ -24,7 +24,7 @@ export const waitlistWelcomeEmail = (email: string) => ({
 
             <!-- Intro -->
             <p style="color: #2c3e50; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
-              Right now, proving you're negative means showing your full name, date of birth, address—basically your whole life—to someone who might not even remember your name tomorrow.
+              Right now, proving you're negative means showing your full name, date of birth, address... basically your whole life... to someone who might not even remember your name tomorrow.
             </p>
 
             <p style="color: #2c3e50; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -74,7 +74,7 @@ export const waitlistWelcomeEmail = (email: string) => ({
             <!-- Footer -->
             <div style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed #e0e0e0; text-align: center;">
               <p style="color: #95a5a6; font-size: 11px; margin: 0;">
-                <a href="https://discloser.app" style="color: #667eea; text-decoration: none; font-weight: 600;">discloser.app</a> · You signed up for the waitlist
+                <a href="https://discloser.app" style="color: #667eea; text-decoration: none; font-weight: 600;">discloser.app</a> · You're in for early access
               </p>
             </div>
           </div>
