@@ -267,6 +267,14 @@ export default function Home() {
               >
                 We'll let you know when Discloser is ready.
               </motion.p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-white/40 text-xs mt-3"
+              >
+                Check your inbox for next steps.
+              </motion.p>
             </motion.div>
           ) : (
             <>
@@ -316,6 +324,9 @@ export default function Home() {
                   )}
                 </motion.button>
               </form>
+              <p className="text-xs text-white/50 max-w-sm mx-auto mb-2">
+                We'll send you launch notifications and occasional surveys. You can unsubscribe anytime.
+              </p>
               <p className="text-sm text-white/40">
                 Join 847 people on the waitlist
               </p>
