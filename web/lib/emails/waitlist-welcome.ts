@@ -1,7 +1,7 @@
 export const waitlistWelcomeEmail = (email: string) => ({
   from: 'Discloser <hello@updates.discloser.app>',
   to: email,
-  subject: 'You're on the list!',
+  subject: 'You\'re on the list!',
   html: `
     <!DOCTYPE html>
     <html>
