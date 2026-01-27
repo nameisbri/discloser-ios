@@ -20,14 +20,7 @@ const nextConfig = {
 
   // Webpack optimizations
   webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Tree shake unused code
-      config.optimization = {
-        ...config.optimization,
-        usedExports: true,
-        sideEffects: false,
-      };
-    }
+    // Next.js handles optimizations by default in v14+
     return config;
   },
 
