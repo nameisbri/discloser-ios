@@ -1,12 +1,12 @@
 // LLM-based document parser using OpenRouter
 
-import { LLMResponse } from './types';
-import { fetchWithRetry, NetworkRequestError } from '../http';
-import { logger } from '../utils/logger';
+import { LLMResponse } from "./types";
+import { fetchWithRetry, NetworkRequestError } from "../http";
+import { logger } from "../utils/logger";
 
 const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'meta-llama/llama-3.3-70b-instruct:free'; // Fast and free
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL = "meta-llama/llama-3.3-70b-instruct:free"; // Fast and free
 
 const SYSTEM_PROMPT = `You are a medical document parser that extracts STI test results from lab reports.
 
@@ -43,6 +43,7 @@ RULES:
 - Use simple disease names (e.g., "HIV" not "HIV1/2 Ag/Ab Combo Screen")
 - If collection date not found, use null
 - Ignore non-STI tests (e.g., liver enzymes, ALT) unless they relate to hepatitis interpretation
+- There should only be one entry per disease / test type (e.g. one HIV entry, one Hepatitis A entry, etc.)
 
 TEST TYPE/TITLE:
 - Suggest a concise title for this test panel based on what was tested
@@ -93,7 +94,7 @@ function isValidUTF8(text: string): boolean {
     // Attempt to encode and decode the text
     // If it contains invalid UTF-8 sequences, this will fail
     const encoder = new TextEncoder();
-    const decoder = new TextDecoder('utf-8', { fatal: true });
+    const decoder = new TextDecoder("utf-8", { fatal: true });
     const encoded = encoder.encode(text);
     decoder.decode(encoded);
     return true;
@@ -132,15 +133,17 @@ function formatSize(bytes: number): string {
 
 export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
   if (!OPENROUTER_API_KEY) {
-    throw new Error('EXPO_PUBLIC_OPENROUTER_API_KEY is not configured');
+    throw new Error("EXPO_PUBLIC_OPENROUTER_API_KEY is not configured");
   }
 
   // Validate text encoding
   if (!isValidUTF8(text)) {
     const error = new Error(
-      'Document contains invalid UTF-8 encoding. Please ensure the document is properly encoded.'
+      "Document contains invalid UTF-8 encoding. Please ensure the document is properly encoded.",
     );
-    logger.error('LLM parser: Invalid UTF-8 encoding detected', { textLength: text.length });
+    logger.error("LLM parser: Invalid UTF-8 encoding detected", {
+      textLength: text.length,
+    });
     throw error;
   }
 
@@ -149,7 +152,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
   const wasTruncated = text.length > 100000;
 
   if (wasTruncated) {
-    logger.warn('LLM parser: Text truncated to fit context window', {
+    logger.warn("LLM parser: Text truncated to fit context window", {
       originalLength: text.length,
       truncatedLength: truncatedText.length,
     });
@@ -160,11 +163,11 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     model: MODEL,
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: SYSTEM_PROMPT,
       },
       {
-        role: 'user',
+        role: "user",
         content: `Extract STI test results from this lab report:\n\n${truncatedText}`,
       },
     ],
@@ -176,7 +179,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
   const payloadSize = calculatePayloadSize(requestPayload);
   const payloadSizeFormatted = formatSize(payloadSize);
 
-  logger.info('LLM parser: Sending request to OpenRouter', {
+  logger.info("LLM parser: Sending request to OpenRouter", {
     url: OPENROUTER_API_URL,
     model: MODEL,
     payloadSize: payloadSizeFormatted,
@@ -189,12 +192,12 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
 
     // Use fetchWithRetry with 30s timeout and 3 retries
     const response = await fetchWithRetry(OPENROUTER_API_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://discloser.app',
-        'X-Title': 'Discloser STI Test Parser',
+        "HTTP-Referer": "https://discloser.app",
+        "X-Title": "Discloser STI Test Parser",
       },
       body: JSON.stringify(requestPayload),
       timeout: 30000, // 30 seconds
@@ -208,24 +211,26 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
-    logger.info('LLM parser: Received response from OpenRouter', {
+    logger.info("LLM parser: Received response from OpenRouter", {
       duration,
-      responseSize: content ? formatSize(content.length) : '0 KB',
+      responseSize: content ? formatSize(content.length) : "0 KB",
       hasContent: !!content,
     });
 
     if (!content) {
       const error = new Error(
-        `No content in LLM response. URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted}`
+        `No content in LLM response. URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted}`,
       );
-      logger.error('LLM parser: Empty response from LLM', { data });
+      logger.error("LLM parser: Empty response from LLM", { data });
       throw error;
     }
 
     // Strip markdown code blocks if present
     let jsonText = content.trim();
-    if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    if (jsonText.startsWith("```")) {
+      jsonText = jsonText
+        .replace(/^```(?:json)?\n?/, "")
+        .replace(/\n?```$/, "");
     }
 
     // Parse the JSON response
@@ -234,9 +239,9 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
       parsed = JSON.parse(jsonText);
     } catch (parseError) {
       const error = new Error(
-        `Failed to parse LLM response as JSON. URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted}`
+        `Failed to parse LLM response as JSON. URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted}`,
       );
-      logger.error('LLM parser: JSON parse error', {
+      logger.error("LLM parser: JSON parse error", {
         parseError,
         contentPreview: content.substring(0, 200),
       });
@@ -246,13 +251,13 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     // Validate response structure
     if (!parsed.tests || !Array.isArray(parsed.tests)) {
       const error = new Error(
-        `Invalid LLM response structure (missing 'tests' array). URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted}`
+        `Invalid LLM response structure (missing 'tests' array). URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted}`,
       );
-      logger.error('LLM parser: Invalid response structure', { parsed });
+      logger.error("LLM parser: Invalid response structure", { parsed });
       throw error;
     }
 
-    logger.info('LLM parser: Successfully parsed document', {
+    logger.info("LLM parser: Successfully parsed document", {
       testCount: parsed.tests.length,
       collectionDate: parsed.collection_date,
       testType: parsed.test_type,
@@ -263,7 +268,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     // Enhanced error handling with diagnostics
     if (error instanceof NetworkRequestError) {
       // Network error from fetchWithRetry - already has good diagnostics
-      logger.error('LLM parser: Network request failed', {
+      logger.error("LLM parser: Network request failed", {
         errorType: error.type,
         statusCode: error.statusCode,
         details: error.details,
@@ -278,14 +283,14 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     }
 
     // Other errors (parsing, validation, etc.)
-    logger.error('LLM parser: Unexpected error', {
+    logger.error("LLM parser: Unexpected error", {
       error,
       url: OPENROUTER_API_URL,
       payloadSize: payloadSizeFormatted,
     });
 
     // Re-throw with additional context if not already enhanced
-    if (error instanceof Error && !error.message.includes('Payload size:')) {
+    if (error instanceof Error && !error.message.includes("Payload size:")) {
       const enhancedMessage = `${error.message} (URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted})`;
       const enhancedError = new Error(enhancedMessage);
       (enhancedError as any).cause = error;
