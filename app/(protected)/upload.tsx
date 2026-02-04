@@ -22,7 +22,6 @@ import {
   ChevronLeft,
   Check,
   X,
-  Calendar,
   Plus,
   Image as ImageIcon,
   FileText,
@@ -65,51 +64,6 @@ type SelectedFile = {
   pageCount?: number;
 };
 
-const DEFAULT_STI_TESTS = [
-  "HIV-1/2",
-  "Syphilis",
-  "Chlamydia",
-  "Gonorrhea",
-  "Hepatitis B",
-  "Hepatitis C",
-  "Herpes (HSV-1)",
-  "Herpes (HSV-2)",
-  "Trichomoniasis",
-];
-
-// Test presets for quick selection
-const TEST_PRESETS = [
-  {
-    id: "full",
-    label: "Full Panel",
-    description: "All 9 common STIs",
-    tests: ["HIV-1/2", "Syphilis", "Chlamydia", "Gonorrhea", "Hepatitis B", "Hepatitis C", "Herpes (HSV-1)", "Herpes (HSV-2)", "Trichomoniasis"],
-  },
-  {
-    id: "basic",
-    label: "Basic Screen",
-    description: "Syphilis, Gonorrhea & Chlamydia",
-    tests: ["Syphilis", "Chlamydia", "Gonorrhea"],
-  },
-  {
-    id: "std4",
-    label: "4-Test Panel",
-    description: "HIV, Syphilis, Chlamydia, Gonorrhea",
-    tests: ["HIV-1/2", "Syphilis", "Chlamydia", "Gonorrhea"],
-  },
-  {
-    id: "hiv",
-    label: "HIV Only",
-    description: "HIV-1/2 test",
-    tests: ["HIV-1/2"],
-  },
-  {
-    id: "custom",
-    label: "Custom",
-    description: "Select specific tests",
-    tests: [],
-  },
-];
 
 export default function Upload() {
   const router = useRouter();
@@ -135,8 +89,6 @@ export default function Upload() {
   const [testType, setTestType] = useState("Full STI Panel");
   const [overallStatus, setOverallStatus] = useState<TestStatus>("negative");
   const [extractedResults, setExtractedResults] = useState<STIResult[]>([]);
-  const [selectedTests, setSelectedTests] = useState<string[]>(DEFAULT_STI_TESTS);
-  const [selectedPreset, setSelectedPreset] = useState<string>("full");
   const [notes, setNotes] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [verificationDetails, setVerificationDetails] = useState<Array<{
@@ -711,14 +663,8 @@ export default function Upload() {
       // Images are only used locally for OCR text extraction during upload.
       // Only structured test data (dates, results) is saved to the database.
 
-      // Build STI results array - use extracted results if available, otherwise create from selected tests
-      const stiResults: STIResult[] = extractedResults.length > 0
-        ? extractedResults
-        : selectedTests.map((name) => ({
-            name,
-            result: overallStatus === "negative" ? "Non-reactive" : "Reactive",
-            status: overallStatus === "pending" ? "pending" : overallStatus,
-          }));
+      // Build STI results array from extracted results
+      const stiResults: STIResult[] = extractedResults;
 
       // Create test result
       const result = await createResult({
@@ -797,22 +743,6 @@ export default function Upload() {
     }
   };
 
-  const toggleTest = (test: string) => {
-    setSelectedTests((prev) =>
-      prev.includes(test) ? prev.filter((t) => t !== test) : [...prev, test]
-    );
-    setSelectedPreset("custom");
-  };
-
-  const selectPreset = (presetId: string) => {
-    setSelectedPreset(presetId);
-    const preset = TEST_PRESETS.find((p) => p.id === presetId);
-    if (preset && preset.tests.length > 0) {
-      setSelectedTests(preset.tests);
-      setTestType(preset.label);
-    }
-  };
-
   if (step === "select") {
     return (
       <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
@@ -855,13 +785,6 @@ export default function Upload() {
               title="Upload a PDF"
               description="Got a PDF from your lab portal?"
               onPress={pickPDF}
-              isDark={isDark}
-            />
-            <UploadOption
-              icon={<Calendar size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Type it in"
-              description="No document? No problem."
-              onPress={() => setStep("details")}
               isDark={isDark}
             />
           </View>
@@ -1221,37 +1144,6 @@ export default function Upload() {
                 />
               </View>
 
-              {/* Overall Status - only show for manual entry */}
-              {extractedResults.length === 0 && (
-                <View className="mb-6">
-                  <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-                    Overall Result
-                  </Text>
-                  <View className="flex-row gap-3">
-                    <StatusButton
-                      label="Negative"
-                      selected={overallStatus === "negative"}
-                      onPress={() => setOverallStatus("negative")}
-                      variant="success"
-                      isDark={isDark}
-                    />
-                    <StatusButton
-                      label="Positive"
-                      selected={overallStatus === "positive"}
-                      onPress={() => setOverallStatus("positive")}
-                      variant="danger"
-                      isDark={isDark}
-                    />
-                    <StatusButton
-                      label="Pending"
-                      selected={overallStatus === "pending"}
-                      onPress={() => setOverallStatus("pending")}
-                      variant="warning"
-                      isDark={isDark}
-                    />
-                  </View>
-                </View>
-              )}
             </>
           )}
 
@@ -1319,97 +1211,16 @@ export default function Upload() {
               ))}
             </View>
           ) : (
-            <View className="mb-6">
-              {/* Test Presets */}
-              <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-                What tests did you get?
-              </Text>
-              <View className="gap-2 mb-4">
-                {TEST_PRESETS.slice(0, 4).map((preset) => (
-                  <Pressable
-                    key={preset.id}
-                    onPress={() => selectPreset(preset.id)}
-                    className={`p-4 rounded-2xl border-2 flex-row items-center justify-between ${
-                      selectedPreset === preset.id
-                        ? isDark
-                          ? "bg-dark-accent-muted border-dark-accent"
-                          : "bg-primary-light/30 border-primary"
-                        : isDark
-                        ? "bg-dark-surface border-dark-border"
-                        : "bg-white border-border"
-                    }`}
-                  >
-                    <View>
-                      <Text
-                        className={`font-inter-semibold ${
-                          selectedPreset === preset.id
-                            ? isDark ? "text-dark-accent" : "text-primary"
-                            : isDark ? "text-dark-text" : "text-text"
-                        }`}
-                      >
-                        {preset.label}
-                      </Text>
-                      <Text className={`text-xs font-inter-regular mt-0.5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                        {preset.description}
-                      </Text>
-                    </View>
-                    {selectedPreset === preset.id && (
-                      <View className={`w-6 h-6 rounded-full items-center justify-center ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
-                        <Check size={14} color="white" strokeWidth={3} />
-                      </View>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* Custom Test Selection */}
-              <Pressable
-                onPress={() => setSelectedPreset("custom")}
-                className="mb-3"
-              >
-                <Text className={`font-inter-medium text-sm ${selectedPreset === "custom" ? isDark ? "text-dark-accent" : "text-primary" : isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                  {selectedPreset === "custom" ? "Custom selection:" : "Or select specific tests →"}
+            <View className={`p-4 rounded-2xl mb-6 ${isDark ? "bg-dark-warning-bg" : "bg-warning-light/50"}`}>
+              <View className="flex-row items-center mb-2">
+                <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
+                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
+                  No test results extracted
                 </Text>
-              </Pressable>
-
-              {selectedPreset === "custom" && (
-                <View className="flex-row flex-wrap gap-2">
-                  {DEFAULT_STI_TESTS.map((test) => (
-                    <Pressable
-                      key={test}
-                      onPress={() => toggleTest(test)}
-                      className={`px-4 py-2 rounded-full border ${
-                        selectedTests.includes(test)
-                          ? isDark
-                            ? "bg-dark-accent border-dark-accent"
-                            : "bg-primary border-primary"
-                          : isDark
-                          ? "bg-dark-surface border-dark-border"
-                          : "bg-white border-border"
-                      }`}
-                    >
-                      <Text
-                        className={`font-inter-medium text-sm ${
-                          selectedTests.includes(test)
-                            ? "text-white"
-                            : isDark ? "text-dark-text" : "text-text"
-                        }`}
-                      >
-                        {test}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-
-              {/* Summary of selected tests */}
-              {selectedPreset !== "custom" && selectedTests.length > 0 && (
-                <View className={`p-3 rounded-xl mt-2 ${isDark ? "bg-dark-success-bg" : "bg-success-light/30"}`}>
-                  <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-mint" : "text-success-dark"}`}>
-                    {selectedTests.length} tests: {selectedTests.join(", ")}
-                  </Text>
-                </View>
-              )}
+              </View>
+              <Text className={`text-sm font-inter-regular ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                We couldn't find any test results in your document. Please try again with a clearer image or PDF, or make sure the document contains STI test results.
+              </Text>
             </View>
           )}
 
@@ -1439,7 +1250,7 @@ export default function Upload() {
               <Button
                 label={uploading ? "On it..." : "Save it"}
                 onPress={handleSubmit}
-                disabled={uploading || (extractedResults.length === 0 && selectedTests.length === 0)}
+                disabled={uploading || extractedResults.length === 0}
                 className="mb-8"
                 icon={
                   uploading ? (
@@ -1489,65 +1300,6 @@ function UploadOption({
         </Text>
       </View>
       <ChevronLeft size={20} color={isDark ? "#3D3548" : "#E5E7EB"} style={{ transform: [{ rotate: '180deg' }] }} />
-    </Pressable>
-  );
-}
-
-function StatusButton({
-  label,
-  selected,
-  onPress,
-  variant,
-  isDark,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  variant: "success" | "danger" | "warning";
-  isDark: boolean;
-}) {
-  const config = {
-    success: {
-      selectedBg: "bg-success",
-      emoji: "✓",
-      unselectedBorder: isDark ? "border-dark-success/30" : "border-success/30",
-    },
-    danger: {
-      selectedBg: "bg-danger",
-      emoji: "!",
-      unselectedBorder: isDark ? "border-danger/30" : "border-danger/30",
-    },
-    warning: {
-      selectedBg: "bg-warning",
-      emoji: "?",
-      unselectedBorder: isDark ? "border-dark-warning/30" : "border-warning/30",
-    },
-  };
-
-  const style = config[variant];
-
-  if (selected) {
-    return (
-      <Pressable
-        onPress={onPress}
-        className={`flex-1 py-4 rounded-2xl ${style.selectedBg} flex-row items-center justify-center`}
-      >
-        <View className="w-5 h-5 bg-white/30 rounded-full items-center justify-center mr-2">
-          <Check size={12} color="white" strokeWidth={3} />
-        </View>
-        <Text className="text-white font-inter-bold">{label}</Text>
-      </Pressable>
-    );
-  }
-
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`flex-1 py-4 rounded-2xl border-2 ${style.unselectedBorder} ${isDark ? "bg-dark-surface" : "bg-background-card"}`}
-    >
-      <Text className={`text-center font-inter-medium ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-        {label}
-      </Text>
     </Pressable>
   );
 }
