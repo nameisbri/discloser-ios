@@ -30,10 +30,14 @@ import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
-import { parseDocument, DocumentParsingError } from "../../lib/parsing";
+import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../lib/constants";
 import { isRetryableError } from "../../lib/http/errors";
+
+// Maximum number of files that can be uploaded at once
+// Limit prevents processing failures on mobile networks
+const MAX_FILES_LIMIT = 4;
 
 // Risk level to testing interval in days
 const RISK_INTERVALS: Record<RiskLevel, number> = {
@@ -137,6 +141,7 @@ export default function Upload() {
     hasAccessionNumber: boolean;
     nameMatched: boolean;
   } | null>(null);
+  const [resultConflicts, setResultConflicts] = useState<TestConflict[]>([]);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -152,6 +157,9 @@ export default function Upload() {
         return;
       }
 
+      // Calculate how many slots are available
+      const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
+
       const result = useCamera
         ? await ImagePicker.launchCameraAsync({
             mediaTypes: ["images"],
@@ -164,10 +172,25 @@ export default function Upload() {
             allowsEditing: false,
             quality: 0.8,
             allowsMultipleSelection: true,
+            selectionLimit: slotsAvailable, // Enforce file limit
           });
 
       if (!result.canceled && result.assets.length > 0) {
-        const newFiles: SelectedFile[] = result.assets.map((asset) => ({
+        // Check if adding these would exceed limit
+        const combinedCount = selectedFiles.length + result.assets.length;
+        let assetsToAdd = result.assets;
+
+        if (combinedCount > MAX_FILES_LIMIT) {
+          // Only take what we can fit
+          assetsToAdd = result.assets.slice(0, slotsAvailable);
+          Alert.alert(
+            "File Limit Reached",
+            `You can upload up to ${MAX_FILES_LIMIT} images at once. ${assetsToAdd.length > 0 ? `Added ${assetsToAdd.length} image(s).` : "No images added."}`
+          );
+          if (assetsToAdd.length === 0) return;
+        }
+
+        const newFiles: SelectedFile[] = assetsToAdd.map((asset) => ({
           uri: asset.uri,
           name:
             asset.fileName ||
@@ -185,6 +208,9 @@ export default function Upload() {
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    // Reset parsed results when files are removed (they may no longer be valid)
+    setExtractedResults([]);
+    setResultConflicts([]);
     if (selectedFiles.length <= 1) {
       setStep("select");
     }
@@ -196,6 +222,7 @@ export default function Upload() {
     try {
       setParsing(true);
       setParsingErrors([]); // Reset errors on new parse attempt
+      setResultConflicts([]); // Reset conflicts on new parse attempt
 
       // Parse all files in parallel with proper error tracking
       const parsePromises = selectedFiles.map((file, index) =>
@@ -295,10 +322,19 @@ export default function Upload() {
 
       if (collectionDate) setTestDate(collectionDate);
       if (testType) setTestType(testType);
+
+      // Deduplicate results across all images (handles overlapping screenshots)
+      let uniqueTestCount = 0;
       if (allResults.length > 0) {
-        setExtractedResults(allResults);
-        const allNegative = allResults.every((t) => t.status === "negative");
-        const anyPositive = allResults.some((t) => t.status === "positive");
+        const deduplicationResult = deduplicateTestResults(allResults);
+
+        setExtractedResults(deduplicationResult.tests);
+        setResultConflicts(deduplicationResult.conflicts);
+        uniqueTestCount = deduplicationResult.tests.length;
+
+        // Calculate overall status from deduplicated results
+        const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
+        const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
         setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
       }
@@ -310,7 +346,7 @@ export default function Upload() {
         // All files processed successfully
         Alert.alert(
           "Success",
-          `Processed ${selectedFiles.length} image(s), found ${allResults.length} test(s). Review below.`,
+          `Processed ${selectedFiles.length} image(s), found ${uniqueTestCount} unique test(s). Review below.`,
           [{ text: "OK" }]
         );
       } else if (successCount > 0) {
@@ -318,7 +354,7 @@ export default function Upload() {
         const errorSummary = buildErrorSummary(errorTypes);
         Alert.alert(
           "Partial Success",
-          `Processed ${successCount}/${selectedFiles.length} image(s), found ${allResults.length} test(s).\n\n${errorSummary}`,
+          `Processed ${successCount}/${selectedFiles.length} image(s), found ${uniqueTestCount} unique test(s).\n\n${errorSummary}`,
           [{ text: "OK" }]
         );
       } else {
@@ -444,15 +480,20 @@ export default function Upload() {
         }
       });
 
-      // Update state with retry results
-      setExtractedResults(newResults);
+      // Update state with retry results - deduplicate combined results
       if (collectionDate) setTestDate(collectionDate);
       if (testTypeValue) setTestType(testTypeValue);
+
       if (newResults.length > 0) {
-        const allNegative = newResults.every((t) => t.status === "negative");
-        const anyPositive = newResults.some((t) => t.status === "positive");
+        const deduplicationResult = deduplicateTestResults(newResults);
+        setExtractedResults(deduplicationResult.tests);
+        setResultConflicts(deduplicationResult.conflicts);
+
+        const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
+        const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
       }
+
       setNotes(extractedNotesArr.join("\n\n"));
       setIsVerified(verified);
       setVerificationDetails(vDetails);
@@ -688,7 +729,7 @@ export default function Upload() {
 
         <ScrollView className="flex-1 px-6 py-4">
           <Text className={`font-inter-medium mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-            {selectedFiles.length} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
+            {selectedFiles.length} of {MAX_FILES_LIMIT} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
             selected
           </Text>
 
@@ -719,16 +760,18 @@ export default function Upload() {
             ))}
           </View>
 
-          {/* Add more files */}
-          <Pressable
-            onPress={() => setStep("select")}
-            className={`flex-row items-center justify-center py-4 border-2 border-dashed rounded-2xl mb-6 ${isDark ? "border-dark-border" : "border-border"}`}
-          >
-            <Plus size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-            <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-              Add More Files
-            </Text>
-          </Pressable>
+          {/* Add more files - only show if under limit */}
+          {selectedFiles.length < MAX_FILES_LIMIT && (
+            <Pressable
+              onPress={() => setStep("select")}
+              className={`flex-row items-center justify-center py-4 border-2 border-dashed rounded-2xl mb-6 ${isDark ? "border-dark-border" : "border-border"}`}
+            >
+              <Plus size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+              <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                Add More Files ({MAX_FILES_LIMIT - selectedFiles.length} remaining)
+              </Text>
+            </Pressable>
+          )}
 
           <Button
             label="Continue to Details"
@@ -848,6 +891,34 @@ export default function Upload() {
                   You can still save this result, but it won't be marked as verified.
                 </Text>
               )}
+            </View>
+          )}
+
+          {/* Conflict Warnings - when same test has different results across images */}
+          {!parsing && resultConflicts.length > 0 && (
+            <View className={`p-4 rounded-2xl mb-4 ${isDark ? "bg-dark-warning-bg" : "bg-warning-light/50"}`}>
+              <View className="flex-row items-center mb-2">
+                <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
+                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
+                  Conflicting Results Detected
+                </Text>
+              </View>
+              <Text className={`text-sm font-inter-regular mb-3 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                These tests appeared with different results across your images. We've selected the most clinically relevant, but please verify:
+              </Text>
+              {resultConflicts.map((conflict, idx) => (
+                <View key={idx} className={`p-3 rounded-xl mb-2 ${isDark ? "bg-dark-surface" : "bg-white"}`}>
+                  <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                    {conflict.testName}
+                  </Text>
+                  <Text className={`text-xs font-inter-regular mt-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                    Found: {conflict.occurrences.map(o => o.status).join(', ')}
+                  </Text>
+                  <Text className={`text-xs font-inter-medium mt-1 ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                    Selected: {conflict.suggested.status}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
