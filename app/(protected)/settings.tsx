@@ -11,6 +11,7 @@ import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNoti
 import * as Notifications from "expo-notifications";
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/Button";
+import { hapticSelection, hapticNotification } from "../../lib/utils/haptics";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
@@ -67,7 +68,8 @@ export default function Settings() {
     }
   }, [profile]);
 
-  const handleToggleNotifications = (value: boolean) => {
+  const handleToggleNotifications = async (value: boolean) => {
+    await hapticSelection();
     setNotifications(value);
     setNotificationsEnabled(value);
   };
@@ -147,7 +149,8 @@ export default function Settings() {
     setShowProfileModal(false);
   };
 
-  const handleDeleteAllData = () => {
+  const handleDeleteAllData = async () => {
+    await hapticNotification("warning");
     Alert.alert(
       "Start fresh?",
       "This wipes everything - results, reminders, links, and your profile. You'll go through setup again.",
@@ -299,9 +302,13 @@ export default function Settings() {
                 onValueChange={handleToggleNotifications}
                 trackColor={{ false: isDark ? "#3D3548" : "#E0E0E0", true: isDark ? "#FF2D7A" : "#923D5C" }}
                 thumbColor="#FFFFFF"
+                accessibilityLabel="Push Notifications"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: notifications }}
               />
             }
             isDark={isDark}
+            accessibilityHint="Toggle push notifications on or off"
           />
           <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
           <SettingsItem
@@ -366,12 +373,19 @@ export default function Settings() {
             onPress={handleDeleteAllData}
             danger
             isDark={isDark}
+            accessibilityHint="Permanently deletes all your data"
           />
         </View>
 
         <Pressable
-          onPress={signOut}
+          onPress={async () => {
+            await hapticNotification("warning");
+            signOut();
+          }}
           className={`mb-12 flex-row items-center justify-center py-4 rounded-2xl border ${isDark ? "border-danger/20 bg-danger/10" : "border-danger/10 bg-danger/5"}`}
+          accessibilityLabel="Sign Out"
+          accessibilityRole="button"
+          accessibilityHint="Signs you out of the app"
         >
           <LogOut size={18} color="#DC3545" />
           <Text className="text-danger font-inter-semibold ml-2">Sign Out</Text>
@@ -583,6 +597,7 @@ function SettingsItem({
   onPress,
   danger,
   isDark,
+  accessibilityHint,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -591,11 +606,15 @@ function SettingsItem({
   onPress?: () => void;
   danger?: boolean;
   isDark?: boolean;
+  accessibilityHint?: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
       className={`flex-row items-center justify-between p-4 ${isDark ? "active:bg-dark-surface-light" : "active:bg-gray-50"}`}
+      accessibilityLabel={title}
+      accessibilityRole={onPress ? "button" : "text"}
+      accessibilityHint={accessibilityHint}
     >
       <View className="flex-row items-center flex-1">
         <View className={`p-2 rounded-xl mr-3 ${

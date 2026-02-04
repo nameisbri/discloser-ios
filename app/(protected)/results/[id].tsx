@@ -261,6 +261,9 @@ export default function ResultDetail() {
         <Pressable
           onPress={handleDelete}
           className="flex-row items-center justify-center py-4 mb-12"
+          accessibilityLabel="Delete Result"
+          accessibilityRole="button"
+          accessibilityHint="Permanently deletes this test result"
         >
           <Trash2 size={18} color="#DC3545" />
           <Text className="text-danger font-inter-medium ml-2">

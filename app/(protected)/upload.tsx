@@ -31,6 +31,7 @@ import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
 import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { hapticSelection, hapticImpact } from "../../lib/utils/haptics";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
 import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict, validatePDF, isPDFExtractionAvailable, determineTestType } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
@@ -849,8 +850,15 @@ export default function Upload() {
                   </Text>
                 </View>
                 <Pressable
-                  onPress={() => removeFile(index)}
-                  className={`p-2 rounded-xl ${isDark ? "bg-dark-danger-bg" : "bg-danger-light"}`}
+                  onPress={async () => {
+                    await hapticImpact("medium");
+                    removeFile(index);
+                  }}
+                  className={`p-3 rounded-xl ${isDark ? "bg-dark-danger-bg" : "bg-danger-light"}`}
+                  style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
+                  accessibilityLabel={`Remove ${file.name}`}
+                  accessibilityRole="button"
+                  accessibilityHint="Removes this file from upload"
                 >
                   <X size={18} color="#DC3545" />
                 </Pressable>
@@ -1159,50 +1167,65 @@ export default function Upload() {
                   <Text className={`font-inter-regular text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>{sti.result}</Text>
                   <View className="flex-row gap-2">
                     <Pressable
-                      onPress={() => {
+                      onPress={async () => {
+                        await hapticSelection();
                         const updated = [...extractedResults];
                         updated[index].status = "negative";
                         setExtractedResults(updated);
                       }}
-                      className={`px-3 py-1 rounded-full ${
+                      className={`px-4 py-2.5 rounded-full ${
                         sti.status === "negative"
                           ? "bg-success"
                           : isDark ? "bg-dark-surface-light" : "bg-gray-100"
                       }`}
+                      style={{ minHeight: 44, justifyContent: "center" }}
+                      accessibilityLabel={`Set ${sti.name} to Negative`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: sti.status === "negative" }}
                     >
-                      <Text className={sti.status === "negative" ? "text-white text-xs" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
+                      <Text className={sti.status === "negative" ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
                         Negative
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => {
+                      onPress={async () => {
+                        await hapticSelection();
                         const updated = [...extractedResults];
                         updated[index].status = "positive";
                         setExtractedResults(updated);
                       }}
-                      className={`px-3 py-1 rounded-full ${
+                      className={`px-4 py-2.5 rounded-full ${
                         sti.status === "positive"
                           ? "bg-danger"
                           : isDark ? "bg-dark-surface-light" : "bg-gray-100"
                       }`}
+                      style={{ minHeight: 44, justifyContent: "center" }}
+                      accessibilityLabel={`Set ${sti.name} to Positive`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: sti.status === "positive" }}
                     >
-                      <Text className={sti.status === "positive" ? "text-white text-xs" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
+                      <Text className={sti.status === "positive" ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
                         Positive
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => {
+                      onPress={async () => {
+                        await hapticSelection();
                         const updated = [...extractedResults];
                         updated[index].status = "pending";
                         setExtractedResults(updated);
                       }}
-                      className={`px-3 py-1 rounded-full ${
+                      className={`px-4 py-2.5 rounded-full ${
                         sti.status === "pending"
                           ? "bg-warning"
                           : isDark ? "bg-dark-surface-light" : "bg-gray-100"
                       }`}
+                      style={{ minHeight: 44, justifyContent: "center" }}
+                      accessibilityLabel={`Set ${sti.name} to Pending`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: sti.status === "pending" }}
                     >
-                      <Text className={sti.status === "pending" ? "text-white text-xs" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
+                      <Text className={sti.status === "pending" ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
                         Pending
                       </Text>
                     </Pressable>

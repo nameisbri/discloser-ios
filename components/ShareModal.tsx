@@ -29,6 +29,7 @@ import { useTheme } from "../context/theme";
 import { supabase } from "../lib/supabase";
 import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
+import { hapticImpact, hapticNotification, hapticSelection } from "../lib/utils/haptics";
 
 type DisplayNameOption = "anonymous" | "alias" | "firstName";
 import type { ShareLink } from "../lib/types";
@@ -193,12 +194,15 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface }}>
           <Pressable
-            onPress={() => {
+            onPress={async () => {
+              await hapticImpact("light");
               if (view === "create" || view === "qr" || view === "preview")
                 setView("list");
               else onClose();
             }}
-            style={{ padding: 8, marginLeft: -8 }}
+            style={{ padding: 12, marginLeft: -12, minWidth: 44, minHeight: 44, justifyContent: "center" }}
+            accessibilityLabel={view === "list" ? "Close" : "Back"}
+            accessibilityRole="button"
           >
             {view === "list" ? (
               <X size={24} color={colors.text} />
@@ -524,15 +528,33 @@ function ShareLinkCard({
           </Text>
         </Pressable>
 
-        <Pressable onPress={onPreview} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}>
+        <Pressable
+          onPress={async () => { await hapticImpact("light"); onPreview(); }}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight, minWidth: 44, minHeight: 44 }}
+          accessibilityLabel="Preview"
+          accessibilityRole="button"
+          accessibilityHint="Shows how recipients will see this link"
+        >
           <Smartphone size={18} color={colors.text} />
         </Pressable>
 
-        <Pressable onPress={onShowQR} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}>
+        <Pressable
+          onPress={async () => { await hapticImpact("light"); onShowQR(); }}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight, minWidth: 44, minHeight: 44 }}
+          accessibilityLabel="Show QR Code"
+          accessibilityRole="button"
+          accessibilityHint="Displays a QR code for this share link"
+        >
           <QrCode size={18} color={colors.text} />
         </Pressable>
 
-        <Pressable onPress={onDelete} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight }}>
+        <Pressable
+          onPress={async () => { await hapticNotification("warning"); onDelete(); }}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight, minWidth: 44, minHeight: 44 }}
+          accessibilityLabel="Delete share link"
+          accessibilityRole="button"
+          accessibilityHint="Permanently deletes this share link"
+        >
           <Trash2 size={18} color={colors.danger} />
         </Pressable>
       </View>
