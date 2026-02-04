@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  BackHandler,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -32,7 +33,7 @@ import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
-import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict, validatePDF, isPDFExtractionAvailable } from "../../lib/parsing";
+import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict, validatePDF, isPDFExtractionAvailable, determineTestType } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../lib/constants";
 import { isRetryableError } from "../../lib/http/errors";
@@ -138,14 +139,26 @@ export default function Upload() {
   const [selectedPreset, setSelectedPreset] = useState<string>("full");
   const [notes, setNotes] = useState("");
   const [isVerified, setIsVerified] = useState(false);
-  const [verificationDetails, setVerificationDetails] = useState<{
+  const [verificationDetails, setVerificationDetails] = useState<Array<{
     labName?: string;
     patientName?: string;
     hasHealthCard: boolean;
     hasAccessionNumber: boolean;
     nameMatched: boolean;
-  } | null>(null);
+  }>>([]);
   const [resultConflicts, setResultConflicts] = useState<TestConflict[]>([]);
+
+  // Prevent back navigation while parsing
+  useEffect(() => {
+    if (!parsing) return;
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Return true to prevent default back behavior
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, [parsing]);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -360,13 +373,13 @@ export default function Upload() {
       let testType: string | null = null;
       let extractedNotes: string[] = [];
       let verified = false;
-      let vDetails: {
+      const vDetailsList: Array<{
         labName?: string;
         patientName?: string;
         hasHealthCard: boolean;
         hasAccessionNumber: boolean;
         nameMatched: boolean;
-      } | null = null;
+      }> = [];
       const errors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
 
       // Track error types for better messaging
@@ -412,7 +425,14 @@ export default function Upload() {
         if (!testType && parsed.testType) testType = parsed.testType;
         if (parsed.notes) extractedNotes.push(parsed.notes);
         if (parsed.isVerified) verified = true;
-        if (parsed.verificationDetails && !vDetails) vDetails = parsed.verificationDetails;
+        if (parsed.verificationDetails) {
+          // Avoid adding duplicate labs (same lab name)
+          const labName = parsed.verificationDetails.labName;
+          const alreadyExists = vDetailsList.some(v => v.labName === labName);
+          if (!alreadyExists) {
+            vDetailsList.push(parsed.verificationDetails);
+          }
+        }
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -425,11 +445,10 @@ export default function Upload() {
       });
 
       setIsVerified(verified);
-      setVerificationDetails(vDetails);
+      setVerificationDetails(vDetailsList);
       setParsingErrors(errors);
 
       if (collectionDate) setTestDate(collectionDate);
-      if (testType) setTestType(testType);
 
       // Deduplicate results across all images (handles overlapping screenshots)
       let uniqueTestCount = 0;
@@ -440,11 +459,18 @@ export default function Upload() {
         setResultConflicts(deduplicationResult.conflicts);
         uniqueTestCount = deduplicationResult.tests.length;
 
+        // Recalculate test type based on ALL combined tests (not just first document)
+        const combinedTestType = determineTestType(deduplicationResult.tests);
+        setTestType(combinedTestType);
+
         // Calculate overall status from deduplicated results
         const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
         const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
         setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
+      } else if (testType) {
+        // No results extracted, fall back to first document's test type
+        setTestType(testType);
       }
 
       // Build success/failure message based on results
@@ -564,13 +590,13 @@ export default function Upload() {
       let testTypeValue: string | null = testType;
       let extractedNotesArr: string[] = notes ? [notes] : [];
       let verified = isVerified;
-      let vDetails: {
+      const vDetailsList: Array<{
         labName?: string;
         patientName?: string;
         hasHealthCard: boolean;
         hasAccessionNumber: boolean;
         nameMatched: boolean;
-      } | null = verificationDetails;
+      }> = [...verificationDetails];
       const remainingErrors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
 
       retryResults.forEach((parsed, arrayIndex) => {
@@ -593,7 +619,13 @@ export default function Upload() {
         if (!testTypeValue && parsed.testType) testTypeValue = parsed.testType;
         if (parsed.notes) extractedNotesArr.push(parsed.notes);
         if (parsed.isVerified) verified = true;
-        if (parsed.verificationDetails && !vDetails) vDetails = parsed.verificationDetails;
+        if (parsed.verificationDetails) {
+          const labName = parsed.verificationDetails.labName;
+          const alreadyExists = vDetailsList.some(v => v.labName === labName);
+          if (!alreadyExists) {
+            vDetailsList.push(parsed.verificationDetails);
+          }
+        }
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -607,21 +639,26 @@ export default function Upload() {
 
       // Update state with retry results - deduplicate combined results
       if (collectionDate) setTestDate(collectionDate);
-      if (testTypeValue) setTestType(testTypeValue);
 
       if (newResults.length > 0) {
         const deduplicationResult = deduplicateTestResults(newResults);
         setExtractedResults(deduplicationResult.tests);
         setResultConflicts(deduplicationResult.conflicts);
 
+        // Recalculate test type based on ALL combined tests
+        const combinedTestType = determineTestType(deduplicationResult.tests);
+        setTestType(combinedTestType);
+
         const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
         const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
+      } else if (testTypeValue) {
+        setTestType(testTypeValue);
       }
 
       setNotes(extractedNotesArr.join("\n\n"));
       setIsVerified(verified);
-      setVerificationDetails(vDetails);
+      setVerificationDetails(vDetailsList);
       setParsingErrors(remainingErrors);
 
       const successCount = filesToRetry.length - remainingErrors.length;
@@ -933,9 +970,10 @@ export default function Upload() {
         <View className="flex-row items-center justify-between px-6 py-4">
           <Pressable
             onPress={() =>
-              setStep(selectedFiles.length > 0 ? "preview" : "select")
+              !parsing && setStep(selectedFiles.length > 0 ? "preview" : "select")
             }
-            className="p-2 -ml-2"
+            disabled={parsing}
+            className={`p-2 -ml-2 ${parsing ? "opacity-30" : ""}`}
           >
             <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
@@ -961,7 +999,7 @@ export default function Upload() {
           )}
 
           {/* Show verification status with detailed feedback */}
-          {verificationDetails && (
+          {verificationDetails.length > 0 && (
             <View className={`p-4 rounded-2xl mb-3 ${isVerified ? (isDark ? "bg-dark-accent-muted" : "bg-primary-light/50") : (isDark ? "bg-dark-warning-bg" : "bg-warning-light/50")}`}>
               <View className="flex-row items-center mb-2">
                 {isVerified ? (
@@ -970,59 +1008,68 @@ export default function Upload() {
                   <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
                 )}
                 <Text className={`font-inter-semibold ml-2 ${isVerified ? (isDark ? "text-dark-accent" : "text-primary") : (isDark ? "text-dark-warning" : "text-warning-dark")}`}>
-                  {isVerified ? "Document verified" : "Document not verified"}
+                  {isVerified
+                    ? verificationDetails.length > 1
+                      ? `${verificationDetails.length} documents verified`
+                      : "Document verified"
+                    : "Document not verified"}
                 </Text>
               </View>
 
-              {/* Lab name */}
-              {verificationDetails.labName && (
-                <View className="flex-row items-center ml-7 mb-1">
-                  <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                    From: {verificationDetails.labName}
-                  </Text>
-                </View>
-              )}
+              {/* Show details for each verified document/lab */}
+              {verificationDetails.map((details, idx) => (
+                <View key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-white/10" : ""}>
+                  {/* Lab name */}
+                  {details.labName && (
+                    <View className="flex-row items-center ml-7 mb-1">
+                      <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                        From: {details.labName}
+                      </Text>
+                    </View>
+                  )}
 
-              {/* Identifiers */}
-              {(verificationDetails.hasHealthCard || verificationDetails.hasAccessionNumber) ? (
-                <View className="flex-row items-center ml-7 mb-1">
-                  <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                    {verificationDetails.hasHealthCard && verificationDetails.hasAccessionNumber
-                      ? "Health card & accession number present"
-                      : verificationDetails.hasHealthCard
-                      ? "Health card present"
-                      : "Accession number present"}
-                  </Text>
-                </View>
-              ) : (
-                <View className="flex-row items-center ml-7 mb-1">
-                  <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                    Missing health card or accession number
-                  </Text>
-                </View>
-              )}
+                  {/* Identifiers */}
+                  {(details.hasHealthCard || details.hasAccessionNumber) ? (
+                    <View className="flex-row items-center ml-7 mb-1">
+                      <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                        {details.hasHealthCard && details.hasAccessionNumber
+                          ? "Health card & accession number present"
+                          : details.hasHealthCard
+                          ? "Health card present"
+                          : "Accession number present"}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View className="flex-row items-center ml-7 mb-1">
+                      <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                        Missing health card or accession number
+                      </Text>
+                    </View>
+                  )}
 
-              {/* Name match */}
-              {verificationDetails.patientName && profile && (
-                verificationDetails.nameMatched ? (
-                  <View className="flex-row items-center ml-7 mb-1">
-                    <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                    <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                      Name matches your profile
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center ml-7 mb-1">
-                    <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                    <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                      Name doesn't match your profile ({verificationDetails.patientName})
-                    </Text>
-                  </View>
-                )
-              )}
+                  {/* Name match */}
+                  {details.patientName && profile && (
+                    details.nameMatched ? (
+                      <View className="flex-row items-center ml-7 mb-1">
+                        <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                        <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                          Name matches your profile
+                        </Text>
+                      </View>
+                    ) : (
+                      <View className="flex-row items-center ml-7 mb-1">
+                        <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+                        <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                          Name doesn't match your profile ({details.patientName})
+                        </Text>
+                      </View>
+                    )
+                  )}
+                </View>
+              ))}
 
               {!isVerified && (
                 <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
@@ -1125,10 +1172,13 @@ export default function Upload() {
                 Processing your results...
               </Text>
               <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Reading {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''}
+                Reading {selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''}
               </Text>
               <Text className={`mt-3 text-xs font-inter-regular text-center ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                 Hang tight, 15-30 seconds
+              </Text>
+              <Text className={`mt-2 text-xs font-inter-medium text-center ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
+                Please stay in the app while we process
               </Text>
             </View>
           )}

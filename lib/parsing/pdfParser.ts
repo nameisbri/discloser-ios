@@ -1,5 +1,6 @@
 // PDF text extraction module using native APIs
 // Uses expo-pdf-text-extract (iOS PDFKit / Android PDFBox)
+// Falls back to OCR via react-native-pdf-to-image for scanned PDFs
 
 import {
   extractText,
@@ -8,6 +9,8 @@ import {
   extractTextWithInfo,
   isAvailable,
 } from 'expo-pdf-text-extract';
+import PdfThumbnail from 'react-native-pdf-thumbnail';
+import { extractTextFromImage } from './documentParser';
 import { logger } from '../utils/logger';
 
 /**
@@ -49,6 +52,149 @@ const DEFAULT_OPTIONS: Required<Omit<PDFExtractionOptions, 'fileIdentifier'>> = 
   maxPages: 10,
   minTextThreshold: 50,
 };
+
+/**
+ * Extracts text from a scanned PDF using OCR.
+ * Converts PDF pages to images, then runs OCR on each image.
+ *
+ * @param uri - Path to the PDF file
+ * @param maxPages - Maximum pages to process
+ * @param fileIdentifier - Optional identifier for logging
+ * @returns PDFExtractionResult with OCR-extracted text
+ */
+async function extractTextFromPDFWithOCR(
+  uri: string,
+  maxPages: number,
+  fileIdentifier?: string
+): Promise<PDFExtractionResult> {
+  const logContext = { fileIdentifier, uri: uri.substring(0, 50) };
+
+  try {
+    logger.info('Starting PDF OCR extraction', logContext);
+
+    // Convert PDF pages to images using react-native-pdf-thumbnail
+    // Quality 100 for best OCR accuracy
+    const thumbnails = await PdfThumbnail.generateAllPages(uri, 100);
+
+    if (!thumbnails || thumbnails.length === 0) {
+      logger.error('PDF to image conversion failed: no thumbnails generated', logContext);
+      return {
+        text: '',
+        pageCount: 0,
+        pagesProcessed: 0,
+        extractionMethod: 'ocr',
+        pageTexts: [],
+        success: false,
+        error: 'Failed to convert PDF to images for OCR processing.',
+      };
+    }
+
+    const pagesToProcess = Math.min(thumbnails.length, maxPages);
+
+    logger.info('PDF converted to images', {
+      ...logContext,
+      totalImages: thumbnails.length,
+      pagesToProcess,
+    });
+
+    const pageTexts: string[] = [];
+    let combinedText = '';
+
+    for (let i = 0; i < pagesToProcess; i++) {
+      const thumbnail = thumbnails[i];
+      const pageNum = i + 1;
+
+      try {
+        logger.info('Running OCR on page image', {
+          ...logContext,
+          page: pageNum,
+          imageUri: thumbnail.uri.substring(0, 50),
+          dimensions: `${thumbnail.width}x${thumbnail.height}`,
+        });
+
+        const pageText = await extractTextFromImage(thumbnail.uri, fileIdentifier);
+        pageTexts.push(pageText);
+
+        if (pageText.trim()) {
+          combinedText += pageText + '\n\n--- Page ' + pageNum + ' ---\n\n';
+        }
+
+        logger.info('OCR completed for page', {
+          ...logContext,
+          page: pageNum,
+          textLength: pageText.length,
+        });
+      } catch (ocrError) {
+        logger.warn('OCR failed for page', {
+          ...logContext,
+          page: pageNum,
+          error: ocrError instanceof Error ? ocrError.message : 'Unknown error',
+        });
+        pageTexts.push('');
+      }
+    }
+
+    const actualContentLength = pageTexts.reduce((sum, text) => sum + text.trim().length, 0);
+
+    if (actualContentLength > 0) {
+      logger.info('PDF OCR extraction successful', {
+        ...logContext,
+        textLength: actualContentLength,
+        pagesProcessed: pagesToProcess,
+      });
+
+      return {
+        text: combinedText.trim(),
+        pageCount: thumbnails.length,
+        pagesProcessed: pagesToProcess,
+        extractionMethod: 'ocr',
+        pageTexts,
+        success: true,
+      };
+    }
+
+    logger.warn('PDF OCR extraction yielded no text', logContext);
+    return {
+      text: '',
+      pageCount: thumbnails.length,
+      pagesProcessed: pagesToProcess,
+      extractionMethod: 'ocr',
+      pageTexts,
+      success: false,
+      error: 'Could not extract any text from this PDF. The document may be blank or the image quality may be too low.',
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    logger.error('PDF OCR extraction failed', {
+      ...logContext,
+      error: errorMessage,
+    });
+
+    // Check if it's a linking error (native module not available)
+    if (errorMessage.includes("doesn't seem to be linked") || errorMessage.includes('not using Expo Go')) {
+      return {
+        text: '',
+        pageCount: 0,
+        pagesProcessed: 0,
+        extractionMethod: 'ocr',
+        pageTexts: [],
+        success: false,
+        error: 'OCR for scanned PDFs requires a development build. Please take a photo of your results instead.',
+      };
+    }
+
+    return {
+      text: '',
+      pageCount: 0,
+      pagesProcessed: 0,
+      extractionMethod: 'ocr',
+      pageTexts: [],
+      success: false,
+      error: 'Failed to process scanned PDF. Please try taking a photo of your results instead.',
+    };
+  }
+}
 
 /**
  * Checks if the native PDF extractor is available.
@@ -154,12 +300,13 @@ export async function extractTextFromPDF(
       }
     }
 
-    const totalTextLength = combinedText.length;
+    // Check actual content length (excluding page markers)
+    const actualContentLength = pageTexts.reduce((sum, text) => sum + text.trim().length, 0);
 
-    if (totalTextLength >= minTextThreshold) {
+    if (actualContentLength >= minTextThreshold) {
       logger.info('PDF text extraction successful (page-by-page)', {
         ...logContext,
-        textLength: totalTextLength,
+        textLength: actualContentLength,
         pagesProcessed: pagesToProcess,
       });
 
@@ -174,21 +321,14 @@ export async function extractTextFromPDF(
     }
 
     // Text extraction didn't yield enough content - likely a scanned PDF
-    logger.warn('PDF appears to be scanned (minimal extractable text)', {
+    // Try OCR fallback
+    logger.info('PDF appears to be scanned, attempting OCR fallback', {
       ...logContext,
-      totalTextLength,
+      actualContentLength,
       threshold: minTextThreshold,
     });
 
-    return {
-      text: combinedText.trim(),
-      pageCount: totalPageCount,
-      pagesProcessed: pagesToProcess,
-      extractionMethod: 'native',
-      pageTexts,
-      success: false,
-      error: 'This PDF appears to be a scanned document. Please take a photo of your results instead, or use a text-based PDF from your lab portal.',
-    };
+    return await extractTextFromPDFWithOCR(uri, maxPages, fileIdentifier);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 

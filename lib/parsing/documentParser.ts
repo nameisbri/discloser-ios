@@ -185,7 +185,7 @@ export class DocumentParsingError extends Error {
  * Extracts text from an image using Google Cloud Vision OCR
  * @throws {DocumentParsingError} When OCR fails or no text is found
  */
-async function extractTextFromImage(uri: string, fileIdentifier?: string): Promise<string> {
+export async function extractTextFromImage(uri: string, fileIdentifier?: string): Promise<string> {
   try {
     const apiKey = process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY;
     if (!apiKey) {
@@ -513,7 +513,7 @@ export async function parseDocument(
 /**
  * Determines the overall test type based on tests found
  */
-function determineTestType(tests: ParsedTest[]): string {
+export function determineTestType(tests: Array<{ name: string }>): string {
   const categories = new Set<string>();
 
   for (const test of tests) {
