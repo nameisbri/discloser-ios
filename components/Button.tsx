@@ -2,6 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 import { useTheme } from "../context/theme";
+import { hapticImpact } from "../lib/utils/haptics";
 
 // Light mode variants
 const buttonVariantsLight = cva(
@@ -105,6 +106,18 @@ interface ButtonProps
   label: string;
   textClassName?: string;
   icon?: React.ReactNode;
+  /**
+   * Custom accessibility label (defaults to label prop)
+   */
+  accessibilityLabel?: string;
+  /**
+   * Optional hint describing what happens on press
+   */
+  accessibilityHint?: string;
+  /**
+   * Disable haptic feedback
+   */
+  hapticDisabled?: boolean;
 }
 
 export function Button({
@@ -115,6 +128,10 @@ export function Button({
   textClassName,
   icon,
   disabled,
+  accessibilityLabel,
+  accessibilityHint,
+  hapticDisabled,
+  onPress,
   ...props
 }: ButtonProps & { disabled?: boolean }) {
   const { isDark } = useTheme();
@@ -122,11 +139,27 @@ export function Button({
   const buttonVariants = isDark ? buttonVariantsDark : buttonVariantsLight;
   const textVariants = isDark ? buttonTextVariantsDark : buttonTextVariantsLight;
 
+  const handlePress = async (event: any) => {
+    if (disabled) return;
+
+    // Trigger haptic feedback - heavy for danger variant
+    if (!hapticDisabled) {
+      await hapticImpact(variant === "danger" ? "heavy" : "medium");
+    }
+
+    onPress?.(event);
+  };
+
   return (
     <Pressable
       className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled}
       style={disabled ? { opacity: 0.5 } : undefined}
+      onPress={handlePress}
+      accessibilityLabel={accessibilityLabel || label}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || false }}
       {...props}
     >
       {icon && <View className="mr-2">{icon}</View>}

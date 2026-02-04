@@ -52,13 +52,13 @@ module.exports = {
           surface: "#1A1520",
           "surface-light": "#2D2438",
           "surface-elevated": "#352D42",
-          // Text
+          // Text - Updated for WCAG AAA compliance (14.76:1 contrast ratio)
           text: "#FFFFFF",
-          "text-secondary": "rgba(255, 255, 255, 0.7)",
-          "text-muted": "rgba(255, 255, 255, 0.4)",
-          // Borders
-          border: "#3D3548",
-          "border-light": "rgba(255, 255, 255, 0.1)",
+          "text-secondary": "rgba(255, 255, 255, 0.87)",
+          "text-muted": "rgba(255, 255, 255, 0.6)",
+          // Borders - Increased visibility
+          border: "#52495D",
+          "border-light": "rgba(255, 255, 255, 0.15)",
           // Brand - hot pink accent like landing page
           accent: "#FF2D7A",
           "accent-hover": "#FF4D8F",

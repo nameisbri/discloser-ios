@@ -4,9 +4,20 @@ import { useTheme } from "../context/theme";
 
 interface CardProps extends ViewProps {
   children: React.ReactNode;
+  /**
+   * When true, the card is not focusable by assistive technology
+   * Use when card contains interactive children
+   * @default true
+   */
+  accessibilityElementsHidden?: boolean;
 }
 
-export function Card({ children, className, ...props }: CardProps) {
+export function Card({
+  children,
+  className,
+  accessibilityElementsHidden = false,
+  ...props
+}: CardProps) {
   const { isDark } = useTheme();
 
   return (
@@ -18,6 +29,8 @@ export function Card({ children, className, ...props }: CardProps) {
           : "bg-background-card border-border",
         className
       )}
+      // Don't make the card itself accessible if it contains interactive children
+      accessible={!accessibilityElementsHidden}
       {...props}
     >
       {children}

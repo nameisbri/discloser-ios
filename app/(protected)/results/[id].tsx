@@ -5,7 +5,6 @@ import {
   SafeAreaView,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +22,8 @@ import { Badge } from "../../../components/Badge";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { ShareModal } from "../../../components/ShareModal";
+import { SkeletonLoader, SkeletonText } from "../../../components/SkeletonLoader";
+import { hapticImpact, hapticNotification } from "../../../lib/utils/haptics";
 import type { STIResult } from "../../../lib/types";
 import { formatDate } from "../../../lib/utils/date";
 
@@ -35,7 +36,8 @@ export default function ResultDetail() {
   const { hasKnownCondition } = useProfile();
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    await hapticNotification("warning");
     Alert.alert(
       "Delete Result",
       "Are you sure you want to delete this test result? This action cannot be undone.",
@@ -46,10 +48,13 @@ export default function ResultDetail() {
           style: "destructive",
           onPress: async () => {
             if (id) {
+              await hapticImpact("heavy");
               const success = await deleteResult(id);
               if (success) {
+                await hapticNotification("success");
                 router.replace("/dashboard");
               } else {
+                await hapticNotification("error");
                 Alert.alert("Couldn't Delete", "Something went wrong while deleting this result. Please try again.");
               }
             }
@@ -65,8 +70,41 @@ export default function ResultDetail() {
 
   if (loading) {
     return (
-      <SafeAreaView className={`flex-1 items-center justify-center ${isDark ? "bg-dark-bg" : "bg-background"}`}>
-        <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
+      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
+        {/* Header skeleton */}
+        <View className="flex-row items-center justify-between px-6 py-4">
+          <SkeletonLoader width={40} height={40} borderRadius={8} />
+          <SkeletonLoader width={80} height={24} borderRadius={12} />
+          <SkeletonLoader width={40} height={40} borderRadius={8} />
+        </View>
+
+        <View className="px-6">
+          {/* Status card skeleton */}
+          <View
+            className={`rounded-2xl p-5 border mb-6 ${
+              isDark ? "bg-dark-surface border-dark-border" : "bg-background-card border-border"
+            }`}
+          >
+            <View className="flex-row items-center mb-4">
+              <SkeletonLoader width={48} height={48} borderRadius={16} style={{ marginRight: 16 }} />
+              <View style={{ flex: 1 }}>
+                <SkeletonLoader width="60%" height={20} borderRadius={4} style={{ marginBottom: 8 }} />
+                <SkeletonLoader width="40%" height={16} borderRadius={4} />
+              </View>
+            </View>
+            <SkeletonLoader width="100%" height={32} borderRadius={16} />
+          </View>
+
+          {/* Results breakdown skeleton */}
+          <SkeletonLoader width={120} height={20} borderRadius={4} style={{ marginBottom: 16 }} />
+          <View
+            className={`rounded-2xl p-5 border ${
+              isDark ? "bg-dark-surface border-dark-border" : "bg-background-card border-border"
+            }`}
+          >
+            <SkeletonText lines={4} lineHeight={20} spacing={16} />
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
@@ -75,7 +113,12 @@ export default function ResultDetail() {
     return (
       <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
         <View className="flex-row items-center px-6 py-4">
-          <Pressable onPress={() => router.back()} className="p-2 -ml-2">
+          <Pressable
+            onPress={() => router.back()}
+            className="p-2 -ml-2"
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
             <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
         </View>

@@ -1,9 +1,11 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { FileText, ShieldCheck } from "lucide-react-native";
 import { Card } from "./Card";
 import { formatDate } from "../lib/utils/date";
+import { hapticImpact } from "../lib/utils/haptics";
+import { getResultCardLabel } from "../lib/utils/accessibility";
 import type { TestResult } from "../lib/types";
 
 /**
@@ -129,15 +131,31 @@ function ResultCardComponent({
   const status = statusConfig[effectiveStatus];
 
   // Handler for navigation - memoized to prevent function recreation on every render
-  const handlePress = useCallback(() => {
+  const handlePress = useCallback(async () => {
+    await hapticImpact("light");
     router.push(`/results/${result.id}`);
   }, [router, result.id]);
+
+  // Generate accessibility label
+  const accessibilityLabel = useMemo(
+    () =>
+      getResultCardLabel({
+        test_type: result.test_type,
+        test_date: formatDate(result.test_date),
+        overall_status: status.label,
+        is_verified: result.is_verified,
+      }),
+    [result.test_type, result.test_date, result.is_verified, status.label]
+  );
 
   return (
     <Pressable
       onPress={handlePress}
       className="active:scale-[0.98]"
       style={{ transform: [{ scale: 1 }] }}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityHint="View test result details"
     >
       <Card className="flex-row items-center">
         <View

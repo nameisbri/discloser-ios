@@ -83,6 +83,10 @@ interface BadgeProps extends VariantProps<typeof badgeVariantsLight> {
   label: string;
   className?: string;
   textClassName?: string;
+  /**
+   * Custom accessibility label (defaults to label prop)
+   */
+  accessibilityLabel?: string;
 }
 
 export function Badge({
@@ -90,6 +94,7 @@ export function Badge({
   variant,
   className,
   textClassName,
+  accessibilityLabel,
 }: BadgeProps) {
   const { isDark } = useTheme();
 
@@ -97,7 +102,11 @@ export function Badge({
   const textVariants = isDark ? badgeTextVariantsDark : badgeTextVariantsLight;
 
   return (
-    <View className={cn(badgeVariants({ variant }), className)}>
+    <View
+      className={cn(badgeVariants({ variant }), className)}
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityLabel || `${label} status`}
+    >
       <Text className={cn(textVariants({ variant }), textClassName)}>
         {label}
       </Text>
