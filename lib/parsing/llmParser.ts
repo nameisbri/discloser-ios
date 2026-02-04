@@ -6,7 +6,7 @@ import { logger } from "../utils/logger";
 
 const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "meta-llama/llama-3.3-70b-instruct:free"; // Fast and free
+const MODEL = "meta-llama/llama-3.3-70b-instruct"; // Uses OpenRouter credits
 
 const SYSTEM_PROMPT = `You are a medical document parser that extracts STI test results from lab reports.
 

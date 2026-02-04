@@ -174,9 +174,13 @@ export function isNetworkError(error: unknown): boolean {
  * Determines if an error should trigger a retry attempt.
  *
  * Retry Logic:
- * - Retry: Network errors, timeouts, 5xx server errors
- * - Don't Retry: 4xx client errors (bad request, auth, not found, etc.)
+ * - Retry: Network errors, timeouts, 5xx server errors, 429 rate limit
+ * - Don't Retry: Most 4xx client errors (bad request, auth, not found, etc.)
  * - Don't Retry: Parse errors (indicates response format issue)
+ *
+ * Special Case: 429 Too Many Requests
+ * - This indicates rate limiting, not a bad request
+ * - Should be retried with exponential backoff
  *
  * This follows the Idempotency Principle: only retry operations that
  * are safe to repeat without side effects or where the operation
@@ -197,7 +201,12 @@ export function isRetryableError(error: unknown): boolean {
       return true;
     }
 
-    // Don't retry client errors (4xx) - these indicate a problem with the request itself
+    // Special case: 429 Too Many Requests is retryable (rate limiting)
+    if (error.statusCode === 429) {
+      return true;
+    }
+
+    // Don't retry other client errors (4xx) - these indicate a problem with the request itself
     if (error.type === 'client') {
       return false;
     }
@@ -210,7 +219,13 @@ export function isRetryableError(error: unknown): boolean {
     // For unknown errors, check status code
     if (error.statusCode) {
       // 5xx server errors are retryable
-      return error.statusCode >= 500 && error.statusCode < 600;
+      if (error.statusCode >= 500 && error.statusCode < 600) {
+        return true;
+      }
+      // 429 is also retryable
+      if (error.statusCode === 429) {
+        return true;
+      }
     }
   }
 
@@ -317,11 +332,26 @@ export async function createErrorFromResponse(
 
   // Try to extract error message from response body
   let errorMessage = `HTTP ${statusCode}: ${statusText}`;
+  let errorBody: unknown = null;
   try {
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
-      const errorBody = await response.json();
-      errorMessage = errorBody.message || errorBody.error || errorMessage;
+      errorBody = await response.json();
+      // Handle various error response formats (OpenRouter, OpenAI, etc.)
+      if (typeof errorBody === 'object' && errorBody !== null) {
+        const body = errorBody as Record<string, unknown>;
+        // OpenRouter/OpenAI format: { error: { message: "..." } }
+        if (body.error && typeof body.error === 'object') {
+          const err = body.error as Record<string, unknown>;
+          errorMessage = (err.message as string) || (err.code as string) || errorMessage;
+        }
+        // Simple format: { message: "..." } or { error: "..." }
+        else if (body.message) {
+          errorMessage = body.message as string;
+        } else if (typeof body.error === 'string') {
+          errorMessage = body.error;
+        }
+      }
     } else {
       const textBody = await response.text();
       if (textBody && textBody.length < 200) {
@@ -337,5 +367,6 @@ export async function createErrorFromResponse(
     statusCode,
     statusText,
     url: response.url,
+    responseBody: errorBody, // Include full response for debugging
   });
 }

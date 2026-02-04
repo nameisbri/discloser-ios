@@ -165,22 +165,40 @@ function validateRequestSize(body: BodyInit | null | undefined, url: string): vo
 }
 
 /**
- * Calculates the delay for exponential backoff.
+ * Calculates the delay for exponential backoff with jitter.
  *
- * Algorithm: delay = baseDelay * (2 ^ attempt)
- * - Attempt 1: 1s
- * - Attempt 2: 2s
- * - Attempt 3: 4s
+ * Algorithm: delay = effectiveBase * (2 ^ attempt) + jitter
+ * - Attempt 1: ~1-1.25s (or ~3-3.75s for 429)
+ * - Attempt 2: ~2-2.5s (or ~6-7.5s for 429)
+ * - Attempt 3: ~4-5s (or ~12-15s for 429)
  *
- * Strategy Pattern: Implements exponential backoff algorithm to reduce
- * load on failing services and increase success rate of retries.
+ * Strategy Pattern: Implements exponential backoff with jitter to reduce
+ * load on failing services and prevent the thundering herd problem where
+ * all retries happen at the same moment.
+ *
+ * For rate limit errors (429), uses a longer base delay (minimum 3s) since
+ * rate limit windows are typically measured in minutes.
  *
  * @param attempt - The current retry attempt (0-indexed)
  * @param baseDelay - Base delay in milliseconds
+ * @param statusCode - Optional HTTP status code to adjust delay for 429
  * @returns Delay in milliseconds
  */
-function calculateBackoffDelay(attempt: number, baseDelay: number): number {
-  return baseDelay * Math.pow(2, attempt);
+function calculateBackoffDelay(
+  attempt: number,
+  baseDelay: number,
+  statusCode?: number
+): number {
+  // Use longer base delay for rate limit errors (429)
+  const effectiveBase = statusCode === 429 ? Math.max(baseDelay, 3000) : baseDelay;
+
+  // Exponential backoff: base * 2^attempt
+  const exponentialDelay = effectiveBase * Math.pow(2, attempt);
+
+  // Add jitter (0-25% random variation) to prevent thundering herd
+  const jitter = exponentialDelay * Math.random() * 0.25;
+
+  return Math.floor(exponentialDelay + jitter);
 }
 
 /**
@@ -317,7 +335,7 @@ export async function fetchWithRetry(
         if (attempt < maxRetries && isRetryableError(error)) {
           lastError = error;
 
-          const delay = calculateBackoffDelay(attempt, baseDelay);
+          const delay = calculateBackoffDelay(attempt, baseDelay, error.statusCode);
 
           logger.warn('HTTP request failed, retrying', {
             requestId,
@@ -388,7 +406,7 @@ export async function fetchWithRetry(
       if (attempt < maxRetries && isRetryableError(networkError)) {
         lastError = networkError;
 
-        const delay = calculateBackoffDelay(attempt, baseDelay);
+        const delay = calculateBackoffDelay(attempt, baseDelay, networkError.statusCode);
 
         logger.warn('Network request failed, retrying', {
           requestId,
