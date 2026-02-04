@@ -5,6 +5,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { parseDocumentWithLLM } from './llmParser';
 import { normalizeTestName } from './testNormalizer';
 import { standardizeResult } from './resultStandardizer';
+import { extractTextFromPDF, isPDFExtractionAvailable } from './pdfParser';
 import { ParsedDocument, ParsedTest, LLMResponse, UserProfileForVerification } from './types';
 import { matchesCanadianLab } from '../utils/labNameNormalizer';
 import { logger } from '../utils/logger';
@@ -13,7 +14,7 @@ import { NetworkRequestError, isNetworkRequestError, fetchWithRetry } from '../h
 /**
  * Error types that can occur during document parsing
  */
-type ParsingErrorType = 'ocr' | 'llm_parsing' | 'normalization' | 'validation' | 'network' | 'unknown';
+type ParsingErrorType = 'ocr' | 'llm_parsing' | 'normalization' | 'validation' | 'network' | 'pdf_extraction' | 'unknown';
 
 /**
  * Maximum image dimensions for OCR to keep payload size manageable
@@ -145,13 +146,15 @@ export class DocumentParsingError extends Error {
       case 'ocr':
         return 'Failed to extract text from the image. Please ensure the image is clear and readable.';
       case 'llm_parsing':
-        return 'Failed to parse the test results. Please ensure the image contains valid test results.';
+        return 'Failed to parse the test results. Please ensure the document contains valid test results.';
       case 'normalization':
         return 'Failed to process the test results. Please try again.';
       case 'validation':
         return 'The document does not appear to contain valid test results.';
       case 'network':
         return 'Network error. Please check your connection and try again.';
+      case 'pdf_extraction':
+        return 'Failed to extract text from the PDF. The file may be corrupted or password-protected.';
       default:
         return 'Failed to process the document. Please try again.';
     }
@@ -182,7 +185,7 @@ export class DocumentParsingError extends Error {
  * Extracts text from an image using Google Cloud Vision OCR
  * @throws {DocumentParsingError} When OCR fails or no text is found
  */
-async function extractTextFromImage(uri: string, fileIdentifier?: string): Promise<string> {
+export async function extractTextFromImage(uri: string, fileIdentifier?: string): Promise<string> {
   try {
     const apiKey = process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY;
     if (!apiKey) {
@@ -329,13 +332,54 @@ export async function parseDocument(
   try {
     logger.info('Starting document parsing', logContext);
 
-    // Step 1: Extract text from image using OCR
-    logger.info('Starting text extraction', logContext);
-    const extractedText = await extractTextFromImage(uri, fileIdentifier);
-    logger.info('Text extracted successfully', {
-      ...logContext,
-      textLength: extractedText.length,
-    });
+    // Step 1: Extract text based on document type
+    let extractedText: string;
+
+    if (mimeType === 'application/pdf') {
+      // PDF extraction using native APIs
+      logger.info('Starting PDF text extraction', logContext);
+
+      if (!isPDFExtractionAvailable()) {
+        throw new DocumentParsingError(
+          'pdf_extraction',
+          'PDF extraction is not available. Please use a development build.',
+          { fileIdentifier }
+        );
+      }
+
+      const pdfResult = await extractTextFromPDF(uri, { fileIdentifier });
+
+      if (!pdfResult.success) {
+        throw new DocumentParsingError(
+          'pdf_extraction',
+          pdfResult.error || 'Failed to extract text from PDF',
+          {
+            fileIdentifier,
+            details: {
+              pageCount: pdfResult.pageCount,
+              pagesProcessed: pdfResult.pagesProcessed,
+              extractionMethod: pdfResult.extractionMethod,
+            },
+          }
+        );
+      }
+
+      extractedText = pdfResult.text;
+      logger.info('PDF text extraction successful', {
+        ...logContext,
+        textLength: extractedText.length,
+        pageCount: pdfResult.pageCount,
+        pagesProcessed: pdfResult.pagesProcessed,
+      });
+    } else {
+      // Image extraction using OCR
+      logger.info('Starting image text extraction (OCR)', logContext);
+      extractedText = await extractTextFromImage(uri, fileIdentifier);
+      logger.info('OCR text extraction successful', {
+        ...logContext,
+        textLength: extractedText.length,
+      });
+    }
 
     // Step 2: Parse with LLM
     logger.info('Starting LLM parsing', logContext);
@@ -469,7 +513,7 @@ export async function parseDocument(
 /**
  * Determines the overall test type based on tests found
  */
-function determineTestType(tests: ParsedTest[]): string {
+export function determineTestType(tests: Array<{ name: string }>): string {
   const categories = new Set<string>();
 
   for (const test of tests) {

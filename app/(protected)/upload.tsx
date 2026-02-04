@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  BackHandler,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -24,13 +25,15 @@ import {
   Calendar,
   Plus,
   Image as ImageIcon,
+  FileText,
 } from "lucide-react-native";
+import * as DocumentPicker from "expo-document-picker";
 import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
 import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
-import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict } from "../../lib/parsing";
+import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict, validatePDF, isPDFExtractionAvailable, determineTestType } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../lib/constants";
 import { isRetryableError } from "../../lib/http/errors";
@@ -57,7 +60,9 @@ type Step = "select" | "preview" | "details";
 type SelectedFile = {
   uri: string;
   name: string;
-  type: "image";
+  type: "image" | "pdf";
+  size?: number;
+  pageCount?: number;
 };
 
 const DEFAULT_STI_TESTS = [
@@ -134,14 +139,26 @@ export default function Upload() {
   const [selectedPreset, setSelectedPreset] = useState<string>("full");
   const [notes, setNotes] = useState("");
   const [isVerified, setIsVerified] = useState(false);
-  const [verificationDetails, setVerificationDetails] = useState<{
+  const [verificationDetails, setVerificationDetails] = useState<Array<{
     labName?: string;
     patientName?: string;
     hasHealthCard: boolean;
     hasAccessionNumber: boolean;
     nameMatched: boolean;
-  } | null>(null);
+  }>>([]);
   const [resultConflicts, setResultConflicts] = useState<TestConflict[]>([]);
+
+  // Prevent back navigation while parsing
+  useEffect(() => {
+    if (!parsing) return;
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Return true to prevent default back behavior
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, [parsing]);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -205,6 +222,92 @@ export default function Upload() {
     }
   };
 
+  const pickPDF = async () => {
+    try {
+      // Check if PDF extraction is available (requires development build)
+      if (!isPDFExtractionAvailable()) {
+        Alert.alert(
+          "PDF Not Supported",
+          "PDF upload requires a development build. Please use the camera or photo library instead."
+        );
+        return;
+      }
+
+      // Calculate how many slots are available
+      const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
+
+      if (slotsAvailable <= 0) {
+        Alert.alert(
+          "File Limit Reached",
+          `You can upload up to ${MAX_FILES_LIMIT} files at once.`
+        );
+        return;
+      }
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        // Filter to respect file limit
+        let assetsToAdd = result.assets;
+
+        if (result.assets.length > slotsAvailable) {
+          assetsToAdd = result.assets.slice(0, slotsAvailable);
+          Alert.alert(
+            "File Limit Reached",
+            `You can upload up to ${MAX_FILES_LIMIT} files at once. Added ${assetsToAdd.length} PDF(s).`
+          );
+        }
+
+        // Validate each PDF
+        const validatedFiles: SelectedFile[] = [];
+        const validationErrors: string[] = [];
+
+        for (const asset of assetsToAdd) {
+          const validation = await validatePDF(asset.uri, asset.size);
+
+          if (!validation.valid && !validation.pageCount) {
+            // Completely invalid PDF
+            validationErrors.push(`${asset.name}: ${validation.error}`);
+            continue;
+          }
+
+          // Show warning for large PDFs but still add them
+          if (validation.error && validation.pageCount) {
+            Alert.alert("Note", validation.error);
+          }
+
+          validatedFiles.push({
+            uri: asset.uri,
+            name: asset.name || `document_${Date.now()}.pdf`,
+            type: "pdf" as const,
+            size: asset.size,
+            pageCount: validation.pageCount,
+          });
+        }
+
+        if (validationErrors.length > 0) {
+          Alert.alert(
+            "Some PDFs Could Not Be Added",
+            validationErrors.join("\n\n")
+          );
+        }
+
+        if (validatedFiles.length > 0) {
+          setSelectedFiles((prev) => [...prev, ...validatedFiles]);
+          setStep("preview");
+        }
+      }
+    } catch (error) {
+      Alert.alert(
+        "Couldn't Open Files",
+        "We couldn't access your files. Please try again."
+      );
+    }
+  };
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
@@ -240,9 +343,11 @@ export default function Upload() {
       for (let index = 0; index < selectedFiles.length; index++) {
         const file = selectedFiles[index];
         try {
+          // Use correct MIME type based on file type
+          const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
-            "image/jpeg",
+            mimeType,
             profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
             `File ${index + 1} of ${selectedFiles.length}`
           );
@@ -268,13 +373,13 @@ export default function Upload() {
       let testType: string | null = null;
       let extractedNotes: string[] = [];
       let verified = false;
-      let vDetails: {
+      const vDetailsList: Array<{
         labName?: string;
         patientName?: string;
         hasHealthCard: boolean;
         hasAccessionNumber: boolean;
         nameMatched: boolean;
-      } | null = null;
+      }> = [];
       const errors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
 
       // Track error types for better messaging
@@ -320,7 +425,14 @@ export default function Upload() {
         if (!testType && parsed.testType) testType = parsed.testType;
         if (parsed.notes) extractedNotes.push(parsed.notes);
         if (parsed.isVerified) verified = true;
-        if (parsed.verificationDetails && !vDetails) vDetails = parsed.verificationDetails;
+        if (parsed.verificationDetails) {
+          // Avoid adding duplicate labs (same lab name)
+          const labName = parsed.verificationDetails.labName;
+          const alreadyExists = vDetailsList.some(v => v.labName === labName);
+          if (!alreadyExists) {
+            vDetailsList.push(parsed.verificationDetails);
+          }
+        }
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -333,11 +445,10 @@ export default function Upload() {
       });
 
       setIsVerified(verified);
-      setVerificationDetails(vDetails);
+      setVerificationDetails(vDetailsList);
       setParsingErrors(errors);
 
       if (collectionDate) setTestDate(collectionDate);
-      if (testType) setTestType(testType);
 
       // Deduplicate results across all images (handles overlapping screenshots)
       let uniqueTestCount = 0;
@@ -348,11 +459,18 @@ export default function Upload() {
         setResultConflicts(deduplicationResult.conflicts);
         uniqueTestCount = deduplicationResult.tests.length;
 
+        // Recalculate test type based on ALL combined tests (not just first document)
+        const combinedTestType = determineTestType(deduplicationResult.tests);
+        setTestType(combinedTestType);
+
         // Calculate overall status from deduplicated results
         const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
         const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
         setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
+      } else if (testType) {
+        // No results extracted, fall back to first document's test type
+        setTestType(testType);
       }
 
       // Build success/failure message based on results
@@ -443,9 +561,11 @@ export default function Upload() {
         const file = filesToRetry[arrayIndex];
         const originalIndex = failedIndices[arrayIndex];
         try {
+          // Use correct MIME type based on file type
+          const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
-            "image/jpeg",
+            mimeType,
             profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
             `File ${originalIndex + 1} of ${selectedFiles.length}`
           );
@@ -470,13 +590,13 @@ export default function Upload() {
       let testTypeValue: string | null = testType;
       let extractedNotesArr: string[] = notes ? [notes] : [];
       let verified = isVerified;
-      let vDetails: {
+      const vDetailsList: Array<{
         labName?: string;
         patientName?: string;
         hasHealthCard: boolean;
         hasAccessionNumber: boolean;
         nameMatched: boolean;
-      } | null = verificationDetails;
+      }> = [...verificationDetails];
       const remainingErrors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
 
       retryResults.forEach((parsed, arrayIndex) => {
@@ -499,7 +619,13 @@ export default function Upload() {
         if (!testTypeValue && parsed.testType) testTypeValue = parsed.testType;
         if (parsed.notes) extractedNotesArr.push(parsed.notes);
         if (parsed.isVerified) verified = true;
-        if (parsed.verificationDetails && !vDetails) vDetails = parsed.verificationDetails;
+        if (parsed.verificationDetails) {
+          const labName = parsed.verificationDetails.labName;
+          const alreadyExists = vDetailsList.some(v => v.labName === labName);
+          if (!alreadyExists) {
+            vDetailsList.push(parsed.verificationDetails);
+          }
+        }
 
         if (parsed.tests.length > 0) {
           const results: STIResult[] = parsed.tests.map((t) => ({
@@ -513,21 +639,26 @@ export default function Upload() {
 
       // Update state with retry results - deduplicate combined results
       if (collectionDate) setTestDate(collectionDate);
-      if (testTypeValue) setTestType(testTypeValue);
 
       if (newResults.length > 0) {
         const deduplicationResult = deduplicateTestResults(newResults);
         setExtractedResults(deduplicationResult.tests);
         setResultConflicts(deduplicationResult.conflicts);
 
+        // Recalculate test type based on ALL combined tests
+        const combinedTestType = determineTestType(deduplicationResult.tests);
+        setTestType(combinedTestType);
+
         const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
         const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
+      } else if (testTypeValue) {
+        setTestType(testTypeValue);
       }
 
       setNotes(extractedNotesArr.join("\n\n"));
       setIsVerified(verified);
-      setVerificationDetails(vDetails);
+      setVerificationDetails(vDetailsList);
       setParsingErrors(remainingErrors);
 
       const successCount = filesToRetry.length - remainingErrors.length;
@@ -720,6 +851,13 @@ export default function Upload() {
               isDark={isDark}
             />
             <UploadOption
+              icon={<FileText size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
+              title="Upload a PDF"
+              description="Got a PDF from your lab portal?"
+              onPress={pickPDF}
+              isDark={isDark}
+            />
+            <UploadOption
               icon={<Calendar size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
               title="Type it in"
               description="No document? No problem."
@@ -768,7 +906,11 @@ export default function Upload() {
             {selectedFiles.map((file, index) => (
               <Card key={index} className="flex-row items-center p-4">
                 <View className={`p-3 rounded-xl mr-4 ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
-                  <ImageIcon size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                  {file.type === "pdf" ? (
+                    <FileText size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                  ) : (
+                    <ImageIcon size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                  )}
                 </View>
                 <View className="flex-1">
                   <Text
@@ -778,7 +920,9 @@ export default function Upload() {
                     {file.name}
                   </Text>
                   <Text className={`text-xs font-inter-regular uppercase ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                    Image
+                    {file.type === "pdf"
+                      ? `PDF${file.pageCount ? ` • ${file.pageCount} page${file.pageCount !== 1 ? "s" : ""}` : ""}`
+                      : "Image"}
                   </Text>
                 </View>
                 <Pressable
@@ -826,9 +970,10 @@ export default function Upload() {
         <View className="flex-row items-center justify-between px-6 py-4">
           <Pressable
             onPress={() =>
-              setStep(selectedFiles.length > 0 ? "preview" : "select")
+              !parsing && setStep(selectedFiles.length > 0 ? "preview" : "select")
             }
-            className="p-2 -ml-2"
+            disabled={parsing}
+            className={`p-2 -ml-2 ${parsing ? "opacity-30" : ""}`}
           >
             <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
@@ -854,7 +999,7 @@ export default function Upload() {
           )}
 
           {/* Show verification status with detailed feedback */}
-          {verificationDetails && (
+          {verificationDetails.length > 0 && (
             <View className={`p-4 rounded-2xl mb-3 ${isVerified ? (isDark ? "bg-dark-accent-muted" : "bg-primary-light/50") : (isDark ? "bg-dark-warning-bg" : "bg-warning-light/50")}`}>
               <View className="flex-row items-center mb-2">
                 {isVerified ? (
@@ -863,59 +1008,68 @@ export default function Upload() {
                   <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
                 )}
                 <Text className={`font-inter-semibold ml-2 ${isVerified ? (isDark ? "text-dark-accent" : "text-primary") : (isDark ? "text-dark-warning" : "text-warning-dark")}`}>
-                  {isVerified ? "Document verified" : "Document not verified"}
+                  {isVerified
+                    ? verificationDetails.length > 1
+                      ? `${verificationDetails.length} documents verified`
+                      : "Document verified"
+                    : "Document not verified"}
                 </Text>
               </View>
 
-              {/* Lab name */}
-              {verificationDetails.labName && (
-                <View className="flex-row items-center ml-7 mb-1">
-                  <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                    From: {verificationDetails.labName}
-                  </Text>
-                </View>
-              )}
+              {/* Show details for each verified document/lab */}
+              {verificationDetails.map((details, idx) => (
+                <View key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-white/10" : ""}>
+                  {/* Lab name */}
+                  {details.labName && (
+                    <View className="flex-row items-center ml-7 mb-1">
+                      <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                        From: {details.labName}
+                      </Text>
+                    </View>
+                  )}
 
-              {/* Identifiers */}
-              {(verificationDetails.hasHealthCard || verificationDetails.hasAccessionNumber) ? (
-                <View className="flex-row items-center ml-7 mb-1">
-                  <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                    {verificationDetails.hasHealthCard && verificationDetails.hasAccessionNumber
-                      ? "Health card & accession number present"
-                      : verificationDetails.hasHealthCard
-                      ? "Health card present"
-                      : "Accession number present"}
-                  </Text>
-                </View>
-              ) : (
-                <View className="flex-row items-center ml-7 mb-1">
-                  <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                  <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                    Missing health card or accession number
-                  </Text>
-                </View>
-              )}
+                  {/* Identifiers */}
+                  {(details.hasHealthCard || details.hasAccessionNumber) ? (
+                    <View className="flex-row items-center ml-7 mb-1">
+                      <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                        {details.hasHealthCard && details.hasAccessionNumber
+                          ? "Health card & accession number present"
+                          : details.hasHealthCard
+                          ? "Health card present"
+                          : "Accession number present"}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View className="flex-row items-center ml-7 mb-1">
+                      <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                        Missing health card or accession number
+                      </Text>
+                    </View>
+                  )}
 
-              {/* Name match */}
-              {verificationDetails.patientName && profile && (
-                verificationDetails.nameMatched ? (
-                  <View className="flex-row items-center ml-7 mb-1">
-                    <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                    <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                      Name matches your profile
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center ml-7 mb-1">
-                    <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                    <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                      Name doesn't match your profile ({verificationDetails.patientName})
-                    </Text>
-                  </View>
-                )
-              )}
+                  {/* Name match */}
+                  {details.patientName && profile && (
+                    details.nameMatched ? (
+                      <View className="flex-row items-center ml-7 mb-1">
+                        <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+                        <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                          Name matches your profile
+                        </Text>
+                      </View>
+                    ) : (
+                      <View className="flex-row items-center ml-7 mb-1">
+                        <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+                        <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                          Name doesn't match your profile ({details.patientName})
+                        </Text>
+                      </View>
+                    )
+                  )}
+                </View>
+              ))}
 
               {!isVerified && (
                 <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
@@ -1018,10 +1172,13 @@ export default function Upload() {
                 Processing your results...
               </Text>
               <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Reading {selectedFiles.length} image{selectedFiles.length > 1 ? 's' : ''}
+                Reading {selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''}
               </Text>
               <Text className={`mt-3 text-xs font-inter-regular text-center ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                 Hang tight, 15-30 seconds
+              </Text>
+              <Text className={`mt-2 text-xs font-inter-medium text-center ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
+                Please stay in the app while we process
               </Text>
             </View>
           )}
