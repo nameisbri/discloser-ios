@@ -19,10 +19,10 @@ Enable users to upload PDF documents containing STI test results, with support f
 **So that** I don't have to convert it to an image first
 
 **Acceptance Criteria:**
-- [ ] User can select PDF files from device storage
-- [ ] PDF is processed and test results are extracted
-- [ ] Results are displayed for review before saving
-- [ ] Error message shown if PDF cannot be processed
+- [x] User can select PDF files from device storage
+- [x] PDF is processed and test results are extracted
+- [x] Results are displayed for review before saving
+- [x] Error message shown if PDF cannot be processed
 
 ### US-2: Upload Multi-Page PDF
 **As a** user with a multi-page PDF test result
@@ -30,10 +30,10 @@ Enable users to upload PDF documents containing STI test results, with support f
 **So that** all test results across pages are captured
 
 **Acceptance Criteria:**
-- [ ] All pages of the PDF are processed (up to reasonable limit)
-- [ ] Results from all pages are aggregated and deduplicated
-- [ ] User sees combined results from all pages
-- [ ] Progress indicator shows multi-page processing status
+- [x] All pages of the PDF are processed (up to reasonable limit)
+- [x] Results from all pages are aggregated and deduplicated
+- [x] User sees combined results from all pages
+- [x] Progress indicator shows multi-page processing status
 
 ### US-3: Mixed Upload (Images + PDFs)
 **As a** user
@@ -41,9 +41,9 @@ Enable users to upload PDF documents containing STI test results, with support f
 **So that** I can capture all my results regardless of format
 
 **Acceptance Criteria:**
-- [ ] File picker allows selection of both images and PDFs
-- [ ] Each file type is processed appropriately
-- [ ] Results are combined and deduplicated across all files
+- [x] File picker allows selection of both images and PDFs
+- [x] Each file type is processed appropriately
+- [x] Results are combined and deduplicated across all files
 
 ## Functional Requirements
 
@@ -134,7 +134,8 @@ Enable users to upload PDF documents containing STI test results, with support f
 
 ## Dependencies
 
-- PDF processing library (to be determined in technical design)
+- `expo-pdf-text-extract` - Native PDF text extraction (iOS PDFKit / Android PDFBox)
+- `react-native-pdf-thumbnail` - PDF to image conversion for OCR fallback
 - Existing OCR infrastructure (Google Cloud Vision)
 - Existing LLM parsing infrastructure (OpenRouter)
 

@@ -11,7 +11,9 @@
 ### PDF Support
 - [x] Add PDF upload support with native text extraction (expo-pdf-text-extract)
 - [x] Support multi-page PDFs (extracts all pages up to 10, combines results)
-- [ ] Add OCR fallback for scanned PDFs (post-launch enhancement)
+- [x] Add OCR fallback for scanned PDFs (uses react-native-pdf-thumbnail)
+- [x] Multi-document upload with deduplication across files
+- [x] Multi-provider verification display (shows all verified labs)
 
 ---
 
@@ -28,7 +30,8 @@
 - [ ] Document Android development setup
 
 ### Future Enhancements
-- [ ] Batch upload multiple test results at once
+- [x] Batch upload multiple test results at once (up to 4 files, images + PDFs)
+- [x] Manual entry removed (doesn't align with verification model)
 - [ ] Export test history as PDF report
 - [ ] Account linking between different OAuth providers
 - [ ] Biometric authentication (Face ID / fingerprint unlock)
