@@ -4,7 +4,13 @@ A mobile app for managing and sharing STI test results securely.
 
 ## Features
 
-- **Upload Test Results** - Scan documents with AI-powered extraction (Google Cloud Vision OCR + LLM parsing)
+- **Upload Test Results** - Upload photos or PDFs with AI-powered extraction
+  - Camera capture for instant uploads
+  - Image picker for existing photos
+  - PDF support with native text extraction
+  - OCR fallback for scanned PDFs
+  - Multi-document upload (up to 4 files at once)
+  - Automatic deduplication across documents
 - **Document Verification** - Automatic verification for recognized Canadian labs (LifeLabs, Public Health Ontario, etc.)
 - **Track History** - View all your test results in one place
 - **Share Securely** - Generate time-limited links or QR codes to share results
@@ -22,7 +28,11 @@ A mobile app for managing and sharing STI test results securely.
 - **Framework**: React Native with Expo (SDK 54)
 - **Styling**: NativeWind (Tailwind CSS)
 - **Backend**: Supabase (Auth, PostgreSQL, Storage)
-- **Document Parsing**: Google Cloud Vision + OpenRouter LLM
+- **Document Parsing**:
+  - PDF text extraction: `expo-pdf-text-extract` (iOS PDFKit / Android PDFBox)
+  - OCR for scanned docs: Google Cloud Vision
+  - PDF to image conversion: `react-native-pdf-thumbnail`
+  - AI extraction: OpenRouter LLM (Llama 3.3 70B)
 - **Notifications**: expo-notifications
 
 ## Getting Started
@@ -246,9 +256,11 @@ lib/
     useTestingRecommendations.ts  # Personalized recommendations
   parsing/            # Document OCR and LLM parsing
     documentParser.ts    # Main parsing orchestrator
+    pdfParser.ts         # PDF text extraction and OCR fallback
     llmParser.ts         # LLM-based extraction
     testNormalizer.ts    # Normalize STI names
     resultStandardizer.ts # Standardize results
+    testDeduplicator.ts  # Deduplicate results across documents
   google-auth.ts       # Google Sign-In helpers (Android native, iOS OAuth)
   supabase.ts         # Supabase client
   storage.ts           # File upload helpers

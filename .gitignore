@@ -69,10 +69,8 @@ Thumbs.db
 tmp/
 temp/
 
-# Test credentials and beta testing docs (do not commit!)
-docs/TEST_CREDENTIALS_*.md
-BETA_TESTING.md
-!docs/TEST_ACCOUNT_SETUP.md
+# Documentation (local only - not for GitHub)
+docs/
 
 # AI/Agent planning and context (local only)
 .cursor-plans/
