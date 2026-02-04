@@ -8,9 +8,14 @@
 - [ ] Consider self-hosted options for production to reduce API costs
 - [ ] Add fallback model support in case primary model is unavailable
 
+### PDF Support
+- [x] Add PDF upload support with native text extraction (expo-pdf-text-extract)
+- [x] Support multi-page PDFs (extracts all pages up to 10, combines results)
+- [ ] Add OCR fallback for scanned PDFs (post-launch enhancement)
+
 ---
 
-## In Progress
+## Post-MVP Features
 
 ### Android Support & Multi-Auth
 - [ ] Verify Android build configuration (app.json, eas.json)
@@ -21,16 +26,6 @@
 - [ ] Verify calendar integration works on Android
 - [ ] Create dedicated auth callback screen (`app/(auth)/auth-callback.tsx`)
 - [ ] Document Android development setup
-
----
-
-## Post-MVP Features
-
-### Document Processing
-- [ ] Add PDF upload support with proper conversion to images for OCR
-- [ ] Support multi-page PDFs (extract all pages, not just first)
-- [ ] Improve OCR accuracy for low-quality images
-- [ ] Add image-based document parsing (currently only PDF text extraction works)
 
 ### Future Enhancements
 - [ ] Batch upload multiple test results at once

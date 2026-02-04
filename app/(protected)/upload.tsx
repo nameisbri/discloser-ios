@@ -24,13 +24,15 @@ import {
   Calendar,
   Plus,
   Image as ImageIcon,
+  FileText,
 } from "lucide-react-native";
+import * as DocumentPicker from "expo-document-picker";
 import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
 import { useTheme } from "../../context/theme";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
-import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict } from "../../lib/parsing";
+import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict, validatePDF, isPDFExtractionAvailable } from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../lib/constants";
 import { isRetryableError } from "../../lib/http/errors";
@@ -57,7 +59,9 @@ type Step = "select" | "preview" | "details";
 type SelectedFile = {
   uri: string;
   name: string;
-  type: "image";
+  type: "image" | "pdf";
+  size?: number;
+  pageCount?: number;
 };
 
 const DEFAULT_STI_TESTS = [
@@ -205,6 +209,92 @@ export default function Upload() {
     }
   };
 
+  const pickPDF = async () => {
+    try {
+      // Check if PDF extraction is available (requires development build)
+      if (!isPDFExtractionAvailable()) {
+        Alert.alert(
+          "PDF Not Supported",
+          "PDF upload requires a development build. Please use the camera or photo library instead."
+        );
+        return;
+      }
+
+      // Calculate how many slots are available
+      const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
+
+      if (slotsAvailable <= 0) {
+        Alert.alert(
+          "File Limit Reached",
+          `You can upload up to ${MAX_FILES_LIMIT} files at once.`
+        );
+        return;
+      }
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        // Filter to respect file limit
+        let assetsToAdd = result.assets;
+
+        if (result.assets.length > slotsAvailable) {
+          assetsToAdd = result.assets.slice(0, slotsAvailable);
+          Alert.alert(
+            "File Limit Reached",
+            `You can upload up to ${MAX_FILES_LIMIT} files at once. Added ${assetsToAdd.length} PDF(s).`
+          );
+        }
+
+        // Validate each PDF
+        const validatedFiles: SelectedFile[] = [];
+        const validationErrors: string[] = [];
+
+        for (const asset of assetsToAdd) {
+          const validation = await validatePDF(asset.uri, asset.size);
+
+          if (!validation.valid && !validation.pageCount) {
+            // Completely invalid PDF
+            validationErrors.push(`${asset.name}: ${validation.error}`);
+            continue;
+          }
+
+          // Show warning for large PDFs but still add them
+          if (validation.error && validation.pageCount) {
+            Alert.alert("Note", validation.error);
+          }
+
+          validatedFiles.push({
+            uri: asset.uri,
+            name: asset.name || `document_${Date.now()}.pdf`,
+            type: "pdf" as const,
+            size: asset.size,
+            pageCount: validation.pageCount,
+          });
+        }
+
+        if (validationErrors.length > 0) {
+          Alert.alert(
+            "Some PDFs Could Not Be Added",
+            validationErrors.join("\n\n")
+          );
+        }
+
+        if (validatedFiles.length > 0) {
+          setSelectedFiles((prev) => [...prev, ...validatedFiles]);
+          setStep("preview");
+        }
+      }
+    } catch (error) {
+      Alert.alert(
+        "Couldn't Open Files",
+        "We couldn't access your files. Please try again."
+      );
+    }
+  };
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
@@ -240,9 +330,11 @@ export default function Upload() {
       for (let index = 0; index < selectedFiles.length; index++) {
         const file = selectedFiles[index];
         try {
+          // Use correct MIME type based on file type
+          const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
-            "image/jpeg",
+            mimeType,
             profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
             `File ${index + 1} of ${selectedFiles.length}`
           );
@@ -443,9 +535,11 @@ export default function Upload() {
         const file = filesToRetry[arrayIndex];
         const originalIndex = failedIndices[arrayIndex];
         try {
+          // Use correct MIME type based on file type
+          const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
-            "image/jpeg",
+            mimeType,
             profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
             `File ${originalIndex + 1} of ${selectedFiles.length}`
           );
@@ -720,6 +814,13 @@ export default function Upload() {
               isDark={isDark}
             />
             <UploadOption
+              icon={<FileText size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
+              title="Upload a PDF"
+              description="Got a PDF from your lab portal?"
+              onPress={pickPDF}
+              isDark={isDark}
+            />
+            <UploadOption
               icon={<Calendar size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
               title="Type it in"
               description="No document? No problem."
@@ -768,7 +869,11 @@ export default function Upload() {
             {selectedFiles.map((file, index) => (
               <Card key={index} className="flex-row items-center p-4">
                 <View className={`p-3 rounded-xl mr-4 ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
-                  <ImageIcon size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                  {file.type === "pdf" ? (
+                    <FileText size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                  ) : (
+                    <ImageIcon size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                  )}
                 </View>
                 <View className="flex-1">
                   <Text
@@ -778,7 +883,9 @@ export default function Upload() {
                     {file.name}
                   </Text>
                   <Text className={`text-xs font-inter-regular uppercase ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                    Image
+                    {file.type === "pdf"
+                      ? `PDF${file.pageCount ? ` • ${file.pageCount} page${file.pageCount !== 1 ? "s" : ""}` : ""}`
+                      : "Image"}
                   </Text>
                 </View>
                 <Pressable
