@@ -332,11 +332,26 @@ export async function createErrorFromResponse(
 
   // Try to extract error message from response body
   let errorMessage = `HTTP ${statusCode}: ${statusText}`;
+  let errorBody: unknown = null;
   try {
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
-      const errorBody = await response.json();
-      errorMessage = errorBody.message || errorBody.error || errorMessage;
+      errorBody = await response.json();
+      // Handle various error response formats (OpenRouter, OpenAI, etc.)
+      if (typeof errorBody === 'object' && errorBody !== null) {
+        const body = errorBody as Record<string, unknown>;
+        // OpenRouter/OpenAI format: { error: { message: "..." } }
+        if (body.error && typeof body.error === 'object') {
+          const err = body.error as Record<string, unknown>;
+          errorMessage = (err.message as string) || (err.code as string) || errorMessage;
+        }
+        // Simple format: { message: "..." } or { error: "..." }
+        else if (body.message) {
+          errorMessage = body.message as string;
+        } else if (typeof body.error === 'string') {
+          errorMessage = body.error;
+        }
+      }
     } else {
       const textBody = await response.text();
       if (textBody && textBody.length < 200) {
@@ -352,5 +367,6 @@ export async function createErrorFromResponse(
     statusCode,
     statusText,
     url: response.url,
+    responseBody: errorBody, // Include full response for debugging
   });
 }

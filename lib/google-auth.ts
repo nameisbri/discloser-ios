@@ -1,10 +1,23 @@
-import {
-  GoogleSignin,
-  isSuccessResponse,
-  isErrorWithCode,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
 import { Platform } from "react-native";
+
+// Lazy load Google Sign-In to avoid crashes in Expo Go
+// The native module is only available in development/production builds
+let GoogleSignin: any = null;
+let isSuccessResponse: any = () => false;
+let isErrorWithCode: any = () => false;
+let statusCodes: any = {};
+
+// Try to load the native module (will fail gracefully in Expo Go)
+try {
+  const googleSignIn = require("@react-native-google-signin/google-signin");
+  GoogleSignin = googleSignIn.GoogleSignin;
+  isSuccessResponse = googleSignIn.isSuccessResponse;
+  isErrorWithCode = googleSignIn.isErrorWithCode;
+  statusCodes = googleSignIn.statusCodes;
+} catch {
+  // Native module not available (Expo Go) - functions will return appropriate errors
+  console.warn("Google Sign-In native module not available (expected in Expo Go)");
+}
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
@@ -19,8 +32,8 @@ export function configureGoogleSignIn() {
     );
   }
 
-  // Only configure native Google Sign-In for Android
-  if (Platform.OS === "android") {
+  // Only configure native Google Sign-In for Android when module is available
+  if (Platform.OS === "android" && GoogleSignin) {
     GoogleSignin.configure({
       webClientId: WEB_CLIENT_ID,
       offlineAccess: false,
@@ -48,6 +61,14 @@ export async function getGoogleIdToken(): Promise<GoogleSignInResult> {
   }
 
   // Android: Use native Google Sign-In
+  if (!GoogleSignin) {
+    return {
+      success: false,
+      cancelled: false,
+      error: new Error("Google Sign-In not available in Expo Go. Use a development build."),
+    };
+  }
+
   try {
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
@@ -102,7 +123,7 @@ export async function getGoogleIdToken(): Promise<GoogleSignInResult> {
 
 export async function signOutGoogle(): Promise<void> {
   try {
-    if (Platform.OS === "android") {
+    if (Platform.OS === "android" && GoogleSignin) {
       await GoogleSignin.signOut();
     }
   } catch {

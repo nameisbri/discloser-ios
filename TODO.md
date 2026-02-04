@@ -1,5 +1,15 @@
 # Development Tasks
 
+## High Priority (Pre-Launch)
+
+### LLM Optimization
+- [ ] Evaluate cost-effective LLM models for document parsing (currently using `meta-llama/llama-3.3-70b-instruct` via OpenRouter)
+- [ ] Compare accuracy vs cost tradeoffs for different models (Llama 3.1 8B, Mistral, etc.)
+- [ ] Consider self-hosted options for production to reduce API costs
+- [ ] Add fallback model support in case primary model is unavailable
+
+---
+
 ## In Progress
 
 ### Android Support & Multi-Auth

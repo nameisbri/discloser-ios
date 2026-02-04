@@ -224,27 +224,43 @@ export default function Upload() {
       setParsingErrors([]); // Reset errors on new parse attempt
       setResultConflicts([]); // Reset conflicts on new parse attempt
 
-      // Parse all files in parallel with proper error tracking
-      const parsePromises = selectedFiles.map((file, index) =>
-        parseDocument(
-          file.uri,
-          "image/jpeg",
-          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
-          `File ${index + 1} of ${selectedFiles.length}`
-        ).catch((error) => ({
-          // Handle individual file failures gracefully
-          collectionDate: null,
-          testType: null,
-          tests: [],
-          notes: undefined,
-          isVerified: false,
-          verificationDetails: undefined,
-          error: error,
-          fileIndex: index,
-        }))
-      );
+      // Parse files sequentially to avoid rate limiting on free tier LLM APIs
+      // (Parallel requests hit OpenRouter's rate limits too quickly)
+      const parsedDocuments: Array<Awaited<ReturnType<typeof parseDocument>> | {
+        collectionDate: null;
+        testType: null;
+        tests: never[];
+        notes: undefined;
+        isVerified: false;
+        verificationDetails: undefined;
+        error: unknown;
+        fileIndex: number;
+      }> = [];
 
-      const parsedDocuments = await Promise.all(parsePromises);
+      for (let index = 0; index < selectedFiles.length; index++) {
+        const file = selectedFiles[index];
+        try {
+          const result = await parseDocument(
+            file.uri,
+            "image/jpeg",
+            profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
+            `File ${index + 1} of ${selectedFiles.length}`
+          );
+          parsedDocuments.push(result);
+        } catch (error) {
+          // Handle individual file failures gracefully
+          parsedDocuments.push({
+            collectionDate: null,
+            testType: null,
+            tests: [],
+            notes: undefined,
+            isVerified: false,
+            verificationDetails: undefined,
+            error: error,
+            fileIndex: index,
+          });
+        }
+      }
 
       // Aggregate results from all parsed documents
       let allResults: STIResult[] = [];
@@ -411,27 +427,42 @@ export default function Upload() {
     try {
       setParsing(true);
 
-      // Retry parsing only failed files
-      const retryPromises = filesToRetry.map((file, arrayIndex) => {
-        const originalIndex = failedIndices[arrayIndex];
-        return parseDocument(
-          file.uri,
-          "image/jpeg",
-          profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
-          `File ${originalIndex + 1} of ${selectedFiles.length}`
-        ).catch((error) => ({
-          collectionDate: null,
-          testType: null,
-          tests: [],
-          notes: undefined,
-          isVerified: false,
-          verificationDetails: undefined,
-          error: error,
-          fileIndex: originalIndex,
-        }));
-      });
+      // Retry parsing failed files sequentially to avoid rate limiting
+      const retryResults: Array<Awaited<ReturnType<typeof parseDocument>> | {
+        collectionDate: null;
+        testType: null;
+        tests: never[];
+        notes: undefined;
+        isVerified: false;
+        verificationDetails: undefined;
+        error: unknown;
+        fileIndex: number;
+      }> = [];
 
-      const retryResults = await Promise.all(retryPromises);
+      for (let arrayIndex = 0; arrayIndex < filesToRetry.length; arrayIndex++) {
+        const file = filesToRetry[arrayIndex];
+        const originalIndex = failedIndices[arrayIndex];
+        try {
+          const result = await parseDocument(
+            file.uri,
+            "image/jpeg",
+            profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
+            `File ${originalIndex + 1} of ${selectedFiles.length}`
+          );
+          retryResults.push(result);
+        } catch (error) {
+          retryResults.push({
+            collectionDate: null,
+            testType: null,
+            tests: [],
+            notes: undefined,
+            isVerified: false,
+            verificationDetails: undefined,
+            error: error,
+            fileIndex: originalIndex,
+          });
+        }
+      }
 
       // Process retry results and update state
       let newResults: STIResult[] = [...extractedResults];
