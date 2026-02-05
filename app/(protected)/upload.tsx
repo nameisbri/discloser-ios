@@ -1,52 +1,32 @@
 import { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  SafeAreaView,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  TextInput,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  BackHandler,
-} from "react-native";
+import { Alert, BackHandler } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import {
-  Upload as UploadIcon,
-  Camera,
-  Info,
-  ChevronLeft,
-  Check,
-  X,
-  Plus,
-  Image as ImageIcon,
-  FileText,
-} from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
 import { useTheme } from "../../context/theme";
-import { Button } from "../../components/Button";
-import { Card } from "../../components/Card";
-import { hapticSelection, hapticImpact } from "../../lib/utils/haptics";
+import { SelectStep, PreviewStep, DetailsStep, type SelectedFile } from "../../components/upload";
 import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
-import { parseDocument, DocumentParsingError, deduplicateTestResults, TestConflict, validatePDF, isPDFExtractionAvailable, determineTestType } from "../../lib/parsing";
+import {
+  parseDocument,
+  DocumentParsingError,
+  deduplicateTestResults,
+  TestConflict,
+  validatePDF,
+  isPDFExtractionAvailable,
+  determineTestType,
+} from "../../lib/parsing";
 import { isStatusSTI } from "../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../lib/constants";
-import { isRetryableError } from "../../lib/http/errors";
 
 // Maximum number of files that can be uploaded at once
-// Limit prevents processing failures on mobile networks
 const MAX_FILES_LIMIT = 4;
 
 // Risk level to testing interval in days
 const RISK_INTERVALS: Record<RiskLevel, number> = {
-  low: 365,      // 12 months
-  moderate: 180, // 6 months
-  high: 90,      // 3 months
+  low: 365,
+  moderate: 180,
+  high: 90,
 };
 
 const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "annual"> = {
@@ -56,15 +36,6 @@ const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "
 };
 
 type Step = "select" | "preview" | "details";
-
-type SelectedFile = {
-  uri: string;
-  name: string;
-  type: "image" | "pdf";
-  size?: number;
-  pageCount?: number;
-};
-
 
 export default function Upload() {
   const router = useRouter();
@@ -84,9 +55,7 @@ export default function Upload() {
   }>>([]);
 
   // Form state
-  const [testDate, setTestDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [testDate, setTestDate] = useState(new Date().toISOString().split("T")[0]);
   const [testType, setTestType] = useState("Full STI Panel");
   const [overallStatus, setOverallStatus] = useState<TestStatus>("negative");
   const [extractedResults, setExtractedResults] = useState<STIResult[]>([]);
@@ -104,12 +73,7 @@ export default function Upload() {
   // Prevent back navigation while parsing
   useEffect(() => {
     if (!parsing) return;
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Return true to prevent default back behavior
-      return true;
-    });
-
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => true);
     return () => backHandler.remove();
   }, [parsing]);
 
@@ -127,7 +91,6 @@ export default function Upload() {
         return;
       }
 
-      // Calculate how many slots are available
       const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
 
       const result = useCamera
@@ -142,16 +105,13 @@ export default function Upload() {
             allowsEditing: false,
             quality: 0.8,
             allowsMultipleSelection: true,
-            selectionLimit: slotsAvailable, // Enforce file limit
+            selectionLimit: slotsAvailable,
           });
 
       if (!result.canceled && result.assets.length > 0) {
-        // Check if adding these would exceed limit
-        const combinedCount = selectedFiles.length + result.assets.length;
         let assetsToAdd = result.assets;
 
-        if (combinedCount > MAX_FILES_LIMIT) {
-          // Only take what we can fit
+        if (selectedFiles.length + result.assets.length > MAX_FILES_LIMIT) {
           assetsToAdd = result.assets.slice(0, slotsAvailable);
           Alert.alert(
             "File Limit Reached",
@@ -162,22 +122,19 @@ export default function Upload() {
 
         const newFiles: SelectedFile[] = assetsToAdd.map((asset) => ({
           uri: asset.uri,
-          name:
-            asset.fileName ||
-            `test_result_${Date.now()}.${asset.uri.split(".").pop() || "jpg"}`,
+          name: asset.fileName || `test_result_${Date.now()}.${asset.uri.split(".").pop() || "jpg"}`,
           type: "image" as const,
         }));
         setSelectedFiles((prev) => [...prev, ...newFiles]);
         setStep("preview");
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Couldn't Open Photos", "We couldn't access your photos. Please try again or check your permissions in Settings.");
     }
   };
 
   const pickPDF = async () => {
     try {
-      // Check if PDF extraction is available (requires development build)
       if (!isPDFExtractionAvailable()) {
         Alert.alert(
           "PDF Not Supported",
@@ -186,14 +143,9 @@ export default function Upload() {
         return;
       }
 
-      // Calculate how many slots are available
       const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
-
       if (slotsAvailable <= 0) {
-        Alert.alert(
-          "File Limit Reached",
-          `You can upload up to ${MAX_FILES_LIMIT} files at once.`
-        );
+        Alert.alert("File Limit Reached", `You can upload up to ${MAX_FILES_LIMIT} files at once.`);
         return;
       }
 
@@ -204,18 +156,13 @@ export default function Upload() {
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        // Filter to respect file limit
         let assetsToAdd = result.assets;
 
         if (result.assets.length > slotsAvailable) {
           assetsToAdd = result.assets.slice(0, slotsAvailable);
-          Alert.alert(
-            "File Limit Reached",
-            `You can upload up to ${MAX_FILES_LIMIT} files at once. Added ${assetsToAdd.length} PDF(s).`
-          );
+          Alert.alert("File Limit Reached", `You can upload up to ${MAX_FILES_LIMIT} files at once. Added ${assetsToAdd.length} PDF(s).`);
         }
 
-        // Validate each PDF
         const validatedFiles: SelectedFile[] = [];
         const validationErrors: string[] = [];
 
@@ -223,12 +170,10 @@ export default function Upload() {
           const validation = await validatePDF(asset.uri, asset.size);
 
           if (!validation.valid && !validation.pageCount) {
-            // Completely invalid PDF
             validationErrors.push(`${asset.name}: ${validation.error}`);
             continue;
           }
 
-          // Show warning for large PDFs but still add them
           if (validation.error && validation.pageCount) {
             Alert.alert("Note", validation.error);
           }
@@ -243,10 +188,7 @@ export default function Upload() {
         }
 
         if (validationErrors.length > 0) {
-          Alert.alert(
-            "Some PDFs Could Not Be Added",
-            validationErrors.join("\n\n")
-          );
+          Alert.alert("Some PDFs Could Not Be Added", validationErrors.join("\n\n"));
         }
 
         if (validatedFiles.length > 0) {
@@ -254,17 +196,13 @@ export default function Upload() {
           setStep("preview");
         }
       }
-    } catch (error) {
-      Alert.alert(
-        "Couldn't Open Files",
-        "We couldn't access your files. Please try again."
-      );
+    } catch {
+      Alert.alert("Couldn't Open Files", "We couldn't access your files. Please try again.");
     }
   };
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    // Reset parsed results when files are removed (they may no longer be valid)
     setExtractedResults([]);
     setResultConflicts([]);
     if (selectedFiles.length <= 1) {
@@ -272,16 +210,14 @@ export default function Upload() {
     }
   };
 
-  const parseFirstDocument = async () => {
+  const parseDocuments = async () => {
     if (selectedFiles.length === 0) return;
 
     try {
       setParsing(true);
-      setParsingErrors([]); // Reset errors on new parse attempt
-      setResultConflicts([]); // Reset conflicts on new parse attempt
+      setParsingErrors([]);
+      setResultConflicts([]);
 
-      // Parse files sequentially to avoid rate limiting on free tier LLM APIs
-      // (Parallel requests hit OpenRouter's rate limits too quickly)
       const parsedDocuments: Array<Awaited<ReturnType<typeof parseDocument>> | {
         collectionDate: null;
         testType: null;
@@ -296,7 +232,6 @@ export default function Upload() {
       for (let index = 0; index < selectedFiles.length; index++) {
         const file = selectedFiles[index];
         try {
-          // Use correct MIME type based on file type
           const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
@@ -306,7 +241,6 @@ export default function Upload() {
           );
           parsedDocuments.push(result);
         } catch (error) {
-          // Handle individual file failures gracefully
           parsedDocuments.push({
             collectionDate: null,
             testType: null,
@@ -314,145 +248,13 @@ export default function Upload() {
             notes: undefined,
             isVerified: false,
             verificationDetails: undefined,
-            error: error,
+            error,
             fileIndex: index,
           });
         }
       }
 
-      // Aggregate results from all parsed documents
-      let allResults: STIResult[] = [];
-      let collectionDate: string | null = null;
-      let testType: string | null = null;
-      let extractedNotes: string[] = [];
-      let verified = false;
-      const vDetailsList: Array<{
-        labName?: string;
-        patientName?: string;
-        hasHealthCard: boolean;
-        hasAccessionNumber: boolean;
-        nameMatched: boolean;
-      }> = [];
-      const errors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
-
-      // Track error types for better messaging
-      const errorTypes = {
-        network: 0,
-        ocr: 0,
-        llm_parsing: 0,
-        other: 0,
-      };
-
-      parsedDocuments.forEach((parsed, index) => {
-        if ('error' in parsed && parsed.error) {
-          // Track DocumentParsingError instances
-          if (parsed.error instanceof DocumentParsingError) {
-            errors.push({
-              fileIndex: index,
-              fileName: selectedFiles[index].name,
-              error: parsed.error,
-            });
-
-            // Count error types
-            if (parsed.error.step === 'network') errorTypes.network++;
-            else if (parsed.error.step === 'ocr') errorTypes.ocr++;
-            else if (parsed.error.step === 'llm_parsing') errorTypes.llm_parsing++;
-            else errorTypes.other++;
-          } else {
-            // Handle generic errors
-            errors.push({
-              fileIndex: index,
-              fileName: selectedFiles[index].name,
-              error: new DocumentParsingError(
-                'unknown',
-                parsed.error instanceof Error ? parsed.error.message : 'Unknown error',
-                { fileIdentifier: `File ${index + 1} of ${selectedFiles.length}` }
-              ),
-            });
-            errorTypes.other++;
-          }
-          return;
-        }
-
-        if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
-        if (!testType && parsed.testType) testType = parsed.testType;
-        if (parsed.notes) extractedNotes.push(parsed.notes);
-        if (parsed.isVerified) verified = true;
-        if (parsed.verificationDetails) {
-          // Avoid adding duplicate labs (same lab name)
-          const labName = parsed.verificationDetails.labName;
-          const alreadyExists = vDetailsList.some(v => v.labName === labName);
-          if (!alreadyExists) {
-            vDetailsList.push(parsed.verificationDetails);
-          }
-        }
-
-        if (parsed.tests.length > 0) {
-          const results: STIResult[] = parsed.tests.map((t) => ({
-            name: t.name,
-            result: t.result,
-            status: t.status,
-          }));
-          allResults = [...allResults, ...results];
-        }
-      });
-
-      setIsVerified(verified);
-      setVerificationDetails(vDetailsList);
-      setParsingErrors(errors);
-
-      if (collectionDate) setTestDate(collectionDate);
-
-      // Deduplicate results across all images (handles overlapping screenshots)
-      let uniqueTestCount = 0;
-      if (allResults.length > 0) {
-        const deduplicationResult = deduplicateTestResults(allResults);
-
-        setExtractedResults(deduplicationResult.tests);
-        setResultConflicts(deduplicationResult.conflicts);
-        uniqueTestCount = deduplicationResult.tests.length;
-
-        // Recalculate test type based on ALL combined tests (not just first document)
-        const combinedTestType = determineTestType(deduplicationResult.tests);
-        setTestType(combinedTestType);
-
-        // Calculate overall status from deduplicated results
-        const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
-        const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
-        setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
-        setNotes(extractedNotes.length > 0 ? extractedNotes.join("\n\n") : "");
-      } else if (testType) {
-        // No results extracted, fall back to first document's test type
-        setTestType(testType);
-      }
-
-      // Build success/failure message based on results
-      const successCount = selectedFiles.length - errors.length;
-
-      if (errors.length === 0) {
-        // All files processed successfully
-        Alert.alert(
-          "Success",
-          `Processed ${selectedFiles.length} image(s), found ${uniqueTestCount} unique test(s). Review below.`,
-          [{ text: "OK" }]
-        );
-      } else if (successCount > 0) {
-        // Partial success
-        const errorSummary = buildErrorSummary(errorTypes);
-        Alert.alert(
-          "Partial Success",
-          `Processed ${successCount}/${selectedFiles.length} image(s), found ${uniqueTestCount} unique test(s).\n\n${errorSummary}`,
-          [{ text: "OK" }]
-        );
-      } else {
-        // All files failed
-        const errorSummary = buildErrorSummary(errorTypes);
-        Alert.alert(
-          "Processing Failed",
-          `Failed to process ${errors.length} image(s).\n\n${errorSummary}`,
-          [{ text: "OK" }]
-        );
-      }
+      processParseResults(parsedDocuments);
     } catch (error) {
       Alert.alert(
         "Auto-extraction Failed",
@@ -464,31 +266,126 @@ export default function Upload() {
     }
   };
 
-  /**
-   * Builds a user-friendly error summary based on error types
-   */
-  const buildErrorSummary = (errorTypes: Record<string, number>): string => {
-    const messages: string[] = [];
+  const processParseResults = (parsedDocuments: Array<unknown>) => {
+    let allResults: STIResult[] = [];
+    let collectionDate: string | null = null;
+    let detectedTestType: string | null = null;
+    const extractedNotes: string[] = [];
+    let verified = false;
+    const vDetailsList: Array<{
+      labName?: string;
+      patientName?: string;
+      hasHealthCard: boolean;
+      hasAccessionNumber: boolean;
+      nameMatched: boolean;
+    }> = [];
+    const errors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
+    const errorTypes = { network: 0, ocr: 0, llm_parsing: 0, other: 0 };
 
-    if (errorTypes.network > 0) {
-      messages.push(`${errorTypes.network} network error(s) - check your connection`);
-    }
-    if (errorTypes.ocr > 0) {
-      messages.push(`${errorTypes.ocr} image(s) could not be read - ensure clarity`);
-    }
-    if (errorTypes.llm_parsing > 0) {
-      messages.push(`${errorTypes.llm_parsing} document(s) could not be parsed`);
-    }
-    if (errorTypes.other > 0) {
-      messages.push(`${errorTypes.other} other error(s)`);
+    parsedDocuments.forEach((parsed: unknown, index: number) => {
+      const doc = parsed as {
+        error?: unknown;
+        collectionDate?: string;
+        testType?: string;
+        notes?: string;
+        isVerified?: boolean;
+        verificationDetails?: {
+          labName?: string;
+          patientName?: string;
+          hasHealthCard: boolean;
+          hasAccessionNumber: boolean;
+          nameMatched: boolean;
+        };
+        tests?: Array<{ name: string; result: string; status: TestStatus }>;
+      };
+
+      if (doc.error) {
+        if (doc.error instanceof DocumentParsingError) {
+          errors.push({ fileIndex: index, fileName: selectedFiles[index].name, error: doc.error });
+          if (doc.error.step === "network") errorTypes.network++;
+          else if (doc.error.step === "ocr") errorTypes.ocr++;
+          else if (doc.error.step === "llm_parsing") errorTypes.llm_parsing++;
+          else errorTypes.other++;
+        } else {
+          errors.push({
+            fileIndex: index,
+            fileName: selectedFiles[index].name,
+            error: new DocumentParsingError(
+              "unknown",
+              doc.error instanceof Error ? doc.error.message : "Unknown error",
+              { fileIdentifier: `File ${index + 1} of ${selectedFiles.length}` }
+            ),
+          });
+          errorTypes.other++;
+        }
+        return;
+      }
+
+      if (!collectionDate && doc.collectionDate) collectionDate = doc.collectionDate;
+      if (!detectedTestType && doc.testType) detectedTestType = doc.testType;
+      if (doc.notes) extractedNotes.push(doc.notes);
+      if (doc.isVerified) verified = true;
+      if (doc.verificationDetails) {
+        const labName = doc.verificationDetails.labName;
+        if (!vDetailsList.some((v) => v.labName === labName)) {
+          vDetailsList.push(doc.verificationDetails);
+        }
+      }
+
+      if (doc.tests && doc.tests.length > 0) {
+        const results: STIResult[] = doc.tests.map((t) => ({
+          name: t.name,
+          result: t.result,
+          status: t.status,
+        }));
+        allResults = [...allResults, ...results];
+      }
+    });
+
+    setIsVerified(verified);
+    setVerificationDetails(vDetailsList);
+    setParsingErrors(errors);
+
+    if (collectionDate) setTestDate(collectionDate);
+
+    let uniqueTestCount = 0;
+    if (allResults.length > 0) {
+      const deduplicationResult = deduplicateTestResults(allResults);
+      setExtractedResults(deduplicationResult.tests);
+      setResultConflicts(deduplicationResult.conflicts);
+      uniqueTestCount = deduplicationResult.tests.length;
+
+      const combinedTestType = determineTestType(deduplicationResult.tests);
+      setTestType(combinedTestType);
+
+      const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
+      const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
+      setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
+      setNotes(extractedNotes.join("\n\n"));
+    } else if (detectedTestType) {
+      setTestType(detectedTestType);
     }
 
-    return messages.join('\n');
+    // Show result alert
+    const successCount = selectedFiles.length - errors.length;
+    if (errors.length === 0) {
+      Alert.alert("Success", `Processed ${selectedFiles.length} image(s), found ${uniqueTestCount} unique test(s). Review below.`);
+    } else if (successCount > 0) {
+      Alert.alert("Partial Success", `Processed ${successCount}/${selectedFiles.length} image(s), found ${uniqueTestCount} unique test(s).\n\n${buildErrorSummary(errorTypes)}`);
+    } else {
+      Alert.alert("Processing Failed", `Failed to process ${errors.length} image(s).\n\n${buildErrorSummary(errorTypes)}`);
+    }
   };
 
-  /**
-   * Retries parsing for failed files
-   */
+  const buildErrorSummary = (errorTypes: Record<string, number>): string => {
+    const messages: string[] = [];
+    if (errorTypes.network > 0) messages.push(`${errorTypes.network} network error(s) - check your connection`);
+    if (errorTypes.ocr > 0) messages.push(`${errorTypes.ocr} image(s) could not be read - ensure clarity`);
+    if (errorTypes.llm_parsing > 0) messages.push(`${errorTypes.llm_parsing} document(s) could not be parsed`);
+    if (errorTypes.other > 0) messages.push(`${errorTypes.other} other error(s)`);
+    return messages.join("\n");
+  };
+
   const retryFailedFiles = async () => {
     const failedIndices = parsingErrors.map((e) => e.fileIndex);
     const filesToRetry = selectedFiles.filter((_, index) => failedIndices.includes(index));
@@ -498,7 +395,6 @@ export default function Upload() {
     try {
       setParsing(true);
 
-      // Retry parsing failed files sequentially to avoid rate limiting
       const retryResults: Array<Awaited<ReturnType<typeof parseDocument>> | {
         collectionDate: null;
         testType: null;
@@ -514,7 +410,6 @@ export default function Upload() {
         const file = filesToRetry[arrayIndex];
         const originalIndex = failedIndices[arrayIndex];
         try {
-          // Use correct MIME type based on file type
           const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
@@ -531,82 +426,76 @@ export default function Upload() {
             notes: undefined,
             isVerified: false,
             verificationDetails: undefined,
-            error: error,
+            error,
             fileIndex: originalIndex,
           });
         }
       }
 
-      // Process retry results and update state
+      // Process retry results
       let newResults: STIResult[] = [...extractedResults];
-      let collectionDate: string | null = testDate;
-      let testTypeValue: string | null = testType;
-      let extractedNotesArr: string[] = notes ? [notes] : [];
+      let collectionDateVal: string = testDate;
+      let testTypeVal: string = testType;
+      const extractedNotesArr: string[] = notes ? [notes] : [];
       let verified = isVerified;
-      const vDetailsList: Array<{
-        labName?: string;
-        patientName?: string;
-        hasHealthCard: boolean;
-        hasAccessionNumber: boolean;
-        nameMatched: boolean;
-      }> = [...verificationDetails];
+      const vDetailsList = [...verificationDetails];
       const remainingErrors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
 
-      retryResults.forEach((parsed, arrayIndex) => {
+      retryResults.forEach((parsed: unknown, arrayIndex: number) => {
         const originalIndex = failedIndices[arrayIndex];
+        const doc = parsed as {
+          error?: unknown;
+          collectionDate?: string;
+          testType?: string;
+          notes?: string;
+          isVerified?: boolean;
+          verificationDetails?: {
+            labName?: string;
+            patientName?: string;
+            hasHealthCard: boolean;
+            hasAccessionNumber: boolean;
+            nameMatched: boolean;
+          };
+          tests?: Array<{ name: string; result: string; status: TestStatus }>;
+        };
 
-        if ('error' in parsed && parsed.error) {
-          // Still failed, keep error
-          if (parsed.error instanceof DocumentParsingError) {
-            remainingErrors.push({
-              fileIndex: originalIndex,
-              fileName: selectedFiles[originalIndex].name,
-              error: parsed.error,
-            });
+        if (doc.error) {
+          if (doc.error instanceof DocumentParsingError) {
+            remainingErrors.push({ fileIndex: originalIndex, fileName: selectedFiles[originalIndex].name, error: doc.error });
           }
           return;
         }
 
-        // Success! Add to results
-        if (!collectionDate && parsed.collectionDate) collectionDate = parsed.collectionDate;
-        if (!testTypeValue && parsed.testType) testTypeValue = parsed.testType;
-        if (parsed.notes) extractedNotesArr.push(parsed.notes);
-        if (parsed.isVerified) verified = true;
-        if (parsed.verificationDetails) {
-          const labName = parsed.verificationDetails.labName;
-          const alreadyExists = vDetailsList.some(v => v.labName === labName);
-          if (!alreadyExists) {
-            vDetailsList.push(parsed.verificationDetails);
+        if (!collectionDateVal && doc.collectionDate) collectionDateVal = doc.collectionDate;
+        if (!testTypeVal && doc.testType) testTypeVal = doc.testType;
+        if (doc.notes) extractedNotesArr.push(doc.notes);
+        if (doc.isVerified) verified = true;
+        if (doc.verificationDetails) {
+          const labName = doc.verificationDetails.labName;
+          if (!vDetailsList.some((v) => v.labName === labName)) {
+            vDetailsList.push(doc.verificationDetails);
           }
         }
 
-        if (parsed.tests.length > 0) {
-          const results: STIResult[] = parsed.tests.map((t) => ({
-            name: t.name,
-            result: t.result,
-            status: t.status,
-          }));
+        if (doc.tests && doc.tests.length > 0) {
+          const results: STIResult[] = doc.tests.map((t) => ({ name: t.name, result: t.result, status: t.status }));
           newResults = [...newResults, ...results];
         }
       });
 
-      // Update state with retry results - deduplicate combined results
-      if (collectionDate) setTestDate(collectionDate);
+      if (collectionDateVal) setTestDate(collectionDateVal);
 
       if (newResults.length > 0) {
         const deduplicationResult = deduplicateTestResults(newResults);
         setExtractedResults(deduplicationResult.tests);
         setResultConflicts(deduplicationResult.conflicts);
-
-        // Recalculate test type based on ALL combined tests
         const combinedTestType = determineTestType(deduplicationResult.tests);
         setTestType(combinedTestType);
-
         const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
         const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
         setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
-      } else if (testTypeValue) {
-        setTestType(testTypeValue);
+      } else if (testTypeVal) {
+        setTestType(testTypeVal);
       }
 
       setNotes(extractedNotesArr.join("\n\n"));
@@ -616,31 +505,18 @@ export default function Upload() {
 
       const successCount = filesToRetry.length - remainingErrors.length;
       if (remainingErrors.length === 0) {
-        Alert.alert(
-          "Success",
-          `Successfully processed all ${successCount} file(s) on retry!`,
-          [{ text: "OK" }]
-        );
+        Alert.alert("Success", `Successfully processed all ${successCount} file(s) on retry!`);
       } else {
-        Alert.alert(
-          "Partial Success",
-          `Processed ${successCount}/${filesToRetry.length} file(s) on retry. ${remainingErrors.length} still failed.`,
-          [{ text: "OK" }]
-        );
+        Alert.alert("Partial Success", `Processed ${successCount}/${filesToRetry.length} file(s) on retry. ${remainingErrors.length} still failed.`);
       }
     } catch (error) {
-      Alert.alert(
-        "Retry Failed",
-        error instanceof Error ? error.message : "Please try again or enter manually.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Retry Failed", error instanceof Error ? error.message : "Please try again or enter manually.");
     } finally {
       setParsing(false);
     }
   };
 
   const handleSubmit = async () => {
-    // Check for duplicate test date
     const existingResult = results.find((r) => r.test_date === testDate);
     if (existingResult) {
       Alert.alert(
@@ -648,7 +524,7 @@ export default function Upload() {
         `You already have results from ${testDate}. Do you want to add another result for this date?`,
         [
           { text: "Cancel", style: "cancel", onPress: () => router.replace("/dashboard") },
-          { text: "Add Anyway", onPress: () => submitResult() },
+          { text: "Add Anyway", onPress: submitResult },
         ]
       );
       return;
@@ -660,34 +536,26 @@ export default function Upload() {
     try {
       setUploading(true);
 
-      // NOTE: For privacy, we do NOT store medical document files in cloud storage.
-      // Images are only used locally for OCR text extraction during upload.
-      // Only structured test data (dates, results) is saved to the database.
-
-      // Build STI results array from extracted results
-      const stiResults: STIResult[] = extractedResults;
-
-      // Create test result
       const result = await createResult({
         test_date: testDate,
         status: overallStatus,
         test_type: testType,
-        sti_results: stiResults,
+        sti_results: extractedResults,
         notes: notes || undefined,
         is_verified: isVerified,
       });
 
       if (result) {
         // Auto-add positive status STIs to known conditions
-        const newStatusPositives = stiResults.filter(
+        const newStatusPositives = extractedResults.filter(
           (sti) => sti.status === "positive" && isStatusSTI(sti.name) && !hasKnownCondition(sti.name)
         );
         for (const sti of newStatusPositives) {
           await addKnownCondition(sti.name);
         }
 
-        // Only update reminder if results contain routine tests (HIV, Syphilis, Chlamydia, Gonorrhea)
-        const hasRoutine = stiResults.some((sti) =>
+        // Update reminder based on risk level
+        const hasRoutine = extractedResults.some((sti) =>
           ROUTINE_TESTS.some((r) => sti.name.toLowerCase().includes(r))
         );
 
@@ -698,9 +566,7 @@ export default function Upload() {
           nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
           const nextDateStr = nextDueDate.toISOString().split("T")[0];
 
-          // Update first active reminder, or create new one
           const existingReminder = activeReminders[0];
-
           if (existingReminder) {
             await updateReminder(existingReminder.id, {
               next_date: nextDateStr,
@@ -717,612 +583,77 @@ export default function Upload() {
         }
 
         Alert.alert("Success", "Test result saved successfully!", [
-          {
-            text: "View Result",
-            onPress: () => router.replace(`/results/${result.id}`),
-          },
-          {
-            text: "Go to Dashboard",
-            onPress: () => router.replace("/dashboard"),
-          },
+          { text: "View Result", onPress: () => router.replace(`/results/${result.id}`) },
+          { text: "Go to Dashboard", onPress: () => router.replace("/dashboard") },
         ]);
       } else {
-        Alert.alert(
-          "Couldn't Save",
-          "We couldn't save your test result. This might be a connection issue. Please check your internet and try again."
-        );
+        Alert.alert("Couldn't Save", "We couldn't save your test result. This might be a connection issue. Please check your internet and try again.");
       }
     } catch (error) {
       Alert.alert(
         "Upload Failed",
         error instanceof Error
           ? error.message
-          : "We couldn't upload your test result. Please check your internet connection and try again. If this keeps happening, try entering the details manually instead."
+          : "We couldn't upload your test result. Please check your internet connection and try again."
       );
     } finally {
       setUploading(false);
     }
   };
 
+  // Render the appropriate step
   if (step === "select") {
     return (
-      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
-        <View className="flex-row items-center px-6 py-4">
-          <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
-          </Pressable>
-        </View>
-
-        <ScrollView className="flex-1 px-8 py-6" contentContainerStyle={{ paddingBottom: 40 }}>
-          <View className="items-center mb-10">
-            <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/30"}`}>
-              <UploadIcon size={40} color={isDark ? "#FF2D7A" : "#923D5C"} />
-            </View>
-            <Text className={`text-3xl font-inter-bold mb-3 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-              Add a result
-            </Text>
-            <Text className={`font-inter-regular text-center ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              We'll keep it safe. You decide who sees it.
-            </Text>
-          </View>
-
-          <View className="gap-4">
-            <UploadOption
-              icon={<Camera size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Take a photo"
-              description="Take a photo of your results"
-              onPress={() => pickImage(true)}
-              isDark={isDark}
-            />
-            <UploadOption
-              icon={<ImageIcon size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Choose from photos"
-              description="Already have it saved? Perfect."
-              onPress={() => pickImage(false)}
-              isDark={isDark}
-            />
-            <UploadOption
-              icon={<FileText size={28} color={isDark ? "#FF2D7A" : "#923D5C"} />}
-              title="Upload a PDF"
-              description="Got a PDF from your lab portal?"
-              onPress={pickPDF}
-              isDark={isDark}
-            />
-          </View>
-
-          <View className={`p-5 rounded-3xl flex-row items-start mt-6 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/20"}`}>
-            <Info size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-            <Text className={`ml-3 flex-1 font-inter-medium text-sm leading-5 ${isDark ? "text-dark-accent" : "text-primary-dark"}`}>
-              Encrypted, secure, and yours alone. Privacy that's not just theatre.
-            </Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <SelectStep
+        isDark={isDark}
+        onPickImage={pickImage}
+        onPickPDF={pickPDF}
+      />
     );
   }
 
   if (step === "preview") {
     return (
-      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
-        <View className="flex-row items-center justify-between px-6 py-4">
-          <Pressable
-            onPress={() => {
-              setSelectedFiles([]);
-              setStep("select");
-            }}
-            className="p-2 -ml-2"
-          >
-            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
-          </Pressable>
-          <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-            Documents Selected
-          </Text>
-          <View className="w-10" />
-        </View>
-
-        <ScrollView className="flex-1 px-6 py-4">
-          <Text className={`font-inter-medium mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-            {selectedFiles.length} of {MAX_FILES_LIMIT} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
-            selected
-          </Text>
-
-          <View className="gap-3 mb-6">
-            {selectedFiles.map((file, index) => (
-              <Card key={index} className="flex-row items-center p-4">
-                <View className={`p-3 rounded-xl mr-4 ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
-                  {file.type === "pdf" ? (
-                    <FileText size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                  ) : (
-                    <ImageIcon size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                  )}
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}
-                    numberOfLines={1}
-                  >
-                    {file.name}
-                  </Text>
-                  <Text className={`text-xs font-inter-regular uppercase ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                    {file.type === "pdf"
-                      ? `PDF${file.pageCount ? ` • ${file.pageCount} page${file.pageCount !== 1 ? "s" : ""}` : ""}`
-                      : "Image"}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={async () => {
-                    await hapticImpact("medium");
-                    removeFile(index);
-                  }}
-                  className={`p-3 rounded-xl ${isDark ? "bg-dark-danger-bg" : "bg-danger-light"}`}
-                  style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}
-                  accessibilityLabel={`Remove ${file.name}`}
-                  accessibilityRole="button"
-                  accessibilityHint="Removes this file from upload"
-                >
-                  <X size={18} color="#DC3545" />
-                </Pressable>
-              </Card>
-            ))}
-          </View>
-
-          {/* Add more files - only show if under limit */}
-          {selectedFiles.length < MAX_FILES_LIMIT && (
-            <Pressable
-              onPress={() => setStep("select")}
-              className={`flex-row items-center justify-center py-4 border-2 border-dashed rounded-2xl mb-6 ${isDark ? "border-dark-border" : "border-border"}`}
-            >
-              <Plus size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-              <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Add More Files ({MAX_FILES_LIMIT - selectedFiles.length} remaining)
-              </Text>
-            </Pressable>
-          )}
-
-          <Button
-            label="Continue to Details"
-            onPress={async () => {
-              setStep("details");
-              await parseFirstDocument();
-            }}
-          />
-        </ScrollView>
-      </SafeAreaView>
+      <PreviewStep
+        isDark={isDark}
+        selectedFiles={selectedFiles}
+        maxFiles={MAX_FILES_LIMIT}
+        onBack={() => {
+          setSelectedFiles([]);
+          setStep("select");
+        }}
+        onRemoveFile={removeFile}
+        onAddMore={() => setStep("select")}
+        onContinue={async () => {
+          setStep("details");
+          await parseDocuments();
+        }}
+      />
     );
   }
 
-  // Details step
   return (
-    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <View className="flex-row items-center justify-between px-6 py-4">
-          <Pressable
-            onPress={() =>
-              !parsing && setStep(selectedFiles.length > 0 ? "preview" : "select")
-            }
-            disabled={parsing}
-            className={`p-2 -ml-2 ${parsing ? "opacity-30" : ""}`}
-          >
-            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
-          </Pressable>
-          <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-            Test Details
-          </Text>
-          <View className="w-10" />
-        </View>
-
-        <ScrollView
-          className="flex-1 px-6"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Show attached files summary */}
-          {selectedFiles.length > 0 && (
-            <View className={`p-4 rounded-2xl flex-row items-center mb-3 ${isDark ? "bg-dark-success-bg" : "bg-success-light/50"}`}>
-              <Check size={20} color={isDark ? "#00E5A0" : "#28A745"} />
-              <Text className={`font-inter-medium ml-2 flex-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                {selectedFiles.length} file
-                {selectedFiles.length !== 1 ? "s" : ""} attached
-              </Text>
-            </View>
-          )}
-
-          {/* Show verification status with detailed feedback */}
-          {verificationDetails.length > 0 && (
-            <View className={`p-4 rounded-2xl mb-3 ${isVerified ? (isDark ? "bg-dark-accent-muted" : "bg-primary-light/50") : (isDark ? "bg-dark-warning-bg" : "bg-warning-light/50")}`}>
-              <View className="flex-row items-center mb-2">
-                {isVerified ? (
-                  <Check size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                ) : (
-                  <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
-                )}
-                <Text className={`font-inter-semibold ml-2 ${isVerified ? (isDark ? "text-dark-accent" : "text-primary") : (isDark ? "text-dark-warning" : "text-warning-dark")}`}>
-                  {isVerified
-                    ? verificationDetails.length > 1
-                      ? `${verificationDetails.length} documents verified`
-                      : "Document verified"
-                    : "Document not verified"}
-                </Text>
-              </View>
-
-              {/* Show details for each verified document/lab */}
-              {verificationDetails.map((details, idx) => (
-                <View key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-white/10" : ""}>
-                  {/* Lab name */}
-                  {details.labName && (
-                    <View className="flex-row items-center ml-7 mb-1">
-                      <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                        From: {details.labName}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Identifiers */}
-                  {(details.hasHealthCard || details.hasAccessionNumber) ? (
-                    <View className="flex-row items-center ml-7 mb-1">
-                      <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                        {details.hasHealthCard && details.hasAccessionNumber
-                          ? "Health card & accession number present"
-                          : details.hasHealthCard
-                          ? "Health card present"
-                          : "Accession number present"}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View className="flex-row items-center ml-7 mb-1">
-                      <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                      <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                        Missing health card or accession number
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Name match */}
-                  {details.patientName && profile && (
-                    details.nameMatched ? (
-                      <View className="flex-row items-center ml-7 mb-1">
-                        <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                        <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                          Name matches your profile
-                        </Text>
-                      </View>
-                    ) : (
-                      <View className="flex-row items-center ml-7 mb-1">
-                        <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                        <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                          Name doesn't match your profile ({details.patientName})
-                        </Text>
-                      </View>
-                    )
-                  )}
-                </View>
-              ))}
-
-              {!isVerified && (
-                <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                  You can still save this result, but it won't be marked as verified.
-                </Text>
-              )}
-            </View>
-          )}
-
-          {/* Conflict Warnings - when same test has different results across images */}
-          {!parsing && resultConflicts.length > 0 && (
-            <View className={`p-4 rounded-2xl mb-4 ${isDark ? "bg-dark-warning-bg" : "bg-warning-light/50"}`}>
-              <View className="flex-row items-center mb-2">
-                <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
-                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
-                  Conflicting Results Detected
-                </Text>
-              </View>
-              <Text className={`text-sm font-inter-regular mb-3 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                These tests appeared with different results across your images. We've selected the most clinically relevant, but please verify:
-              </Text>
-              {resultConflicts.map((conflict, idx) => (
-                <View key={idx} className={`p-3 rounded-xl mb-2 ${isDark ? "bg-dark-surface" : "bg-white"}`}>
-                  <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
-                    {conflict.testName}
-                  </Text>
-                  <Text className={`text-xs font-inter-regular mt-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                    Found: {conflict.occurrences.map(o => o.status).join(', ')}
-                  </Text>
-                  <Text className={`text-xs font-inter-medium mt-1 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                    Selected: {conflict.suggested.status}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Parsing Errors Display */}
-          {!parsing && parsingErrors.length > 0 && (
-            <View className="mb-6">
-              <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-                Processing Errors ({parsingErrors.length})
-              </Text>
-
-              {parsingErrors.map((errorInfo, idx) => {
-                const isRetryable = errorInfo.error.step === 'network' || errorInfo.error.step === 'ocr' || isRetryableError(errorInfo.error.originalError);
-
-                return (
-                  <View
-                    key={idx}
-                    className={`border rounded-2xl p-4 mb-3 ${isDark ? "bg-dark-danger-bg border-dark-border" : "bg-danger-light border-danger"}`}
-                  >
-                    <View className="flex-row items-start mb-2">
-                      <X size={18} color="#DC3545" className="mr-2 mt-1" />
-                      <View className="flex-1">
-                        <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                          {errorInfo.fileName}
-                        </Text>
-                        <Text className={`font-inter-regular text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                          {errorInfo.error.getUserMessage()}
-                        </Text>
-
-                        {/* Show error type badge */}
-                        <View className="mt-2">
-                          <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                            Error type: {errorInfo.error.step}
-                          </Text>
-                        </View>
-
-                        {/* Retryable indicator */}
-                        {isRetryable && (
-                          <View className={`mt-2 px-2 py-1 rounded-full self-start ${isDark ? "bg-dark-warning-bg" : "bg-warning-light"}`}>
-                            <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
-                              Can retry
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-
-              {/* Retry Button - show if any errors are retryable */}
-              {parsingErrors.some((e) => e.error.step === 'network' || e.error.step === 'ocr' || isRetryableError(e.error.originalError)) && (
-                <Button
-                  label="Retry Auto-Extract"
-                  onPress={retryFailedFiles}
-                  variant="secondary"
-                  className="mt-2"
-                />
-              )}
-            </View>
-          )}
-
-          {parsing && (
-            <View className={`p-6 rounded-3xl items-center mb-6 ${isDark ? "bg-dark-surface" : "bg-primary-light/20"}`}>
-              <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
-              <Text className={`mt-4 text-xl font-inter-bold text-center ${isDark ? "text-dark-text" : "text-primary-dark"}`}>
-                Processing your results...
-              </Text>
-              <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Reading {selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''}
-              </Text>
-              <Text className={`mt-3 text-xs font-inter-regular text-center ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                Hang tight, 15-30 seconds
-              </Text>
-              <Text className={`mt-2 text-xs font-inter-medium text-center ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
-                Please stay in the app while we process
-              </Text>
-            </View>
-          )}
-
-          {!parsing && (
-            <>
-              {/* Test Date */}
-              <View className="mb-6">
-                <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
-                  Test Date
-                </Text>
-                <TextInput
-                  value={testDate}
-                  onChangeText={setTestDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
-                  className={`border rounded-2xl px-4 py-4 font-inter-regular ${
-                    isDark
-                      ? "bg-dark-surface border-dark-border text-dark-text"
-                      : "bg-white border-border text-text"
-                  }`}
-                />
-              </View>
-
-              {/* Test Type */}
-              <View className="mb-6">
-                <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
-                  Test Type
-                </Text>
-                <TextInput
-                  value={testType}
-                  onChangeText={setTestType}
-                  placeholder="e.g., Full STI Panel"
-                  placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
-                  className={`border rounded-2xl px-4 py-4 font-inter-regular ${
-                    isDark
-                      ? "bg-dark-surface border-dark-border text-dark-text"
-                      : "bg-white border-border text-text"
-                  }`}
-                />
-              </View>
-
-            </>
-          )}
-
-          {/* Tests Included */}
-          {parsing ? null : extractedResults.length > 0 ? (
-            <View className="mb-6">
-              <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-                Extracted Test Results ({extractedResults.length})
-              </Text>
-              {extractedResults.map((sti, index) => (
-                <View key={index} className={`border rounded-2xl p-4 mb-3 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
-                  <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>{sti.name}</Text>
-                  <Text className={`font-inter-regular text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>{sti.result}</Text>
-                  <View className="flex-row gap-2">
-                    <Pressable
-                      onPress={async () => {
-                        await hapticSelection();
-                        const updated = [...extractedResults];
-                        updated[index].status = "negative";
-                        setExtractedResults(updated);
-                      }}
-                      className={`px-4 py-2.5 rounded-full ${
-                        sti.status === "negative"
-                          ? "bg-success"
-                          : isDark ? "bg-dark-surface-light" : "bg-gray-100"
-                      }`}
-                      style={{ minHeight: 44, justifyContent: "center" }}
-                      accessibilityLabel={`Set ${sti.name} to Negative`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: sti.status === "negative" }}
-                    >
-                      <Text className={sti.status === "negative" ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
-                        Negative
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={async () => {
-                        await hapticSelection();
-                        const updated = [...extractedResults];
-                        updated[index].status = "positive";
-                        setExtractedResults(updated);
-                      }}
-                      className={`px-4 py-2.5 rounded-full ${
-                        sti.status === "positive"
-                          ? "bg-danger"
-                          : isDark ? "bg-dark-surface-light" : "bg-gray-100"
-                      }`}
-                      style={{ minHeight: 44, justifyContent: "center" }}
-                      accessibilityLabel={`Set ${sti.name} to Positive`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: sti.status === "positive" }}
-                    >
-                      <Text className={sti.status === "positive" ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
-                        Positive
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={async () => {
-                        await hapticSelection();
-                        const updated = [...extractedResults];
-                        updated[index].status = "pending";
-                        setExtractedResults(updated);
-                      }}
-                      className={`px-4 py-2.5 rounded-full ${
-                        sti.status === "pending"
-                          ? "bg-warning"
-                          : isDark ? "bg-dark-surface-light" : "bg-gray-100"
-                      }`}
-                      style={{ minHeight: 44, justifyContent: "center" }}
-                      accessibilityLabel={`Set ${sti.name} to Pending`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: sti.status === "pending" }}
-                    >
-                      <Text className={sti.status === "pending" ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
-                        Pending
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View className={`p-4 rounded-2xl mb-6 ${isDark ? "bg-dark-warning-bg" : "bg-warning-light/50"}`}>
-              <View className="flex-row items-center mb-2">
-                <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
-                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
-                  No test results extracted
-                </Text>
-              </View>
-              <Text className={`text-sm font-inter-regular ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                We couldn't find any test results in your document. Please try again with a clearer image or PDF, or make sure the document contains STI test results.
-              </Text>
-            </View>
-          )}
-
-          {!parsing && (
-            <>
-              {/* Notes */}
-              <View className="mb-8">
-                <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
-                  Notes (Optional)
-                </Text>
-                <TextInput
-                  value={notes}
-                  onChangeText={setNotes}
-                  placeholder="Any additional notes..."
-                  placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
-                  multiline
-                  numberOfLines={3}
-                  className={`border rounded-2xl px-4 py-4 font-inter-regular min-h-[100px] ${
-                    isDark
-                      ? "bg-dark-surface border-dark-border text-dark-text"
-                      : "bg-white border-border text-text"
-                  }`}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <Button
-                label={uploading ? "On it..." : "Save it"}
-                onPress={handleSubmit}
-                disabled={uploading || extractedResults.length === 0}
-                className="mb-8"
-                icon={
-                  uploading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : undefined
-                }
-              />
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
-}
-
-function UploadOption({
-  icon,
-  title,
-  description,
-  onPress,
-  isDark,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  onPress: () => void;
-  isDark: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`p-5 rounded-2xl border-2 flex-row items-center ${
-        isDark
-          ? "bg-dark-surface border-dark-border active:border-dark-accent active:bg-dark-surface-light"
-          : "bg-background-card border-border active:border-primary active:bg-primary-muted"
-      }`}
-    >
-      <View className={`w-14 h-14 rounded-xl items-center justify-center mr-4 ${isDark ? "bg-dark-surface-light" : "bg-primary-muted"}`}>
-        {icon}
-      </View>
-      <View className="flex-1">
-        <Text className={`text-base font-inter-bold mb-0.5 ${isDark ? "text-dark-text" : "text-text"}`}>
-          {title}
-        </Text>
-        <Text className={`font-inter-regular text-sm ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-          {description}
-        </Text>
-      </View>
-      <ChevronLeft size={20} color={isDark ? "#3D3548" : "#E5E7EB"} style={{ transform: [{ rotate: '180deg' }] }} />
-    </Pressable>
+    <DetailsStep
+      isDark={isDark}
+      selectedFiles={selectedFiles}
+      parsing={parsing}
+      uploading={uploading}
+      testDate={testDate}
+      setTestDate={setTestDate}
+      testType={testType}
+      setTestType={setTestType}
+      extractedResults={extractedResults}
+      setExtractedResults={setExtractedResults}
+      notes={notes}
+      setNotes={setNotes}
+      isVerified={isVerified}
+      verificationDetails={verificationDetails}
+      resultConflicts={resultConflicts}
+      parsingErrors={parsingErrors}
+      hasProfile={!!profile}
+      onBack={() => !parsing && setStep(selectedFiles.length > 0 ? "preview" : "select")}
+      onRetryFailed={retryFailedFiles}
+      onSubmit={handleSubmit}
+    />
   );
 }
