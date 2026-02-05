@@ -1,17 +1,17 @@
 import { View, Text, Pressable, ScrollView, SafeAreaView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useAuth } from "../../context/auth";
-import { useTheme, ThemeMode } from "../../context/theme";
+import { useAuth } from "../../../context/auth";
+import { useTheme, ThemeMode } from "../../../context/theme";
 import { User, Bell, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock } from "lucide-react-native";
-import { useProfile, useTestResults, useReminders } from "../../lib/hooks";
-import { RiskAssessment } from "../../components/RiskAssessment";
-import { KnownConditionsModal } from "../../components/KnownConditionsModal";
+import { useProfile, useTestResults, useReminders } from "../../../lib/hooks";
+import { RiskAssessment } from "../../../components/RiskAssessment";
+import { KnownConditionsModal } from "../../../components/KnownConditionsModal";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications } from "../../lib/notifications";
+import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications } from "../../../lib/notifications";
 import * as Notifications from "expo-notifications";
-import { supabase } from "../../lib/supabase";
-import { Button } from "../../components/Button";
-import { hapticSelection, hapticNotification } from "../../lib/utils/haptics";
+import { supabase } from "../../../lib/supabase";
+import { Button } from "../../../components/Button";
+import { hapticSelection, hapticNotification } from "../../../lib/utils/haptics";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];

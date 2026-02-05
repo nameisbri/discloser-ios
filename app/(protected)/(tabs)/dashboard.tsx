@@ -8,10 +8,10 @@ import {
   Image,
 } from "react-native";
 import { Link, useRouter, useFocusEffect } from "expo-router";
-import { useAuth } from "../../context/auth";
-import { useTheme } from "../../context/theme";
-import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
-import { useReminders } from "../../lib/hooks";
+import { useAuth } from "../../../context/auth";
+import { useTheme } from "../../../context/theme";
+import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
+import { useReminders } from "../../../lib/hooks";
 import {
   Plus,
   Bell,
@@ -22,17 +22,17 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react-native";
-import { StatusShareModal } from "../../components/StatusShareModal";
-import { RiskAssessment } from "../../components/RiskAssessment";
-import { Card } from "../../components/Card";
-import { Button } from "../../components/Button";
-import { Badge } from "../../components/Badge";
-import { ResultCard } from "../../components/ResultCard";
-import { SkeletonResultsList } from "../../components/SkeletonLoader";
+import { StatusShareModal } from "../../../components/StatusShareModal";
+import { RiskAssessment } from "../../../components/RiskAssessment";
+import { Card } from "../../../components/Card";
+import { Button } from "../../../components/Button";
+import { Badge } from "../../../components/Badge";
+import { ResultCard } from "../../../components/ResultCard";
+import { SkeletonResultsList } from "../../../components/SkeletonLoader";
 import { LinearGradient } from "expo-linear-gradient";
-import type { TestResult } from "../../lib/types";
-import { formatDate } from "../../lib/utils/date";
-import { hapticSelection } from "../../lib/utils/haptics";
+import type { TestResult } from "../../../lib/types";
+import { formatDate } from "../../../lib/utils/date";
+import { hapticSelection } from "../../../lib/utils/haptics";
 import { useState, useCallback, useMemo, useRef } from "react";
 
 export default function Dashboard() {

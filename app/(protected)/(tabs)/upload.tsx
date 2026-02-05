@@ -3,10 +3,10 @@ import { Alert, BackHandler } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { useTestResults, useReminders, useProfile } from "../../lib/hooks";
-import { useTheme } from "../../context/theme";
-import { SelectStep, PreviewStep, DetailsStep, type SelectedFile } from "../../components/upload";
-import type { TestStatus, STIResult, RiskLevel } from "../../lib/types";
+import { useTestResults, useReminders, useProfile } from "../../../lib/hooks";
+import { useTheme } from "../../../context/theme";
+import { SelectStep, PreviewStep, DetailsStep, type SelectedFile } from "../../../components/upload";
+import type { TestStatus, STIResult, RiskLevel } from "../../../lib/types";
 import {
   parseDocument,
   DocumentParsingError,
@@ -15,9 +15,9 @@ import {
   validatePDF,
   isPDFExtractionAvailable,
   determineTestType,
-} from "../../lib/parsing";
-import { isStatusSTI } from "../../lib/parsing/testNormalizer";
-import { ROUTINE_TESTS } from "../../lib/constants";
+} from "../../../lib/parsing";
+import { isStatusSTI } from "../../../lib/parsing/testNormalizer";
+import { ROUTINE_TESTS } from "../../../lib/constants";
 
 // Maximum number of files that can be uploaded at once
 const MAX_FILES_LIMIT = 4;
