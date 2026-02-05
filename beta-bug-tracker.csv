@@ -1,0 +1,2 @@
+id,reported_date,reporter_name,reporter_email,device_model,ios_version,app_version,build_number,severity,title,description,steps_to_reproduce,expected_behavior,actual_behavior,screenshot_url,status,assigned_to,resolution_date,resolution_notes
+1,2026-02-05,Example Tester,tester@example.com,iPhone 15 Pro,18.3,1.0.0,30,medium,Example Bug Title,Description of the issue,"1. Open app 2. Tap upload 3. See error",Should show success,Shows error message,,open,,,

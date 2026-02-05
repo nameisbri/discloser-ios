@@ -239,7 +239,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Share your status</Text>
-          <Pressable onPress={onClose} style={{ padding: 8 }}>
+          <Pressable onPress={onClose} style={{ padding: 8, minWidth: 44, minHeight: 44 }} accessibilityLabel="Close" accessibilityRole="button" accessibilityHint="Closes the status share modal">
             <X size={24} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -301,7 +301,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             />
 
             {links.length > 0 && (
-              <Pressable onPress={() => setView("links")} style={{ marginTop: 12, padding: 12, alignItems: "center" }}>
+              <Pressable onPress={() => setView("links")} style={{ marginTop: 12, padding: 12, alignItems: "center" }} accessibilityLabel={"View Active Links, " + links.length + " links"} accessibilityRole="button" accessibilityHint="Shows your active share links">
                 <Text style={{ color: colors.primary, fontWeight: "600" }}>View Active Links ({links.length})</Text>
               </Pressable>
             )}
@@ -310,7 +310,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
         {view === "create" && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Pressable onPress={() => setView("preview")} style={{ marginBottom: 16 }}>
+            <Pressable onPress={() => setView("preview")} style={{ marginBottom: 16 }} accessibilityLabel="Back to Preview" accessibilityRole="button" accessibilityHint="Returns to the status preview">
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back to Preview</Text>
             </Pressable>
 
@@ -330,6 +330,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                       borderWidth: 1,
                       borderColor: selectedExpiry.hours === opt.hours ? colors.primary : colors.border,
                     }}
+                    accessibilityLabel={opt.label + (selectedExpiry.hours === opt.hours ? ", selected" : "")}
+                    accessibilityRole="button"
+                    accessibilityHint={"Sets link expiry to " + opt.label}
                   >
                     <Text style={{ fontSize: 14, fontWeight: "500", color: selectedExpiry.hours === opt.hours ? "#fff" : colors.text }}>
                       {opt.label}
@@ -355,6 +358,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                       borderWidth: 1,
                       borderColor: selectedViewLimit.value === opt.value ? colors.primary : colors.border,
                     }}
+                    accessibilityLabel={opt.label + (selectedViewLimit.value === opt.value ? ", selected" : "")}
+                    accessibilityRole="button"
+                    accessibilityHint={"Sets view limit to " + opt.label}
                   >
                     <Text style={{ fontSize: 14, fontWeight: "500", color: selectedViewLimit.value === opt.value ? "#fff" : colors.text }}>
                       {opt.label}
@@ -378,6 +384,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     borderWidth: 1,
                     borderColor: displayNameOption === "anonymous" ? colors.primary : colors.border,
                   }}
+                  accessibilityLabel={"Anonymous" + (displayNameOption === "anonymous" ? ", selected" : "")}
+                  accessibilityRole="button"
+                  accessibilityHint="Share without showing your name"
                 >
                   <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "anonymous" ? "#fff" : colors.text }}>
                     Anonymous
@@ -393,6 +402,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     borderWidth: 1,
                     borderColor: displayNameOption === "alias" ? colors.primary : colors.border,
                   }}
+                  accessibilityLabel={(userProfile?.alias || "Alias") + (displayNameOption === "alias" ? ", selected" : "")}
+                  accessibilityRole="button"
+                  accessibilityHint="Share with your alias visible"
                 >
                   <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "alias" ? "#fff" : colors.text }}>
                     {userProfile?.alias || "Alias"}
@@ -408,6 +420,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     borderWidth: 1,
                     borderColor: displayNameOption === "firstName" ? colors.primary : colors.border,
                   }}
+                  accessibilityLabel={"First Name" + (displayNameOption === "firstName" ? ", selected" : "")}
+                  accessibilityRole="button"
+                  accessibilityHint="Share with your first name visible"
                 >
                   <Text style={{ fontSize: 14, fontWeight: "500", color: displayNameOption === "firstName" ? "#fff" : colors.text }}>
                     First Name
@@ -431,6 +446,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                   borderColor: colors.border,
                   marginBottom: 32,
                 }}
+                accessibilityLabel={"Hide chronic conditions" + (excludeKnownConditions ? ", enabled" : ", disabled")}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: excludeKnownConditions }}
+                accessibilityHint="Toggles whether chronic conditions are included in the shared status"
               >
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: excludeKnownConditions ? colors.primary : colors.border, backgroundColor: excludeKnownConditions ? colors.primary : colors.surface, alignItems: "center", justifyContent: "center" }}>
@@ -453,7 +472,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
         {view === "links" && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Pressable onPress={() => setView("preview")} style={{ marginBottom: 16 }}>
+            <Pressable onPress={() => setView("preview")} style={{ marginBottom: 16 }} accessibilityLabel="Back to Preview" accessibilityRole="button" accessibilityHint="Returns to the status preview">
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back to Preview</Text>
             </Pressable>
 
@@ -500,6 +519,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                         borderRadius: 12,
                         backgroundColor: copiedId === link.id ? colors.successLight : colors.primaryLight,
                       }}
+                      accessibilityLabel={copiedId === link.id ? "Copied to clipboard" : "Copy share link"}
+                      accessibilityRole="button"
+                      accessibilityHint="Copies the share link to your clipboard"
                     >
                       {copiedId === link.id ? (
                         <Check size={18} color={colors.success} />
@@ -514,6 +536,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     <Pressable
                       onPress={() => { setPreviewLink(link); setView("recipient"); }}
                       style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
+                      accessibilityLabel="Preview"
+                      accessibilityRole="button"
+                      accessibilityHint="Shows how recipients will see this link"
                     >
                       <Smartphone size={18} color={colors.text} />
                     </Pressable>
@@ -521,6 +546,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     <Pressable
                       onPress={() => { setQrLink(link); setView("qr"); }}
                       style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
+                      accessibilityLabel="Show QR Code"
+                      accessibilityRole="button"
+                      accessibilityHint="Displays a QR code for this share link"
                     >
                       <QrCode size={18} color={colors.text} />
                     </Pressable>
@@ -528,6 +556,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                     <Pressable
                       onPress={() => handleDelete(link.id)}
                       style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight }}
+                      accessibilityLabel="Delete share link"
+                      accessibilityRole="button"
+                      accessibilityHint="Permanently deletes this share link"
                     >
                       <Trash2 size={18} color={colors.danger} />
                     </Pressable>
@@ -542,7 +573,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
         {view === "qr" && qrLink && (
           <View style={{ flex: 1, padding: 16, alignItems: "center", justifyContent: "center" }}>
-            <Pressable onPress={() => setView("links")} style={{ position: "absolute", top: 16, left: 16 }}>
+            <Pressable onPress={() => setView("links")} style={{ position: "absolute", top: 16, left: 16 }} accessibilityLabel="Back" accessibilityRole="button" accessibilityHint="Returns to the active links list">
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back</Text>
             </Pressable>
 
@@ -556,6 +587,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <Pressable
               onPress={() => handleCopy(qrLink)}
               style={{ marginTop: 24, flexDirection: "row", alignItems: "center", padding: 12 }}
+              accessibilityLabel="Copy Link"
+              accessibilityRole="button"
+              accessibilityHint="Copies the share link to your clipboard"
             >
               <Copy size={18} color={colors.primary} />
               <Text style={{ marginLeft: 8, color: colors.primary, fontWeight: "600" }}>Copy Link</Text>
@@ -565,7 +599,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
         {view === "recipient" && previewLink && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Pressable onPress={() => setView("links")} style={{ marginBottom: 16 }}>
+            <Pressable onPress={() => setView("links")} style={{ marginBottom: 16 }} accessibilityLabel="Back" accessibilityRole="button" accessibilityHint="Returns to the active links list">
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back</Text>
             </Pressable>
 
@@ -640,6 +674,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <Pressable
                 onPress={() => handleCopy(previewLink)}
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 14, backgroundColor: colors.primary, borderRadius: 12 }}
+                accessibilityLabel={copiedId === previewLink.id ? "Copied to clipboard" : "Copy share link"}
+                accessibilityRole="button"
+                accessibilityHint="Copies the share link to your clipboard"
               >
                 {copiedId === previewLink.id ? <Check size={18} color="#fff" /> : <Copy size={18} color="#fff" />}
                 <Text style={{ marginLeft: 8, color: "#fff", fontWeight: "600" }}>
@@ -649,6 +686,9 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <Pressable
                 onPress={() => { setQrLink(previewLink); setView("qr"); }}
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 14, backgroundColor: colors.primaryLight, borderRadius: 12 }}
+                accessibilityLabel="Show QR Code"
+                accessibilityRole="button"
+                accessibilityHint="Displays a QR code for this share link"
               >
                 <QrCode size={18} color={colors.primary} />
                 <Text style={{ marginLeft: 8, color: colors.primary, fontWeight: "600" }}>Show QR Code</Text>

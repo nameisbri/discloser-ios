@@ -1,0 +1,41 @@
+Name: Discloser
+Subtitle: STI Status, Shared Safely
+
+Description:
+Share proof, not your life story. Discloser lets you share your STI test results without exposing your identity.
+
+Generate time-limited, view-limited links that expire automatically. Your partner sees your status — not your name, date of birth, or health card number.
+
+FEATURES:
+- Upload test results with AI-powered extraction
+- Share links that vanish after you set them to expire
+- Set view limits — share once, twice, or as many times as you choose
+- QR codes for quick, in-person sharing
+- Track your testing history in one place
+- Get personalized reminders based on your risk level
+- Share your aggregated STI status or individual results
+- Manage known conditions separately from routine tests
+- Privacy-first design with row-level security
+
+WHY DISCLOSER:
+Being responsible shouldn't cost you your privacy. Lab results contain personal information — your full name, date of birth, health card number — that stays on someone's phone forever once they take a screenshot.
+
+With Discloser, you share the verification, not the identity. You control how long the link lives, how many times it can be viewed, and whether your name appears at all.
+
+PRIVACY:
+- Your data stays private with row-level security
+- Links auto-expire — you control how long they last
+- No data selling or tracking
+- Choose to share anonymously, with an alias, or your first name
+
+Download Discloser and share your status. Keep your name.
+
+Keywords: STI,sexual health,test results,status sharing,privacy,safe sex,health tracking,disclosure
+Category: Health & Fitness
+Secondary Category: Medical
+Age Rating: 17+ (Medical/Treatment Information)
+Privacy Policy URL: https://discloser.app/privacy
+Terms of Use URL: https://discloser.app/terms
+Support URL: https://discloser.app
+Marketing URL: https://discloser.app
+Copyright: 2026 Discloser
