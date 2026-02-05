@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -82,6 +82,10 @@ export default function Onboarding() {
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  // Input refs for auto-focus
+  const lastNameRef = useRef<TextInput>(null);
+  const aliasRef = useRef<TextInput>(null);
 
   // Step 1: Basic info
   const [firstName, setFirstName] = useState("");
@@ -304,6 +308,9 @@ export default function Onboarding() {
                     onChangeText={setFirstName}
                     placeholder="Enter your legal first name"
                     placeholderTextColor={isDark ? "#6B6B6B" : "#9CA3AF"}
+                    returnKeyType="next"
+                    onSubmitEditing={() => lastNameRef.current?.focus()}
+                    blurOnSubmit={false}
                     className={`px-4 py-3 rounded-xl border ${inputBg} ${inputBorder} ${textColor}`}
                   />
                 </View>
@@ -316,10 +323,14 @@ export default function Onboarding() {
                     As it appears on your health card or ID
                   </Text>
                   <TextInput
+                    ref={lastNameRef}
                     value={lastName}
                     onChangeText={setLastName}
                     placeholder="Enter your legal last name"
                     placeholderTextColor={isDark ? "#6B6B6B" : "#9CA3AF"}
+                    returnKeyType="next"
+                    onSubmitEditing={() => aliasRef.current?.focus()}
+                    blurOnSubmit={false}
                     className={`px-4 py-3 rounded-xl border ${inputBg} ${inputBorder} ${textColor}`}
                   />
                 </View>
@@ -332,11 +343,14 @@ export default function Onboarding() {
                     When sharing, you can show your real name, this alias, or stay anonymous
                   </Text>
                   <TextInput
+                    ref={aliasRef}
                     value={alias}
                     onChangeText={setAlias}
                     placeholder="Choose a display name"
                     placeholderTextColor={isDark ? "#6B6B6B" : "#9CA3AF"}
                     autoCapitalize="none"
+                    returnKeyType="done"
+                    onSubmitEditing={() => setShowDatePicker(true)}
                     className={`px-4 py-3 rounded-xl border ${inputBg} ${inputBorder} ${textColor}`}
                   />
                 </View>

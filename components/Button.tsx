@@ -161,13 +161,14 @@ export function Button({
 
   return (
     <Animated.View
+      className={className}
       style={[
         { transform: [{ scale }] },
         loading ? { opacity: pulseOpacity } : undefined,
       ]}
     >
       <Pressable
-        className={cn(buttonVariants({ variant, size }), className)}
+        className={cn(buttonVariants({ variant, size }))}
         disabled={disabled || loading}
         style={disabled ? { opacity: 0.5 } : undefined}
         onPress={handlePress}
