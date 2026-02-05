@@ -21,29 +21,20 @@ export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRe
   const isAdded = (condition: string) => conditions.some((c) => c.condition === condition);
 
   const handleToggle = async (condition: string) => {
-    console.log("KnownConditionsModal: Toggling condition", condition);
     setLoading(condition);
     await hapticSelection();
     try {
-      let result: boolean | void;
-      if (isAdded(condition)) {
-        console.log("KnownConditionsModal: Removing condition", condition);
-        result = await onRemove(condition);
-      } else {
-        console.log("KnownConditionsModal: Adding condition", condition);
-        result = await onAdd(condition);
-      }
+      const result = isAdded(condition)
+        ? await onRemove(condition)
+        : await onAdd(condition);
 
       if (result === true) {
-        console.log("KnownConditionsModal: Operation succeeded");
         await hapticNotification("success");
       } else {
-        console.log("KnownConditionsModal: Operation returned false or void");
         await hapticNotification("error");
       }
-    } catch (error) {
+    } catch {
       await hapticNotification("error");
-      console.error("KnownConditionsModal: Failed to toggle condition:", error);
     } finally {
       setLoading(null);
     }
