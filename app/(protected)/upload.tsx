@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Alert, BackHandler } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -69,6 +69,9 @@ export default function Upload() {
     nameMatched: boolean;
   }>>([]);
   const [resultConflicts, setResultConflicts] = useState<TestConflict[]>([]);
+
+  // Ref to track if parsing was cancelled
+  const cancelledRef = useRef(false);
 
   // Prevent back navigation while parsing
   useEffect(() => {
@@ -210,8 +213,17 @@ export default function Upload() {
     }
   };
 
+  const handleCancelParsing = () => {
+    cancelledRef.current = true;
+    setParsing(false);
+    setStep("preview");
+  };
+
   const parseDocuments = async () => {
     if (selectedFiles.length === 0) return;
+
+    // Reset cancellation flag
+    cancelledRef.current = false;
 
     try {
       setParsing(true);
@@ -230,6 +242,11 @@ export default function Upload() {
       }> = [];
 
       for (let index = 0; index < selectedFiles.length; index++) {
+        // Check if cancelled before processing each file
+        if (cancelledRef.current) {
+          return;
+        }
+
         const file = selectedFiles[index];
         try {
           const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
@@ -239,8 +256,19 @@ export default function Upload() {
             profile ? { first_name: profile.first_name, last_name: profile.last_name } : undefined,
             `File ${index + 1} of ${selectedFiles.length}`
           );
+
+          // Check again after async operation
+          if (cancelledRef.current) {
+            return;
+          }
+
           parsedDocuments.push(result);
         } catch (error) {
+          // Check if cancelled before adding error
+          if (cancelledRef.current) {
+            return;
+          }
+
           parsedDocuments.push({
             collectionDate: null,
             testType: null,
@@ -254,15 +282,24 @@ export default function Upload() {
         }
       }
 
+      // Final check before processing results
+      if (cancelledRef.current) {
+        return;
+      }
+
       processParseResults(parsedDocuments);
     } catch (error) {
-      Alert.alert(
-        "Auto-extraction Failed",
-        error instanceof Error ? error.message : "Please enter manually.",
-        [{ text: "OK" }]
-      );
+      if (!cancelledRef.current) {
+        Alert.alert(
+          "Auto-extraction Failed",
+          error instanceof Error ? error.message : "Please enter manually.",
+          [{ text: "OK" }]
+        );
+      }
     } finally {
-      setParsing(false);
+      if (!cancelledRef.current) {
+        setParsing(false);
+      }
     }
   };
 
@@ -652,6 +689,7 @@ export default function Upload() {
       parsingErrors={parsingErrors}
       hasProfile={!!profile}
       onBack={() => !parsing && setStep(selectedFiles.length > 0 ? "preview" : "select")}
+      onCancel={handleCancelParsing}
       onRetryFailed={retryFailedFiles}
       onSubmit={handleSubmit}
     />

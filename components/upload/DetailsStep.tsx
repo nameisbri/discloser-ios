@@ -52,6 +52,7 @@ interface DetailsStepProps {
   hasProfile: boolean;
   // Callbacks
   onBack: () => void;
+  onCancel?: () => void;
   onRetryFailed: () => void;
   onSubmit: () => void;
 }
@@ -75,6 +76,7 @@ export function DetailsStep({
   parsingErrors,
   hasProfile,
   onBack,
+  onCancel,
   onRetryFailed,
   onSubmit,
 }: DetailsStepProps) {
@@ -158,6 +160,18 @@ export function DetailsStep({
               <Text className={`mt-2 text-xs font-inter-medium text-center ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
                 Please stay in the app while we process
               </Text>
+              {onCancel && (
+                <Pressable
+                  onPress={onCancel}
+                  className={`mt-4 px-6 py-3 rounded-xl ${isDark ? "bg-dark-surface-light" : "bg-white"}`}
+                  accessibilityLabel="Cancel processing"
+                  accessibilityRole="button"
+                >
+                  <Text className={`font-inter-semibold ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                    Cancel
+                  </Text>
+                </Pressable>
+              )}
             </View>
           )}
 
