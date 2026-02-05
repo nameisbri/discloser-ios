@@ -90,9 +90,10 @@ export async function getGoogleIdToken(): Promise<GoogleSignInResult> {
       cancelled: false,
       error: new Error("Google Sign-In failed"),
     };
-  } catch (error) {
+  } catch (error: unknown) {
     if (isErrorWithCode(error)) {
-      switch (error.code) {
+      const errorWithCode = error as { code: string; message?: string };
+      switch (errorWithCode.code) {
         case statusCodes.SIGN_IN_CANCELLED:
         case statusCodes.IN_PROGRESS:
           return { success: false, cancelled: true };
@@ -108,7 +109,7 @@ export async function getGoogleIdToken(): Promise<GoogleSignInResult> {
           return {
             success: false,
             cancelled: false,
-            error: new Error(error.message || "Google Sign-In failed"),
+            error: new Error(errorWithCode.message || "Google Sign-In failed"),
           };
       }
     }

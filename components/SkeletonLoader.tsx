@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, Animated, ViewStyle, AccessibilityInfo } from "react-native";
+import { View, Animated, ViewStyle, AccessibilityInfo, DimensionValue } from "react-native";
 import { useTheme } from "../context/theme";
 
 interface SkeletonLoaderProps {
@@ -89,7 +89,7 @@ export function SkeletonLoader({
       className={className}
       style={[
         {
-          width,
+          width: width as DimensionValue,
           height,
           borderRadius,
           backgroundColor,
