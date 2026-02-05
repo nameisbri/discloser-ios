@@ -1,10 +1,14 @@
-// OCR text extraction module using Google Cloud Vision
+// OCR text extraction module using Supabase Edge Function
 // Separated from documentParser to avoid circular dependencies
+// API keys are kept server-side for security
 
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { logger } from '../utils/logger';
-import { NetworkRequestError, isNetworkRequestError, fetchWithRetry } from '../http';
+import { isNetworkRequestError } from '../http';
+import { supabase } from '../supabase';
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
 /**
  * Error types that can occur during document parsing
@@ -177,21 +181,15 @@ async function compressImageIfNeeded(uri: string, fileIdentifier?: string): Prom
 }
 
 /**
- * Extracts text from an image using Google Cloud Vision OCR
+ * Extracts text from an image using OCR via the extract-text-ocr Edge Function.
+ * The Edge Function handles:
+ * - Google Vision API calls (with server-side API key)
+ * - Image size validation
+ * - Response parsing
  * @throws {DocumentParsingError} When OCR fails or no text is found
  */
 export async function extractTextFromImage(uri: string, fileIdentifier?: string): Promise<string> {
   try {
-    const apiKey = process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY;
-    if (!apiKey) {
-      logger.error('Google Vision API key not configured');
-      throw new DocumentParsingError(
-        'ocr',
-        'Google Vision API key not configured',
-        { fileIdentifier }
-      );
-    }
-
     logger.info('Starting text extraction via OCR', { fileIdentifier, uri: uri.substring(0, 50) });
 
     // Compress image if needed to ensure reliable network transmission
@@ -203,79 +201,75 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
     });
 
     // Log request size for diagnostics
-    const base64SizeKB = (base64.length * 0.75 / 1024).toFixed(2); // Base64 is ~33% larger than binary
+    const base64SizeKB = (base64.length * 0.75 / 1024).toFixed(2);
     logger.info('OCR request size', {
       fileIdentifier,
       base64Length: base64.length,
       estimatedImageSizeKB: base64SizeKB
     });
 
-    // Call Google Vision OCR API with retry logic
-    // Note: Google Vision API can handle much larger payloads than LLM APIs,
-    // so we disable size validation here. The API itself has a 20 MB limit.
-    const response = await fetchWithRetry(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [{
-            image: { content: base64 },
-            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
-          }],
-        }),
-        timeout: 30000,      // 30 seconds timeout
-        maxRetries: 3,       // 3 retry attempts
-        baseDelay: 1000,     // Exponential backoff: 1s, 2s, 4s
-        validateSize: false, // Disable size validation for OCR (Google Vision supports up to 20 MB)
-      }
-    );
+    // Get the current session for authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new DocumentParsingError(
+        'ocr',
+        'Not authenticated. Please sign in to process documents.',
+        { fileIdentifier }
+      );
+    }
+
+    // Call the Edge Function
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/extract-text-ocr`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ imageBase64: base64 }),
+    });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      logger.error('OCR API request failed', {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      logger.error('OCR Edge Function request failed', {
         fileIdentifier,
         statusCode: response.status,
-        statusText: response.statusText,
-        error: errorText,
+        error: errorData.error,
       });
+
+      // Handle specific error cases
+      if (response.status === 401) {
+        throw new DocumentParsingError(
+          'ocr',
+          'Authentication failed. Please sign in again.',
+          { fileIdentifier, details: { statusCode: response.status } }
+        );
+      }
+
+      if (response.status === 422) {
+        throw new DocumentParsingError(
+          'ocr',
+          'No readable text found in image. Please ensure the image is clear and contains text.',
+          { fileIdentifier, details: { textLength: errorData.textLength || 0 } }
+        );
+      }
 
       throw new DocumentParsingError(
         'network',
-        `OCR API failed with status ${response.status}: ${response.statusText}`,
+        errorData.error || `OCR failed with status ${response.status}`,
         {
           fileIdentifier,
-          originalError: errorText,
-          details: {
-            statusCode: response.status,
-            statusText: response.statusText,
-          },
+          originalError: errorData.error,
+          details: { statusCode: response.status },
         }
       );
     }
 
     const data = await response.json();
-    const text = data.responses?.[0]?.fullTextAnnotation?.text;
-
-    if (!text || text.length < 20) {
-      logger.warn('No text extracted from image', {
-        fileIdentifier,
-        textLength: text?.length || 0,
-      });
-
-      throw new DocumentParsingError(
-        'ocr',
-        'No readable text found in image. Please ensure the image is clear and contains text.',
-        {
-          fileIdentifier,
-          details: { textLength: text?.length || 0 },
-        }
-      );
-    }
+    const text = data.text;
 
     logger.info('Text extraction successful', {
       fileIdentifier,
-      textLength: text.length,
+      textLength: data.textLength || text.length,
     });
 
     return text;
