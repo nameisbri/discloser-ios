@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabase";
-import { matchesKnownCondition } from "../utils/stiMatching";
-import { isStatusSTI } from "../parsing/testNormalizer";
-import { ROUTINE_TESTS } from "../constants";
+import { computeSTIStatus } from "../utils/stiStatusComputation";
+import { computeTestingRecommendation } from "../utils/testingRecommendations";
 import type {
   TestResult,
   Profile,
   Reminder,
   TestStatus,
-  RiskLevel,
 } from "../types";
-import type { AggregatedSTI } from "./useSTIStatus";
-import type { TestingRecommendation } from "./useTestingRecommendations";
+import type { AggregatedSTI } from "../utils/stiStatusComputation";
+import type { TestingRecommendation } from "../utils/testingRecommendations";
 
 /**
  * Unified dashboard data interface
@@ -78,182 +76,6 @@ class RequestDeduplicator {
 
 // Singleton deduplicator instance shared across hook instances
 const globalDeduplicator = new RequestDeduplicator();
-
-/**
- * Testing intervals in days by risk level
- * Used for calculating testing recommendations
- */
-const TESTING_INTERVALS: Record<RiskLevel, number> = {
-  low: 365,      // 12 months
-  moderate: 180, // 6 months
-  high: 90,      // 3 months
-};
-
-const ROUTINE_PANEL_KEYWORDS = ["basic", "full", "std", "sti", "routine", "panel", "4-test"];
-
-/**
- * Checks if a test result contains routine tests
- */
-function hasRoutineTests(result: TestResult): boolean {
-  const hasRoutineSTI = result.sti_results?.some((sti) =>
-    ROUTINE_TESTS.some((routine) => sti.name.toLowerCase().includes(routine))
-  );
-  if (hasRoutineSTI) return true;
-
-  const testType = result.test_type?.toLowerCase() || "";
-  return ROUTINE_PANEL_KEYWORDS.some((kw) => testType.includes(kw));
-}
-
-/**
- * Computes aggregated STI status from test results and profile
- * Implements the same logic as useSTIStatus
- */
-function computeSTIStatus(
-  results: TestResult[],
-  profile: Profile | null
-): {
-  aggregatedStatus: AggregatedSTI[];
-  routineStatus: AggregatedSTI[];
-  knownConditionsStatus: AggregatedSTI[];
-  newStatusPositives: AggregatedSTI[];
-  overallStatus: TestStatus;
-  lastTestedDate: string | null;
-} {
-  const stiMap = new Map<string, AggregatedSTI>();
-  const knownConditions = profile?.known_conditions || [];
-
-  // Process all results, keeping most recent per STI
-  for (const result of results) {
-    const stiResults = result.sti_results;
-    if (!stiResults || !Array.isArray(stiResults) || stiResults.length === 0) continue;
-
-    for (const sti of stiResults) {
-      if (!sti.name || !sti.status) continue;
-
-      const existing = stiMap.get(sti.name);
-      const testDate = result.test_date;
-
-      if (!existing || testDate > existing.testDate) {
-        const isKnown = matchesKnownCondition(sti.name, knownConditions);
-        stiMap.set(sti.name, {
-          name: sti.name,
-          status: sti.status,
-          result: sti.result || sti.status.charAt(0).toUpperCase() + sti.status.slice(1),
-          testDate: testDate,
-          isVerified: result.is_verified || false,
-          isKnownCondition: isKnown,
-          isStatusSTI: isStatusSTI(sti.name),
-          hasTestData: true,
-        });
-      }
-    }
-  }
-
-  // Add known conditions that don't have test results
-  for (const kc of knownConditions) {
-    let foundMatch = false;
-    for (const [stiName, stiData] of stiMap.entries()) {
-      if (matchesKnownCondition(stiName, [kc])) {
-        stiMap.set(stiName, { ...stiData, hasTestData: true });
-        foundMatch = true;
-        break;
-      }
-    }
-
-    if (!foundMatch) {
-      const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : new Date().toISOString().split('T')[0];
-      stiMap.set(kc.condition, {
-        name: kc.condition,
-        status: "pending",
-        result: "Not recently tested",
-        testDate: dateOnly,
-        isVerified: false,
-        isKnownCondition: true,
-        isStatusSTI: isStatusSTI(kc.condition),
-        hasTestData: false,
-      });
-    }
-  }
-
-  const aggregatedStatus = [...stiMap.values()].sort((a, b) => a.name.localeCompare(b.name));
-  const routineStatus = aggregatedStatus.filter((s) => !s.isKnownCondition);
-  const knownConditionsStatus = aggregatedStatus.filter((s) => s.isKnownCondition);
-  const newStatusPositives = aggregatedStatus.filter(
-    (s) => s.isStatusSTI && s.status === "positive" && !s.isKnownCondition
-  );
-
-  // Calculate overall status - excludes known conditions
-  let overallStatus: TestStatus = "pending";
-  if (routineStatus.length > 0) {
-    const hasPositive = routineStatus.some((s) => s.status === "positive");
-    const hasPending = routineStatus.some((s) => s.status === "pending");
-    if (hasPositive) overallStatus = "positive";
-    else if (hasPending) overallStatus = "pending";
-    else overallStatus = "negative";
-  }
-
-  const lastTestedDate = aggregatedStatus.length === 0
-    ? null
-    : aggregatedStatus.reduce((latest, sti) =>
-        sti.testDate > latest ? sti.testDate : latest
-      , aggregatedStatus[0].testDate);
-
-  return {
-    aggregatedStatus,
-    routineStatus,
-    knownConditionsStatus,
-    newStatusPositives,
-    overallStatus,
-    lastTestedDate,
-  };
-}
-
-/**
- * Computes testing recommendations based on results and profile
- * Implements the same logic as useTestingRecommendations
- */
-function computeTestingRecommendation(
-  results: TestResult[],
-  profile: Profile | null
-): TestingRecommendation {
-  const riskLevel = profile?.risk_level || null;
-  const routineResults = results.filter(hasRoutineTests);
-
-  if (!riskLevel || routineResults.length === 0) {
-    return {
-      lastTestDate: routineResults[0]?.test_date || null,
-      nextDueDate: null,
-      daysUntilDue: null,
-      isOverdue: false,
-      isDueSoon: false,
-      riskLevel,
-      intervalDays: riskLevel ? TESTING_INTERVALS[riskLevel] : null,
-    };
-  }
-
-  const lastTestDate = routineResults[0].test_date;
-  const intervalDays = TESTING_INTERVALS[riskLevel];
-
-  const lastDate = new Date(lastTestDate);
-  const nextDue = new Date(lastDate);
-  nextDue.setDate(nextDue.getDate() + intervalDays);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  nextDue.setHours(0, 0, 0, 0);
-
-  const daysUntilDue = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-  return {
-    lastTestDate,
-    nextDueDate: nextDue.toISOString().split("T")[0],
-    daysUntilDue,
-    isOverdue: daysUntilDue < 0,
-    isDueSoon: daysUntilDue >= 0 && daysUntilDue <= 14,
-    riskLevel,
-    intervalDays,
-  };
-}
 
 /**
  * Unified dashboard data hook
@@ -386,7 +208,7 @@ export function useDashboardData(): DashboardData {
   }, [fetchDashboardData]);
 
   // Compute derived data - STI Status
-  const stiStatus = computeSTIStatus(testResults, profile);
+  const stiStatus = computeSTIStatus(testResults, profile?.known_conditions || []);
 
   // Compute derived data - Reminders
   const activeReminders = reminders.filter((r) => r.is_active);
@@ -398,7 +220,7 @@ export function useDashboardData(): DashboardData {
   );
 
   // Compute derived data - Testing Recommendations
-  const recommendation = computeTestingRecommendation(testResults, profile);
+  const recommendation = computeTestingRecommendation(testResults, profile?.risk_level || null);
 
   return {
     // Raw data

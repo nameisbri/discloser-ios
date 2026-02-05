@@ -1,5 +1,6 @@
 import * as Calendar from "expo-calendar";
 import { Platform, Alert } from "react-native";
+import { logger } from "./utils/logger";
 
 /**
  * Request calendar permissions
@@ -116,7 +117,7 @@ export async function addToCalendar(
 
     return true;
   } catch (error) {
-    console.error("Failed to add to calendar:", error);
+    logger.error("Failed to add to calendar", { error });
     Alert.alert(
       "Couldn't Add to Calendar",
       "Something went wrong. Please try again or add the event manually.",

@@ -25,10 +25,11 @@ import {
   ChevronDown,
   Smartphone,
 } from "lucide-react-native";
-import { useSTIStatus } from "../lib/hooks";
+import { useSTIStatus, useThemeColors } from "../lib/hooks";
 import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/utils/logger";
 import { formatDate } from "../lib/utils/date";
 import type { StatusShareLink, Database } from "../lib/types";
 
@@ -69,26 +70,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const [previewLink, setPreviewLink] = useState<StatusShareLink | null>(null);
   const [userProfile, setUserProfile] = useState<{ first_name: string | null; alias: string | null; display_name: string | null } | null>(null);
 
-  // Theme colors - Memoized to prevent recreation on every render
-  const colors = useMemo(() => ({
-    bg: isDark ? "#0D0B0E" : "#FAFAFA",
-    surface: isDark ? "#1A1520" : "#FFFFFF",
-    surfaceLight: isDark ? "#2D2438" : "#F3F4F6",
-    border: isDark ? "#3D3548" : "#E5E7EB",
-    text: isDark ? "#FFFFFF" : "#1F2937",
-    textSecondary: isDark ? "rgba(255, 255, 255, 0.7)" : "#6B7280",
-    textMuted: isDark ? "rgba(255, 255, 255, 0.4)" : "#9CA3AF",
-    primary: isDark ? "#FF2D7A" : "#923D5C",
-    primaryLight: isDark ? "rgba(255, 45, 122, 0.2)" : "#EAC4CE",
-    success: "#10B981",
-    successLight: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
-    danger: "#EF4444",
-    dangerLight: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
-    warning: "#F59E0B",
-    warningLight: isDark ? "rgba(245, 158, 11, 0.15)" : "#FEF3C7",
-    info: isDark ? "#C9A0DC" : "#7C3AED",
-    infoLight: isDark ? "rgba(201, 160, 220, 0.2)" : "#F3E8FF",
-  }), [isDark]);
+  // Theme colors from shared hook
+  const colors = useThemeColors();
 
   const fetchUserProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -122,12 +105,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log("fetchLinks: No user found");
+        logger.debug("fetchLinks: No user found");
         setLoading(false);
         return;
       }
 
-      console.log("fetchLinks: Fetching for user", user.id);
+      logger.debug("fetchLinks: Fetching for user", { userId: user.id });
       const { data, error } = await supabase
         .from("status_share_links")
         .select("*")
@@ -136,12 +119,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("fetchLinks error:", error);
+        logger.error("fetchLinks error", { error });
         setLoading(false);
         return;
       }
 
-      console.log("fetchLinks: Found", data?.length || 0, "links");
+      logger.debug("fetchLinks: Found links", { count: data?.length || 0 });
 
       // Filter out links at max_views
       const activeLinks = (data || []).filter(
@@ -150,7 +133,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
       setLinks(activeLinks);
     } catch (err) {
-      console.error("fetchLinks exception:", err);
+      logger.error("fetchLinks exception", { error: err });
     } finally {
       setLoading(false);
     }

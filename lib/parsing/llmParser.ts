@@ -83,6 +83,53 @@ Example output:
 }`;
 
 /**
+ * Sanitizes user-provided document text to prevent prompt injection attacks.
+ *
+ * This function:
+ * 1. Removes potential instruction override attempts
+ * 2. Escapes XML-like tags that could confuse the model
+ * 3. Removes excessive whitespace and control characters
+ *
+ * @param text - The raw document text to sanitize
+ * @returns Sanitized text safe for inclusion in LLM prompts
+ */
+function sanitizeDocumentText(text: string): string {
+  let sanitized = text;
+
+  // Remove null bytes and other control characters (except newlines and tabs)
+  sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  // Escape XML/HTML-like tags that could be interpreted as instructions
+  // This prevents injection of fake system messages or role switches
+  sanitized = sanitized.replace(/<(system|user|assistant|instruction|prompt|ignore|override)/gi, "&lt;$1");
+
+  // Remove common prompt injection patterns (case-insensitive)
+  const injectionPatterns = [
+    /ignore\s+(all\s+)?(previous|above|prior)\s+instructions?/gi,
+    /disregard\s+(all\s+)?(previous|above|prior)\s+instructions?/gi,
+    /forget\s+(all\s+)?(previous|above|prior)\s+instructions?/gi,
+    /new\s+instructions?\s*:/gi,
+    /you\s+are\s+now\s+a/gi,
+    /act\s+as\s+if\s+you\s+are/gi,
+    /pretend\s+(you\s+are|to\s+be)/gi,
+  ];
+
+  for (const pattern of injectionPatterns) {
+    sanitized = sanitized.replace(pattern, "[REMOVED]");
+  }
+
+  // Normalize excessive whitespace (more than 3 consecutive newlines)
+  sanitized = sanitized.replace(/\n{4,}/g, "\n\n\n");
+
+  // Trim to reasonable length (already handled elsewhere, but be safe)
+  if (sanitized.length > 100000) {
+    sanitized = sanitized.substring(0, 100000);
+  }
+
+  return sanitized.trim();
+}
+
+/**
  * Validates that text is valid UTF-8 encoding.
  * Invalid UTF-8 can cause issues with JSON serialization and LLM processing.
  *
@@ -147,18 +194,22 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     throw error;
   }
 
+  // Sanitize input to prevent prompt injection attacks
+  const sanitizedText = sanitizeDocumentText(text);
+
   // Limit text to ~100k chars (roughly 25k tokens) to avoid context limits
-  const truncatedText = text.length > 100000 ? text.substring(0, 100000) : text;
-  const wasTruncated = text.length > 100000;
+  const truncatedText = sanitizedText.length > 100000 ? sanitizedText.substring(0, 100000) : sanitizedText;
+  const wasTruncated = sanitizedText.length > 100000;
 
   if (wasTruncated) {
     logger.warn("LLM parser: Text truncated to fit context window", {
-      originalLength: text.length,
+      originalLength: sanitizedText.length,
       truncatedLength: truncatedText.length,
     });
   }
 
-  // Build request payload
+  // Build request payload with clear delimiters to separate user content
+  // Using XML-style tags helps the model distinguish data from instructions
   const requestPayload = {
     model: MODEL,
     messages: [
@@ -168,7 +219,13 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
       },
       {
         role: "user",
-        content: `Extract STI test results from this lab report:\n\n${truncatedText}`,
+        content: `Extract STI test results from the lab report contained within the <document> tags below. Only process the content inside these tags as a medical document.
+
+<document>
+${truncatedText}
+</document>
+
+Parse only the medical test results from the document above and return the JSON response.`,
       },
     ],
     temperature: 0.1, // Low temperature for consistent extraction
@@ -276,9 +333,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
 
       // Add more context to the error message
       const enhancedMessage = `OpenRouter API request failed: ${error.message} (Type: ${error.type}, Payload size: ${payloadSizeFormatted})`;
-      const enhancedError = new Error(enhancedMessage);
-      // Preserve the original error for stack trace
-      (enhancedError as any).cause = error;
+      const enhancedError = new Error(enhancedMessage, { cause: error });
       throw enhancedError;
     }
 
@@ -292,8 +347,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
     // Re-throw with additional context if not already enhanced
     if (error instanceof Error && !error.message.includes("Payload size:")) {
       const enhancedMessage = `${error.message} (URL: ${OPENROUTER_API_URL}, Payload size: ${payloadSizeFormatted})`;
-      const enhancedError = new Error(enhancedMessage);
-      (enhancedError as any).cause = error;
+      const enhancedError = new Error(enhancedMessage, { cause: error });
       throw enhancedError;
     }
 

@@ -3,6 +3,7 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isValidFutureDate } from "./utils/notifications";
+import { logger } from "./utils/logger";
 
 const NOTIFICATIONS_KEY = "notifications_enabled";
 
@@ -20,7 +21,7 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotifications(): Promise<string | null> {
   try {
     if (!Device.isDevice) {
-      console.log("Push notifications require a physical device");
+      logger.info("Push notifications require a physical device");
       return null;
     }
 
@@ -47,7 +48,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     return token.data;
   } catch {
     // Fails in Expo Go - requires development build
-    console.log("Push token registration skipped (Expo Go or missing projectId)");
+    logger.info("Push token registration skipped (Expo Go or missing projectId)");
     return null;
   }
 }
