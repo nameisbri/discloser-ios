@@ -30,7 +30,7 @@ function getProgressDescription(step: "uploading" | "extracting" | "parsing"): s
     case "uploading":
       return "Getting your document ready";
     case "extracting":
-      return "Using AI to read your document";
+      return "Scanning your document";
     case "parsing":
       return "Finding and organizing test results";
   }
