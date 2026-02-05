@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { waitlistWelcomeEmail } from "@/lib/emails/waitlist-welcome";
 
 // Simple in-memory rate limiting (per IP, resets on server restart)
@@ -89,10 +89,25 @@ export async function POST(req: Request) {
       throw error;
     }
 
-    // Send welcome email
+    // Send welcome email via Titan SMTP
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send(waitlistWelcomeEmail(emailLower));
+      const transporter = nodemailer.createTransport({
+        host: "smtp.titan.email",
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      const emailContent = waitlistWelcomeEmail(emailLower);
+      await transporter.sendMail({
+        from: emailContent.from,
+        to: emailContent.to,
+        subject: emailContent.subject,
+        html: emailContent.html,
+      });
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
       // Don't fail the request if email fails - user is still on waitlist
