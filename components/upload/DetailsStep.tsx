@@ -12,6 +12,29 @@ import {
 import { ChevronLeft, Check, X, Info } from "lucide-react-native";
 import { Button } from "../Button";
 import { hapticSelection } from "../../lib/utils/haptics";
+
+// Helper functions for progress display
+function getProgressTitle(step: "uploading" | "extracting" | "parsing"): string {
+  switch (step) {
+    case "uploading":
+      return "Preparing document...";
+    case "extracting":
+      return "Reading text...";
+    case "parsing":
+      return "Analyzing results...";
+  }
+}
+
+function getProgressDescription(step: "uploading" | "extracting" | "parsing"): string {
+  switch (step) {
+    case "uploading":
+      return "Getting your document ready";
+    case "extracting":
+      return "Using AI to read your document";
+    case "parsing":
+      return "Finding and organizing test results";
+  }
+}
 import { isRetryableError } from "../../lib/http/errors";
 import type { TestStatus, STIResult } from "../../lib/types";
 import type { DocumentParsingError, TestConflict } from "../../lib/parsing";
@@ -31,10 +54,17 @@ interface ParsingError {
   error: DocumentParsingError;
 }
 
+interface ParsingProgress {
+  currentFile: number;
+  totalFiles: number;
+  step: "uploading" | "extracting" | "parsing";
+}
+
 interface DetailsStepProps {
   isDark: boolean;
   selectedFiles: SelectedFile[];
   parsing: boolean;
+  parsingProgress: ParsingProgress | null;
   uploading: boolean;
   // Form state
   testDate: string;
@@ -61,6 +91,7 @@ export function DetailsStep({
   isDark,
   selectedFiles,
   parsing,
+  parsingProgress,
   uploading,
   testDate,
   setTestDate,
@@ -149,13 +180,32 @@ export function DetailsStep({
             <View className={`p-6 rounded-3xl items-center mb-6 ${isDark ? "bg-dark-surface" : "bg-primary-light/20"}`}>
               <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
               <Text className={`mt-4 text-xl font-inter-bold text-center ${isDark ? "text-dark-text" : "text-primary-dark"}`}>
-                Processing your results...
+                {parsingProgress
+                  ? getProgressTitle(parsingProgress.step)
+                  : "Processing your results..."}
               </Text>
-              <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Reading {selectedFiles.length} document{selectedFiles.length > 1 ? "s" : ""}
-              </Text>
+              {parsingProgress && parsingProgress.totalFiles > 1 ? (
+                <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                  File {parsingProgress.currentFile} of {parsingProgress.totalFiles}
+                </Text>
+              ) : (
+                <Text className={`mt-2 text-sm font-inter-regular text-center ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                  Reading {selectedFiles.length} document{selectedFiles.length > 1 ? "s" : ""}
+                </Text>
+              )}
+              {/* Progress bar */}
+              {parsingProgress && parsingProgress.totalFiles > 1 && (
+                <View className={`w-full h-2 rounded-full mt-4 ${isDark ? "bg-dark-surface-light" : "bg-white/50"}`}>
+                  <View
+                    className={`h-2 rounded-full ${isDark ? "bg-dark-accent" : "bg-primary"}`}
+                    style={{ width: `${(parsingProgress.currentFile / parsingProgress.totalFiles) * 100}%` }}
+                  />
+                </View>
+              )}
               <Text className={`mt-3 text-xs font-inter-regular text-center ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                Hang tight, 15-30 seconds
+                {parsingProgress
+                  ? getProgressDescription(parsingProgress.step)
+                  : "Hang tight, 15-30 seconds"}
               </Text>
               <Text className={`mt-2 text-xs font-inter-medium text-center ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
                 Please stay in the app while we process

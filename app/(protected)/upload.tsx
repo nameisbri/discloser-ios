@@ -48,6 +48,11 @@ export default function Upload() {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [parsingProgress, setParsingProgress] = useState<{
+    currentFile: number;
+    totalFiles: number;
+    step: "uploading" | "extracting" | "parsing";
+  } | null>(null);
   const [parsingErrors, setParsingErrors] = useState<Array<{
     fileIndex: number;
     fileName: string;
@@ -216,6 +221,7 @@ export default function Upload() {
   const handleCancelParsing = () => {
     cancelledRef.current = true;
     setParsing(false);
+    setParsingProgress(null);
     setStep("preview");
   };
 
@@ -229,6 +235,11 @@ export default function Upload() {
       setParsing(true);
       setParsingErrors([]);
       setResultConflicts([]);
+      setParsingProgress({
+        currentFile: 0,
+        totalFiles: selectedFiles.length,
+        step: "uploading",
+      });
 
       const parsedDocuments: Array<Awaited<ReturnType<typeof parseDocument>> | {
         collectionDate: null;
@@ -247,8 +258,22 @@ export default function Upload() {
           return;
         }
 
+        // Update progress - uploading phase
+        setParsingProgress({
+          currentFile: index + 1,
+          totalFiles: selectedFiles.length,
+          step: "uploading",
+        });
+
         const file = selectedFiles[index];
         try {
+          // Update progress - extracting phase
+          setParsingProgress({
+            currentFile: index + 1,
+            totalFiles: selectedFiles.length,
+            step: "extracting",
+          });
+
           const mimeType = file.type === "pdf" ? "application/pdf" : "image/jpeg";
           const result = await parseDocument(
             file.uri,
@@ -261,6 +286,13 @@ export default function Upload() {
           if (cancelledRef.current) {
             return;
           }
+
+          // Update progress - parsing phase (analyzing results)
+          setParsingProgress({
+            currentFile: index + 1,
+            totalFiles: selectedFiles.length,
+            step: "parsing",
+          });
 
           parsedDocuments.push(result);
         } catch (error) {
@@ -299,6 +331,7 @@ export default function Upload() {
     } finally {
       if (!cancelledRef.current) {
         setParsing(false);
+        setParsingProgress(null);
       }
     }
   };
@@ -674,6 +707,7 @@ export default function Upload() {
       isDark={isDark}
       selectedFiles={selectedFiles}
       parsing={parsing}
+      parsingProgress={parsingProgress}
       uploading={uploading}
       testDate={testDate}
       setTestDate={setTestDate}
