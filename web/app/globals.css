@@ -66,3 +66,19 @@ input:focus {
     transform: rotate(360deg);
   }
 }
+
+/* Animated gradient for hero tagline */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient {
+  background-size: 200% 100%;
+  animation: gradient-shift 5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient {
+    animation: none;
+  }
+}
