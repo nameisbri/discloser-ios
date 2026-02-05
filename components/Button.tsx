@@ -1,12 +1,13 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, Animated } from "react-native";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 import { useTheme } from "../context/theme";
 import { hapticImpact } from "../lib/utils/haptics";
+import { useReducedMotion, usePressAnimation, usePulseAnimation } from "../lib/utils/animations";
 
 // Light mode variants
 const buttonVariantsLight = cva(
-  "flex-row items-center justify-center rounded-2xl py-4 px-6 active:scale-[0.98]",
+  "flex-row items-center justify-center rounded-2xl py-4 px-6",
   {
     variants: {
       variant: {
@@ -32,7 +33,7 @@ const buttonVariantsLight = cva(
 
 // Dark mode variants
 const buttonVariantsDark = cva(
-  "flex-row items-center justify-center rounded-2xl py-4 px-6 active:scale-[0.98]",
+  "flex-row items-center justify-center rounded-2xl py-4 px-6",
   {
     variants: {
       variant: {
@@ -118,6 +119,10 @@ interface ButtonProps
    * Disable haptic feedback
    */
   hapticDisabled?: boolean;
+  /**
+   * Show loading state with pulse animation
+   */
+  loading?: boolean;
 }
 
 export function Button({
@@ -131,16 +136,20 @@ export function Button({
   accessibilityLabel,
   accessibilityHint,
   hapticDisabled,
+  loading,
   onPress,
   ...props
 }: ButtonProps & { disabled?: boolean }) {
   const { isDark } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const { scale, handlePressIn, handlePressOut } = usePressAnimation(reduceMotion);
+  const pulseOpacity = usePulseAnimation(reduceMotion, loading || false);
 
   const buttonVariants = isDark ? buttonVariantsDark : buttonVariantsLight;
   const textVariants = isDark ? buttonTextVariantsDark : buttonTextVariantsLight;
 
   const handlePress = async (event: any) => {
-    if (disabled) return;
+    if (disabled || loading) return;
 
     // Trigger haptic feedback - heavy for danger variant
     if (!hapticDisabled) {
@@ -151,23 +160,32 @@ export function Button({
   };
 
   return (
-    <Pressable
-      className={cn(buttonVariants({ variant, size }), className)}
-      disabled={disabled}
-      style={disabled ? { opacity: 0.5 } : undefined}
-      onPress={handlePress}
-      accessibilityLabel={accessibilityLabel || label}
-      accessibilityHint={accessibilityHint}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || false }}
-      {...props}
+    <Animated.View
+      style={[
+        { transform: [{ scale }] },
+        loading ? { opacity: pulseOpacity } : undefined,
+      ]}
     >
-      {icon && <View className="mr-2">{icon}</View>}
-      <Text
-        className={cn(textVariants({ variant, size }), textClassName)}
+      <Pressable
+        className={cn(buttonVariants({ variant, size }), className)}
+        disabled={disabled || loading}
+        style={disabled ? { opacity: 0.5 } : undefined}
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        accessibilityLabel={accessibilityLabel || label}
+        accessibilityHint={accessibilityHint}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: disabled || loading || false }}
+        {...props}
       >
-        {label}
-      </Text>
-    </Pressable>
+        {icon && <View className="mr-2">{icon}</View>}
+        <Text
+          className={cn(textVariants({ variant, size }), textClassName)}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 }
