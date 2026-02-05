@@ -28,6 +28,7 @@ export interface Profile {
   risk_assessed_at: string | null;
   known_conditions: KnownCondition[];
   onboarding_completed: boolean;
+  welcome_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }

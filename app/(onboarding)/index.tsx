@@ -19,6 +19,7 @@ import { useProfile } from "../../lib/hooks";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { supabase } from "../../lib/supabase";
+import { SHARE_BASE_URL } from "../../lib/constants";
 import { STATUS_STIS } from "../../lib/types";
 import type { KnownCondition, RiskLevel } from "../../lib/types";
 
@@ -216,6 +217,16 @@ export default function Onboarding() {
         }
         throw error;
       }
+
+      // Fire-and-forget welcome email (don't block navigation)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.access_token) {
+          fetch(`${SHARE_BASE_URL}/api/welcome-email`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).catch(() => {});
+        }
+      });
 
       await refetch();
       router.replace("/dashboard");
