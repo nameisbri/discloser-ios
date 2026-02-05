@@ -52,15 +52,32 @@ Create a `.env` file:
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Document Parsing
-EXPO_PUBLIC_GOOGLE_CLOUD_API_KEY=your_google_cloud_api_key
-EXPO_PUBLIC_OPENROUTER_API_KEY=your_openrouter_api_key
-
 # Google Sign-In
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
 
 # Share Links
 EXPO_PUBLIC_SHARE_BASE_URL=https://your-share-domain.com
+```
+
+### Supabase Edge Functions Setup
+
+API keys for document parsing are stored server-side as Edge Function secrets (not in client code):
+
+```bash
+# Install Supabase CLI
+brew install supabase/tap/supabase
+
+# Login and link your project
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Set the API key secrets
+supabase secrets set OPENROUTER_API_KEY=your_openrouter_api_key
+supabase secrets set GOOGLE_VISION_API_KEY=your_google_vision_api_key
+
+# Deploy the Edge Functions
+supabase functions deploy extract-text-ocr --no-verify-jwt
+supabase functions deploy parse-document --no-verify-jwt
 ```
 
 ### Database Setup
@@ -213,12 +230,25 @@ npm install
 npx expo start
 ```
 
-### Development Build (for push notifications)
+### Development Build
+
+A development build is required for:
+- Push notifications
+- PDF text extraction (native module)
 
 ```bash
+# Build with EAS
+eas build --profile development --platform ios
+
+# Or build locally
 npx expo prebuild
 npx expo run:ios
+
+# Start dev server for development builds
+npx expo start --dev-client
 ```
+
+**Note:** PDF extraction is disabled in Expo Go. Use a development build to test PDF functionality.
 
 ## Project Structure
 
