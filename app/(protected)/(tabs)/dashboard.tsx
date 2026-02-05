@@ -118,7 +118,7 @@ export default function Dashboard() {
           <View className="flex-row justify-between items-center mb-6">
             <View className="flex-row items-center">
               <Image
-                source={require("../../assets/icon.png")}
+                source={require("../../../assets/icon.png")}
                 style={{ width: 40, height: 40, borderRadius: 10, marginRight: 12 }}
               />
               <Text className="text-white/90 font-inter-bold text-lg">Discloser</Text>
