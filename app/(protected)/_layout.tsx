@@ -1,8 +1,16 @@
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { useTheme } from "../../context/theme";
+import { syncReminderNotifications } from "../../lib/notifications";
 
 export default function ProtectedLayout() {
   const { isDark } = useTheme();
+
+  // Sync notifications on app launch to handle TestFlight updates
+  // that may have cleared scheduled notifications
+  useEffect(() => {
+    syncReminderNotifications();
+  }, []);
 
   return (
     <Stack
