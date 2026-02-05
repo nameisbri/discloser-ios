@@ -20,7 +20,7 @@
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.discloser-ios.app",
-      "buildNumber": "29",
+      "buildNumber": "30",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
