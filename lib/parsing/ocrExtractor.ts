@@ -224,6 +224,7 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
+        apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
       },
       body: JSON.stringify({ imageBase64: base64 }),
     });

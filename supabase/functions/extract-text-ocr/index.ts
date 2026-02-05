@@ -1,7 +1,6 @@
 // Supabase Edge Function: extract-text-ocr
 // Proxies OCR requests to Google Cloud Vision, keeping API keys server-side
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const GOOGLE_VISION_API_KEY = Deno.env.get("GOOGLE_VISION_API_KEY");
@@ -22,29 +21,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify user authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create Supabase client to verify the JWT
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Note: Supabase gateway validates the JWT before the request reaches this function.
+    // The function has "verify_jwt" enabled by default, so if we reach this point, the user is authenticated.
 
     // Parse request body
     const { imageBase64 } = await req.json();

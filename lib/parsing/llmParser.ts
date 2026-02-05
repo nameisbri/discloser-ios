@@ -76,6 +76,7 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
+        apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
       },
       body: JSON.stringify({ text }),
     });
