@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "../supabase";
+import { logger } from "../utils/logger";
 import type { ShareLink, CreateShareLinkInput, SharedResult } from "../types";
 
 export function useShareLinks(testResultId?: string) {
@@ -71,7 +72,7 @@ export function useShareLinks(testResultId?: string) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create share link";
       setError(errorMessage);
-      console.error("Share link creation error:", err);
+      logger.error("Share link creation error", { error: err });
       return null;
     }
   };

@@ -269,7 +269,7 @@ function formatDate(dateString: string | null): string | null {
 
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error('Date formatting error:', error);
+    logger.error('Date formatting error', { error });
     return null;
   }
 }

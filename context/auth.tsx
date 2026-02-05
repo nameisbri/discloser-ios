@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Platform, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import { getGoogleIdToken, signOutGoogle } from "../lib/google-auth";
+import { logger } from "../lib/utils/logger";
 import type { Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -55,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (error) {
-          console.error("Error handling magic link:", error);
+          logger.error("Error handling magic link", { error });
         }
       }
     };
@@ -170,14 +171,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error("Apple Sign In error:", error);
+        logger.error("Apple Sign In error", { error });
         Alert.alert(
           "Sign In Failed",
           error.message || "We couldn't sign you in with Apple. Please check your internet connection and try again."
         );
       }
     } catch (error: unknown) {
-      console.error("Apple Sign In error:", error);
+      logger.error("Apple Sign In error", { error });
 
       // Handle user cancellation gracefully
       if (error && typeof error === "object" && "code" in error && error.code === "ERR_REQUEST_CANCELED") {
@@ -205,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (error) {
-          console.error("Google Sign In error:", error);
+          logger.error("Google Sign In error", { error });
           Alert.alert(
             "Sign In Failed",
             error.message || "We couldn't sign you in with Google. Please check your internet connection and try again."
@@ -230,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               });
 
               if (sessionError) {
-                console.error("Session error:", sessionError);
+                logger.error("Session error", { error: sessionError });
                 Alert.alert(
                   "Sign In Failed",
                   "We couldn't complete your sign in. Please close the app and try again. If the problem continues, check your internet connection."
@@ -255,7 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (error) {
-          console.error("Google Sign In error:", error);
+          logger.error("Google Sign In error", { error });
           Alert.alert(
             "Sign In Failed",
             error.message || "We couldn't sign you in with Google. Please check your internet connection and try again."
@@ -263,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error("Google Sign In error:", error);
+      logger.error("Google Sign In error", { error });
       const message = error instanceof Error ? error.message : "We couldn't sign you in. Please check your internet connection and try again.";
       Alert.alert("Sign In Failed", message);
     }
@@ -281,13 +282,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error("Magic link error:", error);
+        logger.error("Magic link error", { error });
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (error) {
-      console.error("Magic link error:", error);
+      logger.error("Magic link error", { error });
       const message = error instanceof Error ? error.message : "Failed to send magic link";
       return { success: false, error: message };
     }

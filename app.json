@@ -48,7 +48,10 @@
               "scheme": "discloser"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -73,7 +76,8 @@
       ],
       "expo-calendar",
       "@react-native-community/datetimepicker",
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-secure-store"
     ],
     "extra": {
       "router": {},

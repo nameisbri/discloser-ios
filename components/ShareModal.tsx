@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -24,7 +24,8 @@ import {
   Plus,
   Smartphone,
 } from "lucide-react-native";
-import { useShareLinks, getShareUrl } from "../lib/hooks/useShareLinks";
+import { useShareLinks, getShareUrl, useThemeColors } from "../lib/hooks";
+import type { ThemeColors } from "../lib/hooks";
 import { useTheme } from "../context/theme";
 import { supabase } from "../lib/supabase";
 import { Button } from "./Button";
@@ -73,22 +74,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   const [qrLink, setQrLink] = useState<ShareLink | null>(null);
   const [userProfile, setUserProfile] = useState<{ first_name: string | null; alias: string | null } | null>(null);
 
-  // Theme colors
-  const colors = useMemo(() => ({
-    bg: isDark ? "#0D0B0E" : "#FAFAFA",
-    surface: isDark ? "#1A1520" : "#FFFFFF",
-    surfaceLight: isDark ? "#2D2438" : "#F3F4F6",
-    border: isDark ? "#3D3548" : "#E5E7EB",
-    text: isDark ? "#FFFFFF" : "#1F2937",
-    textSecondary: isDark ? "rgba(255, 255, 255, 0.7)" : "#6B7280",
-    textMuted: isDark ? "rgba(255, 255, 255, 0.4)" : "#9CA3AF",
-    primary: isDark ? "#FF2D7A" : "#923D5C",
-    primaryLight: isDark ? "rgba(255, 45, 122, 0.2)" : "#EAC4CE80",
-    success: "#10B981",
-    successLight: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
-    danger: "#EF4444",
-    dangerLight: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
-  }), [isDark]);
+  // Theme colors from shared hook
+  const colors = useThemeColors();
 
   useEffect(() => {
     if (visible && testResultId) {
@@ -479,7 +466,7 @@ function ShareLinkCard({
   onPreview: () => void;
   copied: boolean;
   formatExpiry: (exp: string) => string;
-  colors: Record<string, string>;
+  colors: ThemeColors;
 }) {
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
