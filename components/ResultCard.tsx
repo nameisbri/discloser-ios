@@ -1,9 +1,12 @@
-import React, { useCallback } from "react";
-import { View, Text, Pressable } from "react-native";
+import React, { useCallback, useMemo } from "react";
+import { View, Text, Pressable, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { FileText, ShieldCheck } from "lucide-react-native";
 import { Card } from "./Card";
 import { formatDate } from "../lib/utils/date";
+import { hapticImpact } from "../lib/utils/haptics";
+import { getResultCardLabel } from "../lib/utils/accessibility";
+import { useReducedMotion, usePressAnimation, useStaggeredEntrance } from "../lib/utils/animations";
 import type { TestResult } from "../lib/types";
 
 /**
@@ -120,6 +123,9 @@ function ResultCardComponent({
   hasKnownCondition,
 }: ResultCardProps) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
+  const { scale, handlePressIn, handlePressOut } = usePressAnimation(reduceMotion);
+  const { opacity, translateY } = useStaggeredEntrance(reduceMotion, index);
 
   // Get status configuration based on theme
   const statusConfig = getStatusConfig(isDark);
@@ -129,68 +135,91 @@ function ResultCardComponent({
   const status = statusConfig[effectiveStatus];
 
   // Handler for navigation - memoized to prevent function recreation on every render
-  const handlePress = useCallback(() => {
+  const handlePress = useCallback(async () => {
+    await hapticImpact("light");
     router.push(`/results/${result.id}`);
   }, [router, result.id]);
 
+  // Generate accessibility label
+  const accessibilityLabel = useMemo(
+    () =>
+      getResultCardLabel({
+        test_type: result.test_type,
+        test_date: formatDate(result.test_date),
+        overall_status: status.label,
+        is_verified: result.is_verified,
+      }),
+    [result.test_type, result.test_date, result.is_verified, status.label]
+  );
+
   return (
-    <Pressable
-      onPress={handlePress}
-      className="active:scale-[0.98]"
-      style={{ transform: [{ scale: 1 }] }}
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateY }, { scale }],
+      }}
     >
-      <Card className="flex-row items-center">
-        <View
-          className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
-            isDark ? status.bgDark : status.bgLight
-          }`}
-        >
-          <FileText size={22} color={status.icon} />
-        </View>
-        <View className="flex-1">
-          <Text
-            className={`font-inter-bold mb-1 ${
-              isDark ? "text-dark-text" : "text-text"
+      <Pressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        accessibilityHint="View test result details"
+      >
+        <Card className="flex-row items-center">
+          <View
+            className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
+              isDark ? status.bgDark : status.bgLight
             }`}
           >
-            {result.test_type}
-          </Text>
-          <View className="flex-row items-center">
+            <FileText size={22} color={status.icon} />
+          </View>
+          <View className="flex-1">
             <Text
-              className={`text-sm font-inter-regular ${
-                isDark ? "text-dark-text-secondary" : "text-text-light"
+              className={`font-inter-bold mb-1 ${
+                isDark ? "text-dark-text" : "text-text"
               }`}
             >
-              {formatDate(result.test_date)}
+              {result.test_type}
             </Text>
-            {result.is_verified && (
-              <>
-                <Text
-                  className={`mx-2 ${
-                    isDark ? "text-dark-text-muted" : "text-text-muted"
-                  }`}
-                >
-                  •
-                </Text>
-                <ShieldCheck
-                  size={14}
-                  color={isDark ? "#00E5A0" : "#10B981"}
-                />
-              </>
-            )}
+            <View className="flex-row items-center">
+              <Text
+                className={`text-sm font-inter-regular ${
+                  isDark ? "text-dark-text-secondary" : "text-text-light"
+                }`}
+              >
+                {formatDate(result.test_date)}
+              </Text>
+              {result.is_verified && (
+                <>
+                  <Text
+                    className={`mx-2 ${
+                      isDark ? "text-dark-text-muted" : "text-text-muted"
+                    }`}
+                  >
+                    •
+                  </Text>
+                  <ShieldCheck
+                    size={14}
+                    color={isDark ? "#00E5A0" : "#10B981"}
+                  />
+                </>
+              )}
+            </View>
           </View>
-        </View>
-        <View
-          className={`px-3 py-1.5 rounded-full ${
-            isDark ? status.bgDark : status.bgLight
-          }`}
-        >
-          <Text className={`${status.text} font-inter-bold text-xs`}>
-            {status.label}
-          </Text>
-        </View>
-      </Card>
-    </Pressable>
+          <View
+            className={`px-3 py-1.5 rounded-full ${
+              isDark ? status.bgDark : status.bgLight
+            }`}
+          >
+            <Text className={`${status.text} font-inter-bold text-xs`}>
+              {status.label}
+            </Text>
+          </View>
+        </Card>
+      </Pressable>
+    </Animated.View>
   );
 }
 

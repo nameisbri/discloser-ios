@@ -4,15 +4,14 @@ import {
   Pressable,
   ScrollView,
   SafeAreaView,
-  ActivityIndicator,
   RefreshControl,
   Image,
 } from "react-native";
 import { Link, useRouter, useFocusEffect } from "expo-router";
-import { useAuth } from "../../context/auth";
-import { useTheme } from "../../context/theme";
-import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
-import { useReminders } from "../../lib/hooks";
+import { useAuth } from "../../../context/auth";
+import { useTheme } from "../../../context/theme";
+import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
+import { useReminders } from "../../../lib/hooks";
 import {
   Plus,
   Bell,
@@ -23,15 +22,17 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react-native";
-import { StatusShareModal } from "../../components/StatusShareModal";
-import { RiskAssessment } from "../../components/RiskAssessment";
-import { Card } from "../../components/Card";
-import { Button } from "../../components/Button";
-import { Badge } from "../../components/Badge";
-import { ResultCard } from "../../components/ResultCard";
+import { StatusShareModal } from "../../../components/StatusShareModal";
+import { RiskAssessment } from "../../../components/RiskAssessment";
+import { Card } from "../../../components/Card";
+import { Button } from "../../../components/Button";
+import { Badge } from "../../../components/Badge";
+import { ResultCard } from "../../../components/ResultCard";
+import { SkeletonResultsList } from "../../../components/SkeletonLoader";
 import { LinearGradient } from "expo-linear-gradient";
-import type { TestResult } from "../../lib/types";
-import { formatDate } from "../../lib/utils/date";
+import type { TestResult } from "../../../lib/types";
+import { formatDate } from "../../../lib/utils/date";
+import { hapticSelection } from "../../../lib/utils/haptics";
 import { useState, useCallback, useMemo, useRef } from "react";
 
 export default function Dashboard() {
@@ -40,7 +41,7 @@ export default function Dashboard() {
   const { isDark } = useTheme();
   const { results, loading, refetch } = useTestResults();
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
-  const { routineStatus, knownConditionsStatus } = useSTIStatus();
+  const { routineStatus, knownConditionsStatus, refetchProfile: refetchSTIProfile } = useSTIStatus();
   const { profile, refetch: refetchProfile, updateRiskLevel, hasKnownCondition } = useProfile();
   const recommendation = useTestingRecommendations(results);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,19 +62,21 @@ export default function Dashboard() {
           refetch();
           refetchReminders();
           refetchProfile();
+          refetchSTIProfile(); // Also refresh profile in useSTIStatus for known conditions
         }, 300); // 300ms debounce
 
         return () => clearTimeout(timeoutId);
       }
-    }, [refetch, refetchReminders, refetchProfile])
+    }, [refetch, refetchReminders, refetchProfile, refetchSTIProfile])
   );
 
   const onRefresh = useCallback(async () => {
+    await hapticSelection();
     setRefreshing(true);
     lastFetchRef.current = Date.now();
-    await Promise.all([refetch(), refetchReminders(), refetchProfile()]);
+    await Promise.all([refetch(), refetchReminders(), refetchProfile(), refetchSTIProfile()]);
     setRefreshing(false);
-  }, [refetch, refetchReminders, refetchProfile]);
+  }, [refetch, refetchReminders, refetchProfile, refetchSTIProfile]);
 
   // Memoize hasKnownCondition to maintain stable reference for ResultCard
   const hasKnownConditionMemoized = useCallback(
@@ -115,13 +118,18 @@ export default function Dashboard() {
           <View className="flex-row justify-between items-center mb-6">
             <View className="flex-row items-center">
               <Image
-                source={require("../../assets/icon.png")}
+                source={require("../../../assets/icon.png")}
                 style={{ width: 40, height: 40, borderRadius: 10, marginRight: 12 }}
               />
               <Text className="text-white/90 font-inter-bold text-lg">Discloser</Text>
             </View>
             <Link href="/settings" asChild>
-              <Pressable className={`p-3 rounded-xl active:opacity-80 ${isDark ? "bg-dark-accent/20" : "bg-white/20"}`}>
+              <Pressable
+                className={`p-3 rounded-xl active:opacity-80 ${isDark ? "bg-dark-accent/20" : "bg-white/20"}`}
+                accessibilityLabel="Settings"
+                accessibilityRole="button"
+                accessibilityHint="Opens app settings"
+              >
                 <Settings size={20} color="white" />
               </Pressable>
             </Link>
@@ -209,13 +217,23 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <View className="flex-row gap-3 mb-4">
             <Link href="/upload" asChild>
-              <Pressable className={`flex-1 py-5 rounded-2xl items-center active:opacity-90 ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
+              <Pressable
+                className={`flex-1 py-5 rounded-2xl items-center active:opacity-90 ${isDark ? "bg-dark-accent" : "bg-primary"}`}
+                accessibilityLabel="Add Result"
+                accessibilityRole="button"
+                accessibilityHint="Upload a new test result"
+              >
                 <Plus size={24} color="white" />
                 <Text className="text-white font-inter-bold mt-2">Add Result</Text>
               </Pressable>
             </Link>
             <Link href="/reminders" asChild>
-              <Pressable className={`flex-1 border-2 py-5 rounded-2xl items-center ${isDark ? "bg-dark-surface border-dark-border active:bg-dark-surface-light" : "bg-background-card border-border active:bg-gray-50"}`}>
+              <Pressable
+                className={`flex-1 border-2 py-5 rounded-2xl items-center ${isDark ? "bg-dark-surface border-dark-border active:bg-dark-surface-light" : "bg-background-card border-border active:bg-gray-50"}`}
+                accessibilityLabel="Reminders"
+                accessibilityRole="button"
+                accessibilityHint="Manage your testing reminders"
+              >
                 <Sparkles size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
                 <Text className={`font-inter-bold mt-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>Reminders</Text>
               </Pressable>
@@ -275,6 +293,9 @@ export default function Dashboard() {
                   ? "bg-dark-accent-muted border-dark-accent/30 active:bg-dark-accent/20"
                   : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
               }`}
+              accessibilityLabel="Share your status"
+              accessibilityRole="button"
+              accessibilityHint="Opens options to share your test status"
             >
               <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
               <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
@@ -326,8 +347,8 @@ export default function Dashboard() {
           </View>
 
           {loading ? (
-            <View className="py-12 items-center">
-              <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
+            <View className="mb-8">
+              <SkeletonResultsList count={3} />
             </View>
           ) : results.length === 0 ? (
             <Card className={`p-8 items-center justify-center border-2 border-dashed mb-8 ${isDark ? "border-dark-border bg-dark-surface/50" : "border-border bg-primary-muted/30"}`}>
