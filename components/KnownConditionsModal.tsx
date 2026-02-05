@@ -1,8 +1,10 @@
-import { View, Text, Pressable, Modal } from "react-native";
+import { useState } from "react";
+import { View, Text, Pressable, Modal, ActivityIndicator } from "react-native";
 import { Check, Plus, X } from "lucide-react-native";
 import { STATUS_STIS, type KnownCondition } from "../lib/types";
 import { useTheme } from "../context/theme";
 import { Button } from "./Button";
+import { hapticSelection, hapticNotification } from "../lib/utils/haptics";
 
 interface Props {
   visible: boolean;
@@ -14,14 +16,36 @@ interface Props {
 
 export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRemove }: Props) {
   const { isDark } = useTheme();
+  const [loading, setLoading] = useState<string | null>(null);
 
   const isAdded = (condition: string) => conditions.some((c) => c.condition === condition);
 
   const handleToggle = async (condition: string) => {
-    if (isAdded(condition)) {
-      await onRemove(condition);
-    } else {
-      await onAdd(condition);
+    console.log("KnownConditionsModal: Toggling condition", condition);
+    setLoading(condition);
+    await hapticSelection();
+    try {
+      let result: boolean | void;
+      if (isAdded(condition)) {
+        console.log("KnownConditionsModal: Removing condition", condition);
+        result = await onRemove(condition);
+      } else {
+        console.log("KnownConditionsModal: Adding condition", condition);
+        result = await onAdd(condition);
+      }
+
+      if (result === true) {
+        console.log("KnownConditionsModal: Operation succeeded");
+        await hapticNotification("success");
+      } else {
+        console.log("KnownConditionsModal: Operation returned false or void");
+        await hapticNotification("error");
+      }
+    } catch (error) {
+      await hapticNotification("error");
+      console.error("KnownConditionsModal: Failed to toggle condition:", error);
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -46,10 +70,12 @@ export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRe
           <View className="gap-3">
             {STATUS_STIS.map((condition) => {
               const added = isAdded(condition);
+              const isLoading = loading === condition;
               return (
                 <Pressable
                   key={condition}
                   onPress={() => handleToggle(condition)}
+                  disabled={isLoading}
                   className={`flex-row items-center p-4 rounded-2xl border ${
                     added
                       ? isDark
@@ -59,6 +85,11 @@ export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRe
                       ? "bg-dark-surface-light border-dark-border"
                       : "bg-gray-50 border-border"
                   }`}
+                  style={{ opacity: isLoading ? 0.6 : 1 }}
+                  accessibilityLabel={`${condition}, ${added ? "selected" : "not selected"}`}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: added, disabled: isLoading }}
+                  accessibilityHint={added ? "Tap to remove from known conditions" : "Tap to add to known conditions"}
                 >
                   <Text
                     className={`flex-1 font-inter-medium ${
@@ -73,7 +104,9 @@ export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRe
                   >
                     {condition}
                   </Text>
-                  {added ? (
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={isDark ? "#C9A0DC" : "#7C3AED"} />
+                  ) : added ? (
                     <Check size={20} color={isDark ? "#C9A0DC" : "#7C3AED"} />
                   ) : (
                     <Plus size={20} color={isDark ? "#6B7280" : "#9CA3AF"} />

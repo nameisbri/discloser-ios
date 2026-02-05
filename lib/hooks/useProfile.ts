@@ -58,7 +58,14 @@ export function useProfile() {
     try {
       setError(null);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !profile) return false;
+      if (!user) {
+        console.error("addKnownCondition: No authenticated user");
+        return false;
+      }
+      if (!profile) {
+        console.error("addKnownCondition: Profile not loaded yet");
+        return false;
+      }
 
       const newCondition: KnownCondition = {
         condition,
@@ -71,8 +78,10 @@ export function useProfile() {
       const { error: updateError } = await supabase.from("profiles").update({ known_conditions: updated }).eq("id", user.id);
       if (updateError) throw updateError;
       setProfile((prev) => prev ? { ...prev, known_conditions: updated } : null);
+      console.log("addKnownCondition: Successfully added", condition);
       return true;
     } catch (err) {
+      console.error("addKnownCondition: Error", err);
       setError(err instanceof Error ? err.message : "We couldn't add this condition. Please check your internet connection and try again.");
       return false;
     }
@@ -82,7 +91,14 @@ export function useProfile() {
     try {
       setError(null);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !profile) return false;
+      if (!user) {
+        console.error("removeKnownCondition: No authenticated user");
+        return false;
+      }
+      if (!profile) {
+        console.error("removeKnownCondition: Profile not loaded yet");
+        return false;
+      }
 
       const updated = (profile.known_conditions || []).filter((kc) => kc.condition !== condition);
 
@@ -90,8 +106,10 @@ export function useProfile() {
       const { error: updateError } = await supabase.from("profiles").update({ known_conditions: updated }).eq("id", user.id);
       if (updateError) throw updateError;
       setProfile((prev) => prev ? { ...prev, known_conditions: updated } : null);
+      console.log("removeKnownCondition: Successfully removed", condition);
       return true;
     } catch (err) {
+      console.error("removeKnownCondition: Error", err);
       setError(err instanceof Error ? err.message : "We couldn't remove this condition. Please check your internet connection and try again.");
       return false;
     }

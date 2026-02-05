@@ -41,7 +41,7 @@ export default function Dashboard() {
   const { isDark } = useTheme();
   const { results, loading, refetch } = useTestResults();
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
-  const { routineStatus, knownConditionsStatus } = useSTIStatus();
+  const { routineStatus, knownConditionsStatus, refetchProfile: refetchSTIProfile } = useSTIStatus();
   const { profile, refetch: refetchProfile, updateRiskLevel, hasKnownCondition } = useProfile();
   const recommendation = useTestingRecommendations(results);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,20 +62,21 @@ export default function Dashboard() {
           refetch();
           refetchReminders();
           refetchProfile();
+          refetchSTIProfile(); // Also refresh profile in useSTIStatus for known conditions
         }, 300); // 300ms debounce
 
         return () => clearTimeout(timeoutId);
       }
-    }, [refetch, refetchReminders, refetchProfile])
+    }, [refetch, refetchReminders, refetchProfile, refetchSTIProfile])
   );
 
   const onRefresh = useCallback(async () => {
     await hapticSelection();
     setRefreshing(true);
     lastFetchRef.current = Date.now();
-    await Promise.all([refetch(), refetchReminders(), refetchProfile()]);
+    await Promise.all([refetch(), refetchReminders(), refetchProfile(), refetchSTIProfile()]);
     setRefreshing(false);
-  }, [refetch, refetchReminders, refetchProfile]);
+  }, [refetch, refetchReminders, refetchProfile, refetchSTIProfile]);
 
   // Memoize hasKnownCondition to maintain stable reference for ResultCard
   const hasKnownConditionMemoized = useCallback(

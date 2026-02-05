@@ -24,7 +24,7 @@ export interface AggregatedSTI {
 
 export function useSTIStatus() {
   const { results, loading, error, refetch } = useTestResults();
-  const { profile } = useProfile();
+  const { profile, refetch: refetchProfile } = useProfile();
 
   const aggregatedStatus = useMemo(() => {
     const stiMap = new Map<string, AggregatedSTI>();
@@ -132,5 +132,6 @@ export function useSTIStatus() {
     loading,
     error,
     refetch,
+    refetchProfile,
   };
 }
