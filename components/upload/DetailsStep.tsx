@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   Pressable,
   TextInput,
@@ -9,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Check, X, Info } from "lucide-react-native";
 import { Button } from "../Button";
 import { hapticSelection } from "../../lib/utils/haptics";

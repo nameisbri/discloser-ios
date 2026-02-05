@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import {
   View,
   Text,
-  SafeAreaView,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   TextInput,
   RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   Bell,

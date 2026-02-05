@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TextInput,
   Pressable,
@@ -11,6 +10,7 @@ import {
   Platform,
   Modal,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronRight, ChevronLeft, User, Calendar, Heart, Activity } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";

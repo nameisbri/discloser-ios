@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ScrollView, SafeAreaView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/auth";
 import { useTheme, ThemeMode } from "../../../context/theme";
 import { User, Bell, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock } from "lucide-react-native";

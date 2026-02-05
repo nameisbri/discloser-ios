@@ -3,10 +3,10 @@ import {
   Text,
   Pressable,
   ScrollView,
-  SafeAreaView,
   RefreshControl,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../../context/auth";
 import { useTheme } from "../../../context/theme";

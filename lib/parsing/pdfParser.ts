@@ -10,7 +10,7 @@ import {
   isAvailable,
 } from 'expo-pdf-text-extract';
 import PdfThumbnail from 'react-native-pdf-thumbnail';
-import { extractTextFromImage } from './documentParser';
+import { extractTextFromImage } from './ocrExtractor';
 import { logger } from '../utils/logger';
 
 /**
