@@ -41,6 +41,13 @@ const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
   { value: "annual", label: "Yearly" },
 ];
 
+const FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
+  monthly: "Monthly",
+  quarterly: "Every 3 months",
+  biannual: "Every 6 months",
+  annual: "Yearly",
+};
+
 const RISK_FREQUENCY: Record<string, ReminderFrequency> = {
   low: "annual",
   moderate: "biannual",
@@ -263,7 +270,7 @@ export default function Reminders() {
                       reminder={reminder}
                       onToggle={() => handleToggleActive(reminder)}
                       onDelete={() => handleDelete(reminder)}
-                      onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date))}
+                      onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date), FREQUENCY_LABELS[reminder.frequency])}
                       isDark={isDark}
                     />
                   </View>
@@ -284,7 +291,7 @@ export default function Reminders() {
                         reminder={reminder}
                         onToggle={() => handleToggleActive(reminder)}
                         onDelete={() => handleDelete(reminder)}
-                        onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date))}
+                        onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date), FREQUENCY_LABELS[reminder.frequency])}
                         isDark={isDark}
                       />
                     </View>

@@ -60,15 +60,15 @@ async function getDefaultCalendarId(): Promise<string | null> {
 
 /**
  * Add a reminder to the device calendar
- * @param title - Event title
+ * @param title - Event title (e.g., "Routine Checkup")
  * @param date - Event date
- * @param notes - Optional notes for the event
+ * @param frequency - Optional frequency label (e.g., "Every 3 months")
  * @returns true if event was created, false otherwise
  */
 export async function addToCalendar(
   title: string,
   date: Date,
-  notes?: string
+  frequency?: string
 ): Promise<boolean> {
   try {
     const hasPermission = await requestCalendarPermissions();
@@ -98,11 +98,22 @@ export async function addToCalendar(
     const endDate = new Date(startDate);
     endDate.setHours(10, 0, 0, 0); // 1 hour event
 
+    // Build descriptive notes for the calendar event
+    const notesLines = [
+      "🩺 STI/STD Testing Reminder",
+      "",
+      "Time to get tested! Regular testing is an important part of taking care of your sexual health.",
+    ];
+    if (frequency) {
+      notesLines.push("", `📅 Frequency: ${frequency}`);
+    }
+    notesLines.push("", "Added from Discloser app");
+
     await Calendar.createEventAsync(calendarId, {
-      title,
+      title: `🩺 ${title}`,
       startDate,
       endDate,
-      notes: notes || "Testing reminder from Discloser",
+      notes: notesLines.join("\n"),
       alarms: [
         { relativeOffset: -1440 }, // 1 day before
         { relativeOffset: -60 }, // 1 hour before
