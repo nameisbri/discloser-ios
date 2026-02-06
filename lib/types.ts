@@ -91,6 +91,20 @@ export interface Reminder {
   updated_at: string;
 }
 
+// Resource types for sexual health resources hub
+export type ResourceCategory = "find-testing" | "learn-more" | "get-support";
+
+export interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  url: string | null;
+  phone: string | null;
+  category: ResourceCategory;
+  region: string;
+  priority: number;
+}
+
 // Input types for creating/updating records
 export interface CreateTestResultInput {
   test_date: string;
