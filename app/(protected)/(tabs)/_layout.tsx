@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { View } from "react-native";
-import { Home, PlusCircle, Settings } from "lucide-react-native";
+import { Home, PlusCircle, BookOpen, Settings } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../../context/theme";
 import { hapticSelection } from "../../../lib/utils/haptics";
@@ -50,6 +50,14 @@ export default function TabsLayout() {
           title: "Add",
           tabBarIcon: ({ color, size }) => <PlusCircle size={size} color={color} />,
           tabBarAccessibilityLabel: "Add result tab",
+        }}
+      />
+      <Tabs.Screen
+        name="resources"
+        options={{
+          title: "Resources",
+          tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+          tabBarAccessibilityLabel: "Resources tab",
         }}
       />
       <Tabs.Screen
