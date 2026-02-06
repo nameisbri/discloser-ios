@@ -5,6 +5,38 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../../context/theme";
 import { hapticSelection } from "../../../lib/utils/haptics";
 
+function TabIcon({
+  Icon,
+  color,
+  size,
+  focused,
+  isDark,
+}: {
+  Icon: typeof Home;
+  color: string;
+  size: number;
+  focused: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <View style={{ alignItems: "center", position: "relative" }}>
+      {focused && (
+        <View
+          style={{
+            position: "absolute",
+            top: -14,
+            width: 48,
+            height: 2,
+            borderRadius: 1,
+            backgroundColor: isDark ? "#FF2D7A" : "#923D5C",
+          }}
+        />
+      )}
+      <Icon size={size} color={color} />
+    </View>
+  );
+}
+
 export default function TabsLayout() {
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -17,8 +49,8 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: isDark ? "#1A1A1A" : "#FFFFFF",
-          borderTopColor: isDark ? "#2D2D2D" : "#E5E5E5",
+          backgroundColor: isDark ? "#1A1520" : "#FFFFFF",
+          borderTopColor: isDark ? "#52495D" : "#E5E7EB",
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
           height: 60 + Math.max(insets.bottom, 8),
@@ -40,7 +72,9 @@ export default function TabsLayout() {
         name="dashboard"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon Icon={Home} color={color} size={size} focused={focused} isDark={isDark} />
+          ),
           tabBarAccessibilityLabel: "Home tab",
         }}
       />
@@ -48,7 +82,9 @@ export default function TabsLayout() {
         name="upload"
         options={{
           title: "Add",
-          tabBarIcon: ({ color, size }) => <PlusCircle size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon Icon={PlusCircle} color={color} size={size} focused={focused} isDark={isDark} />
+          ),
           tabBarAccessibilityLabel: "Add result tab",
         }}
       />
@@ -56,7 +92,9 @@ export default function TabsLayout() {
         name="resources"
         options={{
           title: "Resources",
-          tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon Icon={BookOpen} color={color} size={size} focused={focused} isDark={isDark} />
+          ),
           tabBarAccessibilityLabel: "Resources tab",
         }}
       />
@@ -64,7 +102,9 @@ export default function TabsLayout() {
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon Icon={Settings} color={color} size={size} focused={focused} isDark={isDark} />
+          ),
           tabBarAccessibilityLabel: "Settings tab",
         }}
       />

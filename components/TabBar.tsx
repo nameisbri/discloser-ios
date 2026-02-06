@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Home, PlusCircle, Settings } from "lucide-react-native";
+import { Home, PlusCircle, BookOpen, Settings } from "lucide-react-native";
 import { useTheme } from "../context/theme";
 import { hapticSelection } from "../lib/utils/haptics";
 
-type TabName = "dashboard" | "upload" | "settings";
+type TabName = "dashboard" | "upload" | "resources" | "settings";
 
 interface TabBarProps {
   /**
@@ -37,6 +37,11 @@ const tabs: TabConfig[] = [
     icon: ({ color, size }) => <PlusCircle size={size} color={color} />,
   },
   {
+    name: "resources",
+    label: "Resources",
+    icon: ({ color, size }) => <BookOpen size={size} color={color} />,
+  },
+  {
     name: "settings",
     label: "Settings",
     icon: ({ color, size }) => <Settings size={size} color={color} />,
@@ -47,7 +52,7 @@ const tabs: TabConfig[] = [
  * TabBar - Bottom navigation component
  *
  * Features:
- * - Three tabs: Home, Add (Upload), Settings
+ * - Four tabs: Home, Add (Upload), Resources, Settings
  * - Active tab indicator with brand colors
  * - Haptic feedback on tab switch
  * - Full accessibility support
