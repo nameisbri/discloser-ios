@@ -17,7 +17,7 @@ export default function NotFound() {
         </div>
 
         <div className="flex items-center justify-center gap-2 mt-8 text-white/40 text-sm">
-          <Image src="/logo.png" alt="Discloser" width={20} height={20} className="rounded" />
+          <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
           <span>Discloser</span>
         </div>
       </div>

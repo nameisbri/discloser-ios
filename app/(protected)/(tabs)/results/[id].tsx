@@ -26,6 +26,7 @@ import { SkeletonLoader, SkeletonText } from "../../../../components/SkeletonLoa
 import { hapticImpact, hapticNotification } from "../../../../lib/utils/haptics";
 import type { STIResult } from "../../../../lib/types";
 import { formatDate } from "../../../../lib/utils/date";
+import { HeaderLogo } from "../../../../components/HeaderLogo";
 
 export default function ResultDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -156,9 +157,7 @@ export default function ResultDetail() {
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
-        <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Test Result
-        </Text>
+        <HeaderLogo showText />
         <Pressable
           onPress={handleShare}
           className={`p-2 rounded-xl ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/50"}`}

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Check, X, Info } from "lucide-react-native";
 import { Button } from "../Button";
+import { HeaderLogo } from "../HeaderLogo";
 import { hapticSelection } from "../../lib/utils/haptics";
 
 // Helper functions for progress display
@@ -124,7 +125,7 @@ export function DetailsStep({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View className="flex-row items-center justify-between px-6 py-4">
+        <View className="flex-row items-center px-6 py-4">
           <Pressable
             onPress={onBack}
             disabled={parsing}
@@ -134,10 +135,9 @@ export function DetailsStep({
           >
             <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
           </Pressable>
-          <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-            Test Details
-          </Text>
-          <View className="w-10" />
+          <View className="ml-2">
+            <HeaderLogo showText />
+          </View>
         </View>
 
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>

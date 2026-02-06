@@ -8,6 +8,7 @@ import {
   FileText,
 } from "lucide-react-native";
 import { Card } from "../Card";
+import { HeaderLogo } from "../HeaderLogo";
 import { Button } from "../Button";
 import { hapticImpact } from "../../lib/utils/haptics";
 
@@ -40,7 +41,7 @@ export function PreviewStep({
 }: PreviewStepProps) {
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
-      <View className="flex-row items-center justify-between px-6 py-4">
+      <View className="flex-row items-center px-6 py-4">
         <Pressable
           onPress={onBack}
           className="p-2 -ml-2"
@@ -49,10 +50,9 @@ export function PreviewStep({
         >
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
-        <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Documents Selected
-        </Text>
-        <View className="w-10" />
+        <View className="ml-2">
+          <HeaderLogo showText />
+        </View>
       </View>
 
       <ScrollView className="flex-1 px-6 py-4">

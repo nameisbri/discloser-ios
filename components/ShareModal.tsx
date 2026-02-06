@@ -28,6 +28,7 @@ import { useRouter } from "expo-router";
 import { useShareLinks, getShareUrl, useThemeColors } from "../lib/hooks";
 import type { ThemeColors } from "../lib/hooks";
 import { useTheme } from "../context/theme";
+import { HeaderLogo } from "./HeaderLogo";
 import { supabase } from "../lib/supabase";
 import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
@@ -200,15 +201,18 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
               <Text style={{ fontSize: 16, fontWeight: "500", color: colors.primary }}>Back</Text>
             )}
           </Pressable>
-          <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text }}>
-            {view === "create"
-              ? "New Share Link"
-              : view === "qr"
-              ? "QR Code"
-              : view === "preview"
-              ? "Recipient View"
-              : "Share Result"}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <HeaderLogo size={28} />
+            <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginLeft: 8 }}>
+              {view === "create"
+                ? "New Share Link"
+                : view === "qr"
+                ? "QR Code"
+                : view === "preview"
+                ? "Recipient View"
+                : "Share Result"}
+            </Text>
+          </View>
           <View style={{ width: 40 }} />
         </View>
 

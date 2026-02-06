@@ -28,6 +28,7 @@ import {
 import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
 import { useTheme } from "../../../context/theme";
 import { Card } from "../../../components/Card";
+import { HeaderLogo } from "../../../components/HeaderLogo";
 import { Badge } from "../../../components/Badge";
 import { Button } from "../../../components/Button";
 import type { Reminder, ReminderFrequency } from "../../../lib/types";
@@ -155,7 +156,7 @@ export default function Reminders() {
         <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
           Reminders
         </Text>
-        <View className="w-10" />
+        <HeaderLogo />
       </View>
 
       <ScrollView

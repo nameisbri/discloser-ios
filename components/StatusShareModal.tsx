@@ -30,6 +30,7 @@ import { useSTIStatus, useThemeColors } from "../lib/hooks";
 import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { TabBar } from "./TabBar";
+import { HeaderLogo } from "./HeaderLogo";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/utils/logger";
 import { formatDate } from "../lib/utils/date";
@@ -241,7 +242,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top", "left", "right"]}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Share your status</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <HeaderLogo size={28} />
+            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginLeft: 8 }}>Share your status</Text>
+          </View>
           <Pressable onPress={onClose} style={{ padding: 8, minWidth: 44, minHeight: 44 }} accessibilityLabel="Close" accessibilityRole="button" accessibilityHint="Closes the status share modal">
             <X size={24} color={colors.textSecondary} />
           </Pressable>

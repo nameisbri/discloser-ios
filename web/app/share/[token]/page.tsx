@@ -33,7 +33,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-md">
         {children}
         <div className="flex items-center justify-center gap-2 mt-8 text-white/40 text-sm">
-          <Image src="/logo.png" alt="Discloser" width={20} height={20} className="rounded" />
+          <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
           <span>Discloser</span>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
       {/* Branding Footer */}
       <div className="flex flex-col items-center justify-center gap-1 mt-8">
         <div className="flex items-center gap-2 text-white/40 text-sm">
-          <Image src="/logo.png" alt="Discloser" width={20} height={20} className="rounded" />
+          <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
           <span>Shared via Discloser</span>
         </div>
         <span className="text-white/25 text-xs">Share your status. Keep your name.</span>

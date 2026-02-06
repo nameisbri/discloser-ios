@@ -14,11 +14,10 @@ export default function AnimatedHeader() {
     >
       <div className="flex items-center gap-2">
         <Image
-          src="/logo.png"
+          src="/logomark.png"
           alt="Discloser - Privacy-first sexual health app logo"
           width={36}
           height={36}
-          className="rounded-xl"
           priority
         />
         <span className="font-semibold text-white/90">Discloser</span>

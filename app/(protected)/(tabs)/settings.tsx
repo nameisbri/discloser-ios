@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../../lib/supabase";
 import { Button } from "../../../components/Button";
 import { hapticNotification } from "../../../lib/utils/haptics";
+import { HeaderLogo } from "../../../components/HeaderLogo";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
@@ -161,7 +162,7 @@ export default function Settings() {
         <Text className={`flex-1 text-center text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
           Settings
         </Text>
-        <View className="w-8" />
+        <HeaderLogo />
       </View>
       <ScrollView className="flex-1 px-6">
         {/* Stats Header */}

@@ -19,6 +19,7 @@ import {
 import { trackResourceTap } from "../../../lib/utils/analytics";
 import { hapticImpact } from "../../../lib/utils/haptics";
 import type { Resource, ResourceCategory } from "../../../lib/types";
+import { HeaderLogo } from "../../../components/HeaderLogo";
 
 const CATEGORY_ICONS: Record<ResourceCategory, typeof MapPin> = {
   "find-testing": MapPin,
@@ -74,7 +75,7 @@ export default function Resources() {
         >
           Resources
         </Text>
-        <View className="w-8" />
+        <HeaderLogo />
       </View>
 
       <ScrollView className="flex-1 px-6">

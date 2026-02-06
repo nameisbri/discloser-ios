@@ -10,6 +10,7 @@ import {
   FileText,
 } from "lucide-react-native";
 import { UploadOption } from "./UploadOption";
+import { HeaderLogo } from "../HeaderLogo";
 
 interface SelectStepProps {
   isDark: boolean;
@@ -31,6 +32,9 @@ export function SelectStep({ isDark, onPickImage, onPickPDF }: SelectStepProps) 
         >
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
+        <View className="ml-2">
+          <HeaderLogo showText />
+        </View>
       </View>
 
       <ScrollView className="flex-1 px-8 py-6" contentContainerStyle={{ paddingBottom: 40 }}>

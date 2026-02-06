@@ -36,8 +36,8 @@ export default function Login() {
         <View className="flex-1 justify-center">
           {/* Logo mark */}
           <Image
-            source={require("../../assets/icon.png")}
-            style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 32 }}
+            source={require("../../assets/logomark.png")}
+            style={{ width: 64, height: 64, marginBottom: 32 }}
           />
 
           <Text className="text-5xl font-inter-bold text-white mb-4">

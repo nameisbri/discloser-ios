@@ -14,11 +14,10 @@ export default function AnimatedFooter() {
       <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Image
-            src="/logo.png"
+            src="/logomark.png"
             alt="Discloser - Privacy-first sexual health app logo"
             width={28}
             height={28}
-            className="rounded-lg"
             loading="lazy"
           />
           <span className="text-white/75 text-sm">Discloser</span>
