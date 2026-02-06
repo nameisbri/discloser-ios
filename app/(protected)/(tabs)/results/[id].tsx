@@ -16,16 +16,16 @@ import {
   AlertCircle,
   Trash2,
 } from "lucide-react-native";
-import { useTestResult, useTestResults, useProfile } from "../../../lib/hooks";
-import { useTheme } from "../../../context/theme";
-import { Badge } from "../../../components/Badge";
-import { Card } from "../../../components/Card";
-import { Button } from "../../../components/Button";
-import { ShareModal } from "../../../components/ShareModal";
-import { SkeletonLoader, SkeletonText } from "../../../components/SkeletonLoader";
-import { hapticImpact, hapticNotification } from "../../../lib/utils/haptics";
-import type { STIResult } from "../../../lib/types";
-import { formatDate } from "../../../lib/utils/date";
+import { useTestResult, useTestResults, useProfile } from "../../../../lib/hooks";
+import { useTheme } from "../../../../context/theme";
+import { Badge } from "../../../../components/Badge";
+import { Card } from "../../../../components/Card";
+import { Button } from "../../../../components/Button";
+import { ShareModal } from "../../../../components/ShareModal";
+import { SkeletonLoader, SkeletonText } from "../../../../components/SkeletonLoader";
+import { hapticImpact, hapticNotification } from "../../../../lib/utils/haptics";
+import type { STIResult } from "../../../../lib/types";
+import { formatDate } from "../../../../lib/utils/date";
 
 export default function ResultDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -70,7 +70,7 @@ export default function ResultDetail() {
 
   if (loading) {
     return (
-      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
+      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`} edges={["top", "left", "right"]}>
         {/* Header skeleton */}
         <View className="flex-row items-center justify-between px-6 py-4">
           <SkeletonLoader width={40} height={40} borderRadius={8} />
@@ -111,7 +111,7 @@ export default function ResultDetail() {
 
   if (error || !result) {
     return (
-      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
+      <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`} edges={["top", "left", "right"]}>
         <View className="flex-row items-center px-6 py-4">
           <Pressable
             onPress={() => router.back()}
@@ -151,7 +151,7 @@ export default function ResultDetail() {
     result.status.charAt(0).toUpperCase() + result.status.slice(1);
 
   return (
-    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
+    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`} edges={["top", "left", "right"]}>
       <View className="flex-row items-center justify-between px-6 py-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
