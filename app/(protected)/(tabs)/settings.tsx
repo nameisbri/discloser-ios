@@ -1,18 +1,16 @@
-import { View, Text, Pressable, ScrollView, Switch, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/auth";
 import { useTheme, ThemeMode } from "../../../context/theme";
-import { User, Bell, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock } from "lucide-react-native";
+import { User, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock } from "lucide-react-native";
 import { useProfile, useTestResults, useReminders } from "../../../lib/hooks";
 import { RiskAssessment } from "../../../components/RiskAssessment";
 import { KnownConditionsModal } from "../../../components/KnownConditionsModal";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications, syncReminderNotifications } from "../../../lib/notifications";
-import * as Notifications from "expo-notifications";
 import { supabase } from "../../../lib/supabase";
 import { Button } from "../../../components/Button";
-import { hapticSelection, hapticNotification } from "../../../lib/utils/haptics";
+import { hapticNotification } from "../../../lib/utils/haptics";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
@@ -41,7 +39,6 @@ export default function Settings() {
   const testingFrequency = profile?.risk_level
     ? { low: "Yearly", moderate: "Every 6 mo", high: "Every 3 mo" }[profile.risk_level]
     : null;
-  const [notifications, setNotifications] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
@@ -56,10 +53,6 @@ export default function Settings() {
   const [pronouns, setPronouns] = useState("");
 
   useEffect(() => {
-    getNotificationsEnabled().then(setNotifications);
-  }, []);
-
-  useEffect(() => {
     if (profile) {
       setFirstName(profile.first_name || "");
       setLastName(profile.last_name || "");
@@ -68,40 +61,6 @@ export default function Settings() {
       setPronouns(profile.pronouns || "");
     }
   }, [profile]);
-
-  const handleToggleNotifications = async (value: boolean) => {
-    await hapticSelection();
-    setNotifications(value);
-    await setNotificationsEnabled(value);
-    if (value) {
-      await syncReminderNotifications();
-    }
-  };
-
-  const handleCheckScheduledNotifications = async () => {
-    try {
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      if (scheduled.length === 0) {
-        Alert.alert(
-          "No Scheduled Notifications",
-          "There are no push notifications scheduled. Create a reminder to schedule one."
-        );
-      } else {
-        const details = scheduled.map(n => {
-          const trigger = n.trigger as { type?: string; date?: Date };
-          const date = trigger?.date ? new Date(trigger.date).toLocaleString() : "Unknown";
-          return `• ${n.content.body}\n  Scheduled: ${date}`;
-        }).join("\n\n");
-
-        Alert.alert(
-          `${scheduled.length} Notification(s) Scheduled`,
-          details
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not check scheduled notifications. Make sure you're on a physical device.");
-    }
-  };
 
   const validateProfile = () => {
     if (!firstName.trim()) {
@@ -183,7 +142,6 @@ export default function Settings() {
               known_conditions: [],
               onboarding_completed: false,
             }).eq("id", userId);
-            await cancelAllReminderNotifications();
             // Sign out to force re-authentication and onboarding flow
             await signOut();
           },
@@ -294,32 +252,6 @@ export default function Settings() {
             title="Profile Information"
             showChevron
             onPress={() => setShowProfileModal(true)}
-            isDark={isDark}
-          />
-          <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
-          <SettingsItem
-            icon={<Bell size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
-            title="Push Notifications"
-            rightElement={
-              <Switch
-                value={notifications}
-                onValueChange={handleToggleNotifications}
-                trackColor={{ false: isDark ? "#3D3548" : "#E0E0E0", true: isDark ? "#FF2D7A" : "#923D5C" }}
-                thumbColor="#FFFFFF"
-                accessibilityLabel="Push Notifications"
-                accessibilityRole="switch"
-                accessibilityState={{ checked: notifications }}
-              />
-            }
-            isDark={isDark}
-            accessibilityHint="Toggle push notifications on or off"
-          />
-          <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />
-          <SettingsItem
-            icon={<Clock size={20} color={isDark ? "#C9A0DC" : "#374151"} />}
-            title="Check Scheduled Notifications"
-            onPress={handleCheckScheduledNotifications}
-            showChevron
             isDark={isDark}
           />
         </View>

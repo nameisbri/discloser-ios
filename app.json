@@ -37,8 +37,7 @@
       },
       "permissions": [
         "android.permission.READ_CALENDAR",
-        "android.permission.WRITE_CALENDAR",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.WRITE_CALENDAR"
       ],
       "intentFilters": [
         {
@@ -67,12 +66,6 @@
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.816706813459-i26rbr56927bv08elu287apn9ughp2d6"
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "sounds": []
         }
       ],
       "expo-calendar",

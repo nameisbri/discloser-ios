@@ -52,7 +52,6 @@ export default function PrivacyPage() {
               <li>To provide and improve the app</li>
               <li>To manage your account and authentication</li>
               <li>To enable secure sharing of test results</li>
-              <li>To send push notifications for testing reminders</li>
               <li>To analyze usage patterns (anonymized)</li>
             </ul>
           </section>
@@ -85,7 +84,6 @@ export default function PrivacyPage() {
               <li><strong className="text-white/90">Access:</strong> View all data stored in the app</li>
               <li><strong className="text-white/90">Correction:</strong> Edit your profile information</li>
               <li><strong className="text-white/90">Deletion:</strong> Delete your account and all associated data</li>
-              <li><strong className="text-white/90">Opt-out:</strong> Disable push notifications in Settings</li>
             </ul>
           </section>
 
