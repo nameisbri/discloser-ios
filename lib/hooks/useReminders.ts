@@ -5,11 +5,6 @@ import type {
   CreateReminderInput,
   UpdateReminderInput,
 } from "../types";
-import {
-  scheduleReminderNotification,
-  cancelReminderNotification,
-} from "../notifications";
-import { getNotificationDate } from "../utils/notifications";
 
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -71,16 +66,6 @@ export function useReminders() {
 
       if (createError) throw createError;
 
-      // Schedule notification
-      const reminder = data as Reminder;
-      if (reminder.is_active) {
-        try {
-          await scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
-        } catch {
-          // Notification scheduling failed, but reminder was saved successfully
-        }
-      }
-
       setReminders((prev) =>
         [...prev, data].sort(
           (a, b) =>
@@ -112,18 +97,6 @@ export function useReminders() {
 
       if (updateError) throw updateError;
 
-      // Update notification
-      const reminder = data as Reminder;
-      if (reminder.is_active) {
-        try {
-          await scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
-        } catch {
-          // Notification scheduling failed, but reminder was updated successfully
-        }
-      } else {
-        cancelReminderNotification(reminder.id);
-      }
-
       setReminders((prev) =>
         prev
           .map((r) => (r.id === id ? data : r))
@@ -150,9 +123,6 @@ export function useReminders() {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
-
-      // Cancel notification
-      cancelReminderNotification(id);
 
       setReminders((prev) => prev.filter((r) => r.id !== id));
       return true;
