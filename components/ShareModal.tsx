@@ -24,12 +24,14 @@ import {
   Plus,
   Smartphone,
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { useShareLinks, getShareUrl, useThemeColors } from "../lib/hooks";
 import type { ThemeColors } from "../lib/hooks";
 import { useTheme } from "../context/theme";
 import { supabase } from "../lib/supabase";
 import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
+import { TabBar } from "./TabBar";
 import { hapticImpact, hapticNotification, hapticSelection } from "../lib/utils/haptics";
 
 type DisplayNameOption = "anonymous" | "alias" | "firstName";
@@ -62,6 +64,7 @@ interface ShareModalProps {
 
 export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) {
   const { isDark } = useTheme();
+  const router = useRouter();
   const { links, loading, error, fetchLinks, createShareLink, deleteShareLink } =
     useShareLinks(testResultId);
 
@@ -177,7 +180,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top", "left", "right"]}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface }}>
           <Pressable
@@ -444,6 +447,14 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
         {view === "preview" && qrLink && (
           <SharedResultPreview token={qrLink.token} />
         )}
+
+        <TabBar
+          activeTab="dashboard"
+          onTabPress={(tab) => {
+            onClose();
+            router.push(`/${tab}`);
+          }}
+        />
       </SafeAreaView>
     </Modal>
   );

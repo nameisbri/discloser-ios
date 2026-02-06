@@ -25,9 +25,11 @@ import {
   ChevronDown,
   Smartphone,
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { useSTIStatus, useThemeColors } from "../lib/hooks";
 import { useTheme } from "../context/theme";
 import { Button } from "./Button";
+import { TabBar } from "./TabBar";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/utils/logger";
 import { formatDate } from "../lib/utils/date";
@@ -56,6 +58,7 @@ interface StatusShareModalProps {
 
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const { isDark } = useTheme();
+  const router = useRouter();
   const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading, refetch: refetchStatus } = useSTIStatus();
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
@@ -235,7 +238,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top", "left", "right"]}>
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>Share your status</Text>
@@ -696,6 +699,14 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             </View>
           </ScrollView>
         )}
+
+        <TabBar
+          activeTab="dashboard"
+          onTabPress={(tab) => {
+            onClose();
+            router.push(`/${tab}`);
+          }}
+        />
       </SafeAreaView>
     </Modal>
   );

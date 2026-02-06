@@ -60,6 +60,14 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: "Settings tab",
         }}
       />
+      <Tabs.Screen
+        name="results/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="reminders"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

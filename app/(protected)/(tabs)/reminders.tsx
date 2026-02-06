@@ -25,14 +25,14 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react-native";
-import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage } from "../../lib/hooks";
-import { useTheme } from "../../context/theme";
-import { Card } from "../../components/Card";
-import { Badge } from "../../components/Badge";
-import { Button } from "../../components/Button";
-import type { Reminder, ReminderFrequency } from "../../lib/types";
-import { formatDate } from "../../lib/utils/date";
-import { addToCalendar } from "../../lib/calendar";
+import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
+import { useTheme } from "../../../context/theme";
+import { Card } from "../../../components/Card";
+import { Badge } from "../../../components/Badge";
+import { Button } from "../../../components/Button";
+import type { Reminder, ReminderFrequency } from "../../../lib/types";
+import { formatDate } from "../../../lib/utils/date";
+import { addToCalendar } from "../../../lib/calendar";
 
 const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
   { value: "monthly", label: "Monthly" },
@@ -147,7 +147,7 @@ export default function Reminders() {
   );
 
   return (
-    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
+    <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`} edges={["top", "left", "right"]}>
       <View className="flex-row items-center justify-between px-6 py-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
