@@ -74,7 +74,11 @@ export function useReminders() {
       // Schedule notification
       const reminder = data as Reminder;
       if (reminder.is_active) {
-        scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
+        try {
+          await scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
+        } catch {
+          // Notification scheduling failed, but reminder was saved successfully
+        }
       }
 
       setReminders((prev) =>
@@ -111,7 +115,11 @@ export function useReminders() {
       // Update notification
       const reminder = data as Reminder;
       if (reminder.is_active) {
-        scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
+        try {
+          await scheduleReminderNotification(reminder.id, reminder.title, getNotificationDate(reminder.next_date));
+        } catch {
+          // Notification scheduling failed, but reminder was updated successfully
+        }
       } else {
         cancelReminderNotification(reminder.id);
       }

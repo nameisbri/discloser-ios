@@ -32,7 +32,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    const wasAlreadyGranted = existingStatus === "granted";
 
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -50,17 +49,21 @@ export async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
-    // Sync notifications if permission was just granted
-    // This ensures existing reminders get their notifications scheduled
-    if (!wasAlreadyGranted) {
-      await syncReminderNotifications();
-    }
+    // Always sync notifications after confirming permissions
+    // (the protected layout also syncs once auth is ready, but this covers
+    // the case where permission was just granted for the first time)
+    await syncReminderNotifications();
 
-    const token = await Notifications.getExpoPushTokenAsync();
-    return token.data;
+    // Push token is separate — failure here should not affect local notifications
+    try {
+      const token = await Notifications.getExpoPushTokenAsync();
+      return token.data;
+    } catch {
+      logger.info("Push token registration skipped (Expo Go or missing projectId)");
+      return null;
+    }
   } catch {
-    // Fails in Expo Go - requires development build
-    logger.info("Push token registration skipped (Expo Go or missing projectId)");
+    logger.info("Notification permission request failed");
     return null;
   }
 }

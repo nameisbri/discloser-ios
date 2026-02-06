@@ -270,7 +270,7 @@ export default function Reminders() {
                       reminder={reminder}
                       onToggle={() => handleToggleActive(reminder)}
                       onDelete={() => handleDelete(reminder)}
-                      onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date), FREQUENCY_LABELS[reminder.frequency])}
+                      onAddToCalendar={() => addToCalendar(reminder.title, reminder.next_date, FREQUENCY_LABELS[reminder.frequency])}
                       isDark={isDark}
                     />
                   </View>
@@ -291,7 +291,7 @@ export default function Reminders() {
                         reminder={reminder}
                         onToggle={() => handleToggleActive(reminder)}
                         onDelete={() => handleDelete(reminder)}
-                        onAddToCalendar={() => addToCalendar(reminder.title, new Date(reminder.next_date), FREQUENCY_LABELS[reminder.frequency])}
+                        onAddToCalendar={() => addToCalendar(reminder.title, reminder.next_date, FREQUENCY_LABELS[reminder.frequency])}
                         isDark={isDark}
                       />
                     </View>

@@ -1,16 +1,20 @@
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { useTheme } from "../../context/theme";
+import { useAuth } from "../../context/auth";
 import { syncReminderNotifications } from "../../lib/notifications";
 
 export default function ProtectedLayout() {
   const { isDark } = useTheme();
+  const { session } = useAuth();
 
-  // Sync notifications on app launch to handle TestFlight updates
-  // that may have cleared scheduled notifications
+  // Sync notifications when user session becomes available
+  // This fixes the race condition where sync ran before auth was restored
   useEffect(() => {
-    syncReminderNotifications();
-  }, []);
+    if (session?.user) {
+      syncReminderNotifications();
+    }
+  }, [session?.user?.id]);
 
   return (
     <Stack

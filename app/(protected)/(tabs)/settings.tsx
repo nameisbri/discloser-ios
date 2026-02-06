@@ -8,7 +8,7 @@ import { RiskAssessment } from "../../../components/RiskAssessment";
 import { KnownConditionsModal } from "../../../components/KnownConditionsModal";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications } from "../../../lib/notifications";
+import { getNotificationsEnabled, setNotificationsEnabled, cancelAllReminderNotifications, syncReminderNotifications } from "../../../lib/notifications";
 import * as Notifications from "expo-notifications";
 import { supabase } from "../../../lib/supabase";
 import { Button } from "../../../components/Button";
@@ -72,7 +72,10 @@ export default function Settings() {
   const handleToggleNotifications = async (value: boolean) => {
     await hapticSelection();
     setNotifications(value);
-    setNotificationsEnabled(value);
+    await setNotificationsEnabled(value);
+    if (value) {
+      await syncReminderNotifications();
+    }
   };
 
   const handleCheckScheduledNotifications = async () => {

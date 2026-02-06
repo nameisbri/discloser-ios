@@ -12,26 +12,33 @@ export async function requestCalendarPermissions(): Promise<boolean> {
 }
 
 /**
- * Get the default calendar ID for the platform
- * Creates a new calendar if none exists
+ * Get the default calendar ID for the platform.
+ * On iOS, uses the system default calendar for new events.
+ * On Android, falls back to primary or creates a new calendar.
  */
 async function getDefaultCalendarId(): Promise<string | null> {
-  const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-
-  // Find the default calendar
-  const defaultCalendar = calendars.find(
-    (cal) =>
-      cal.allowsModifications &&
-      (Platform.OS === "ios"
-        ? cal.source?.name === "iCloud" || cal.source?.name === "Default"
-        : cal.isPrimary)
-  );
-
-  if (defaultCalendar) {
-    return defaultCalendar.id;
+  // On iOS, use the system default calendar — this is the calendar the user
+  // has configured in Settings > Calendar > Default Calendar, so events
+  // always appear where they expect them.
+  if (Platform.OS === "ios") {
+    try {
+      const defaultCal = await Calendar.getDefaultCalendarAsync();
+      if (defaultCal?.id) {
+        return defaultCal.id;
+      }
+    } catch {
+      // getDefaultCalendarAsync can throw if no default is set
+    }
   }
 
-  // Fall back to any calendar that allows modifications
+  // Fallback: find any writable calendar
+  const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+
+  if (Platform.OS === "android") {
+    const primary = calendars.find((cal) => cal.isPrimary && cal.allowsModifications);
+    if (primary) return primary.id;
+  }
+
   const writableCalendar = calendars.find((cal) => cal.allowsModifications);
   if (writableCalendar) {
     return writableCalendar.id;
@@ -67,7 +74,7 @@ async function getDefaultCalendarId(): Promise<string | null> {
  */
 export async function addToCalendar(
   title: string,
-  date: Date,
+  dateInput: Date | string,
   frequency?: string
 ): Promise<boolean> {
   try {
@@ -91,7 +98,15 @@ export async function addToCalendar(
       return false;
     }
 
-    // Create an all-day event
+    // Parse date safely to avoid UTC timezone shift with "YYYY-MM-DD" strings
+    let date: Date;
+    if (typeof dateInput === "string") {
+      const [year, month, day] = dateInput.split("-").map(Number);
+      date = new Date(year, month - 1, day);
+    } else {
+      date = dateInput;
+    }
+
     const startDate = new Date(date);
     startDate.setHours(9, 0, 0, 0); // Set to 9 AM
 
@@ -109,7 +124,7 @@ export async function addToCalendar(
     }
     notesLines.push("", "Added from Discloser app");
 
-    await Calendar.createEventAsync(calendarId, {
+    const eventId = await Calendar.createEventAsync(calendarId, {
       title: `🩺 ${title}`,
       startDate,
       endDate,
@@ -119,6 +134,15 @@ export async function addToCalendar(
         { relativeOffset: -60 }, // 1 hour before
       ],
     });
+
+    if (!eventId) {
+      Alert.alert(
+        "Couldn't Add to Calendar",
+        "The event could not be saved. Please check your calendar permissions in Settings.",
+        [{ text: "OK" }]
+      );
+      return false;
+    }
 
     Alert.alert(
       "Added to Calendar",

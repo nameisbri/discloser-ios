@@ -20,11 +20,12 @@
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.discloser-ios.app",
-      "buildNumber": "30",
+      "buildNumber": "31",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCalendarsUsageDescription": "Discloser needs calendar access to add testing reminders to your calendar."
+        "NSCalendarsUsageDescription": "Discloser needs calendar access to add testing reminders to your calendar.",
+        "NSCalendarsFullAccessUsageDescription": "Discloser needs full calendar access to add and manage testing reminders in your calendar."
       }
     },
     "android": {
