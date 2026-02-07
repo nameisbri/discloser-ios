@@ -66,6 +66,8 @@ export interface ShareLink {
   show_name: boolean;
   display_name: string | null;
   created_at: string;
+  note: string | null;
+  label: string | null;
 }
 
 export interface StatusShareLink {
@@ -136,6 +138,8 @@ export interface CreateShareLinkInput {
   max_views?: number | null;
   show_name?: boolean;
   display_name?: string | null;
+  note?: string | null;
+  label?: string | null;
 }
 
 export interface CreateReminderInput {
@@ -164,6 +168,10 @@ export interface SharedResult {
   is_valid: boolean;
   is_expired: boolean;
   is_over_limit: boolean;
+  known_conditions: KnownCondition[];
+  created_at: string;
+  note: string | null;
+  label: string | null;
 }
 
 // Supabase Database type helper

@@ -119,6 +119,8 @@ function createMockShareLink(overrides: Partial<ShareLink> = {}): ShareLink {
     show_name: false,
     display_name: null,
     created_at: new Date().toISOString(),
+    note: null,
+    label: null,
     ...overrides,
   };
 }

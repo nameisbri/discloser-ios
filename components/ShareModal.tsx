@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   View,
   Text,
+  TextInput,
   Modal,
   Pressable,
   ScrollView,
@@ -16,13 +17,13 @@ import {
   Link as LinkIcon,
   Clock,
   Eye,
-  User,
   Copy,
   Check,
   Trash2,
   QrCode,
   Plus,
   Smartphone,
+  MessageSquare,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useShareLinks, getShareUrl, useThemeColors } from "../lib/hooks";
@@ -75,6 +76,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   const [selectedViewLimit, setSelectedViewLimit] = useState(VIEW_LIMIT_OPTIONS[0]);
   const [displayNameOption, setDisplayNameOption] = useState<DisplayNameOption>("anonymous");
   const [creating, setCreating] = useState(false);
+  const [linkLabel, setLinkLabel] = useState("");
+  const [linkNote, setLinkNote] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<ShareLink | null>(null);
   const [userProfile, setUserProfile] = useState<{ first_name: string | null; alias: string | null } | null>(null);
@@ -87,6 +90,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       fetchLinks();
       fetchUserProfile();
       setView("list");
+      setLinkLabel("");
+      setLinkNote("");
     }
   }, [visible, testResultId, fetchLinks]);
 
@@ -120,6 +125,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       max_views: selectedViewLimit.value,
       show_name: displayNameOption !== "anonymous",
       display_name: getDisplayName(),
+      note: linkNote.trim() || null,
+      label: linkLabel.trim() || null,
     });
 
     setCreating(false);
@@ -128,6 +135,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       setSelectedExpiry(EXPIRY_OPTIONS[1]);
       setSelectedViewLimit(VIEW_LIMIT_OPTIONS[0]);
       setDisplayNameOption("anonymous");
+      setLinkLabel("");
+      setLinkNote("");
     } else {
       Alert.alert("Couldn't Create Link", error || "Something went wrong while creating your share link. Please check your connection and try again.");
     }
@@ -167,6 +176,13 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
     if (hours < 24) return `${hours}h left`;
     const days = Math.floor(hours / 24);
     return `${days}d left`;
+  };
+
+  const formatCreatedAt = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+      ", " +
+      date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   };
 
   const activeLinks = links.filter((l) => !isLinkExpired(l));
@@ -265,6 +281,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                           }}
                           copied={copiedId === link.id}
                           formatExpiry={formatExpiry}
+                          formatCreatedAt={formatCreatedAt}
                           colors={colors}
                         />
                       ))}
@@ -284,6 +301,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                           key={link.id}
                           link={link}
                           onDelete={() => handleDelete(link)}
+                          formatCreatedAt={formatCreatedAt}
                           colors={colors}
                         />
                       ))}
@@ -298,6 +316,61 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
         {/* Create View */}
         {view === "create" && (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+            {/* Label */}
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Label (optional)</Text>
+              <TextInput
+                value={linkLabel}
+                onChangeText={setLinkLabel}
+                placeholder="e.g. For Alex, Tinder date"
+                placeholderTextColor={colors.textSecondary}
+                maxLength={50}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  color: colors.text,
+                }}
+                accessibilityLabel="Link label"
+                accessibilityHint="Optional label to identify this link"
+              />
+            </View>
+
+            {/* Note */}
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Note (optional)</Text>
+              <TextInput
+                value={linkNote}
+                onChangeText={setLinkNote}
+                placeholder="Add a note — e.g., 'Getting retested next week'"
+                placeholderTextColor={colors.textSecondary}
+                maxLength={500}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  color: colors.text,
+                  minHeight: 80,
+                }}
+                accessibilityLabel="Link note"
+                accessibilityHint="Optional note visible to the recipient"
+              />
+              <Text style={{ fontSize: 12, textAlign: "right", marginTop: 4, color: linkNote.length >= 500 ? colors.danger : linkNote.length >= 450 ? colors.warning : colors.textSecondary }}>
+                {linkNote.length} / 500
+              </Text>
+            </View>
+
             {/* Expiry */}
             <View style={{ marginBottom: 24 }}>
               <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Self-destructs in</Text>
@@ -494,6 +567,7 @@ function ShareLinkCard({
   onPreview,
   copied,
   formatExpiry,
+  formatCreatedAt,
   colors,
 }: {
   link: ShareLink;
@@ -503,10 +577,29 @@ function ShareLinkCard({
   onPreview: () => void;
   copied: boolean;
   formatExpiry: (exp: string) => string;
+  formatCreatedAt: (date: string) => string;
   colors: ThemeColors;
 }) {
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+      {/* Label or fallback date header */}
+      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 2 }}>
+        {link.label || `Link created ${formatCreatedAt(link.created_at)}`}
+      </Text>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+        {link.label ? formatCreatedAt(link.created_at) : ""}
+      </Text>
+
+      {/* Note preview */}
+      {link.note && (
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+          <MessageSquare size={12} color={colors.textSecondary} />
+          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4, flex: 1 }}>
+            {link.note.length > 50 ? link.note.substring(0, 50) + "..." : link.note}
+          </Text>
+        </View>
+      )}
+
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -589,10 +682,12 @@ function ShareLinkCard({
 function ExpiredShareLinkCard({
   link,
   onDelete,
+  formatCreatedAt,
   colors,
 }: {
   link: ShareLink;
   onDelete: () => void;
+  formatCreatedAt: (date: string) => string;
   colors: ThemeColors;
 }) {
   const status = getLinkExpirationStatus(link);
@@ -604,6 +699,24 @@ function ExpiredShareLinkCard({
           <Text style={{ fontSize: 12, fontWeight: "600", color: colors.warning }}>{getExpirationLabel(status)}</Text>
         </View>
       </View>
+
+      {/* Label or fallback date header */}
+      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 2 }}>
+        {link.label || `Link created ${formatCreatedAt(link.created_at)}`}
+      </Text>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+        {link.label ? formatCreatedAt(link.created_at) : ""}
+      </Text>
+
+      {/* Note preview */}
+      {link.note && (
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+          <MessageSquare size={12} color={colors.textSecondary} />
+          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4, flex: 1 }}>
+            {link.note.length > 50 ? link.note.substring(0, 50) + "..." : link.note}
+          </Text>
+        </View>
+      )}
 
       {/* View count */}
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
