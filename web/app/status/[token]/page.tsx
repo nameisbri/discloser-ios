@@ -159,7 +159,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
             <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
             <span>Shared via Discloser</span>
           </div>
-          <span className="text-white/25 text-xs">Be adventurous. Stay anonymous.</span>
+          <span className="text-white/25 text-xs">Share your status. Keep your name.</span>
         </div>
       </div>
     </main>

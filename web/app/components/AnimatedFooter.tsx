@@ -23,7 +23,7 @@ export default function AnimatedFooter() {
           <span className="text-white/75 text-sm">Discloser</span>
         </div>
         <p className="text-white/65 text-sm italic">
-          Be adventurous. Stay anonymous.
+          Share your status. Keep your name.
         </p>
         <div className="flex gap-6 text-sm text-white/65">
           <a href="/privacy" className="hover:text-white/75 transition-colors">

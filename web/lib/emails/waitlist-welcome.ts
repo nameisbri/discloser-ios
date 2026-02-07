@@ -235,7 +235,7 @@ export const waitlistWelcomeEmail = (email: string) => ({
                 You're in for early access.
               </p>
               <p style="margin: 0; font-size: 11px; color: rgba(255,255,255,0.15); font-style: italic;">
-                Be adventurous. Stay anonymous.
+                Share your status. Keep your name.
               </p>
             </td>
           </tr>

@@ -49,7 +49,7 @@ export default function Login() {
           </Text>
           <Text className="text-base font-inter-regular text-white/60 leading-6 mt-4">
             Being responsible shouldn't cost you your privacy.{"\n"}
-            Be adventurous. Stay anonymous.
+            Share your status. Keep your name.
           </Text>
         </View>
 
@@ -99,7 +99,7 @@ export default function Login() {
 
         <Text className={`text-center text-xs font-inter-regular mt-6 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
           Your data stays yours. Always encrypted.{"\n"}
-          Be adventurous. Stay anonymous.
+          Share your status. Keep your name.
         </Text>
       </View>
     </KeyboardAvoidingView>
