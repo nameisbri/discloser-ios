@@ -14,6 +14,7 @@ export interface KnownCondition {
   condition: string;
   added_at: string;
   notes?: string;
+  management_methods?: string[];
 }
 
 export interface Profile {
@@ -71,6 +72,7 @@ export interface StatusShareLink {
   id: string;
   user_id: string;
   token: string;
+  label: string | null;
   expires_at: string;
   view_count: number;
   max_views: number | null;
