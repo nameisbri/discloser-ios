@@ -5,9 +5,17 @@ import type { KnownCondition } from "../types";
  * Handles variations like "HSV-1", "Herpes (HSV-1)", "Herpes Simplex Virus 1"
  */
 export function matchesKnownCondition(stiName: string, knownConditions: KnownCondition[]): boolean {
+  return findMatchingKnownCondition(stiName, knownConditions) !== undefined;
+}
+
+/**
+ * Find the matching KnownCondition entry for an STI name.
+ * Returns the full KnownCondition object (including management_methods) or undefined.
+ */
+export function findMatchingKnownCondition(stiName: string, knownConditions: KnownCondition[]): KnownCondition | undefined {
   const name = stiName.toLowerCase();
 
-  return knownConditions.some((kc) => {
+  return knownConditions.find((kc) => {
     const cond = kc.condition.toLowerCase();
 
     // Direct match

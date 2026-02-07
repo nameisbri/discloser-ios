@@ -97,9 +97,30 @@ export function useProfile() {
     }
   };
 
+  const updateManagementMethods = async (condition: string, methods: string[]): Promise<boolean> => {
+    try {
+      setError(null);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !profile) return false;
+
+      const updated = (profile.known_conditions || []).map((kc) =>
+        kc.condition === condition ? { ...kc, management_methods: methods } : kc
+      );
+
+      // @ts-expect-error - Supabase types not generated, runtime types are correct
+      const { error: updateError } = await supabase.from("profiles").update({ known_conditions: updated }).eq("id", user.id);
+      if (updateError) throw updateError;
+      setProfile((prev) => prev ? { ...prev, known_conditions: updated } : null);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "We couldn't update management methods. Please try again.");
+      return false;
+    }
+  };
+
   const hasKnownCondition = useCallback((stiName: string): boolean => {
     return matchesKnownCondition(stiName, profile?.known_conditions || []);
   }, [profile?.known_conditions]);
 
-  return { profile, loading, error, refetch: fetchProfile, updateRiskLevel, addKnownCondition, removeKnownCondition, hasKnownCondition };
+  return { profile, loading, error, refetch: fetchProfile, updateRiskLevel, addKnownCondition, removeKnownCondition, updateManagementMethods, hasKnownCondition };
 }

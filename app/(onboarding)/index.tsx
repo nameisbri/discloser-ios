@@ -22,6 +22,7 @@ import { supabase } from "../../lib/supabase";
 import { SHARE_BASE_URL } from "../../lib/constants";
 import { STATUS_STIS } from "../../lib/types";
 import type { KnownCondition, RiskLevel } from "../../lib/types";
+import { getMethodsForCondition, type ManagementMethod } from "../../lib/managementMethods";
 
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
 
@@ -95,8 +96,9 @@ export default function Onboarding() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pronouns, setPronouns] = useState("");
 
-  // Step 2: Known conditions
+  // Step 2: Known conditions + management methods
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+  const [conditionMethods, setConditionMethods] = useState<Record<string, string[]>>({});
   const [noConditions, setNoConditions] = useState(false);
 
   // Step 3: Risk assessment
@@ -153,16 +155,34 @@ export default function Onboarding() {
 
   const toggleCondition = (condition: string) => {
     setNoConditions(false);
-    setSelectedConditions((prev) =>
-      prev.includes(condition)
-        ? prev.filter((c) => c !== condition)
-        : [...prev, condition]
-    );
+    setSelectedConditions((prev) => {
+      if (prev.includes(condition)) {
+        // Remove methods for this condition
+        setConditionMethods((m) => {
+          const copy = { ...m };
+          delete copy[condition];
+          return copy;
+        });
+        return prev.filter((c) => c !== condition);
+      }
+      return [...prev, condition];
+    });
+  };
+
+  const toggleMethod = (condition: string, methodId: string) => {
+    setConditionMethods((prev) => {
+      const current = prev[condition] || [];
+      const updated = current.includes(methodId)
+        ? current.filter((m) => m !== methodId)
+        : [...current, methodId];
+      return { ...prev, [condition]: updated };
+    });
   };
 
   const handleNoConditions = () => {
     setNoConditions(true);
     setSelectedConditions([]);
+    setConditionMethods({});
   };
 
   const handleRiskAnswer = (questionId: string, points: number) => {
@@ -188,10 +208,11 @@ export default function Onboarding() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Build known conditions array
+      // Build known conditions array with management methods
       const knownConditions: KnownCondition[] = selectedConditions.map((c) => ({
         condition: c,
         added_at: new Date().toISOString(),
+        management_methods: conditionMethods[c]?.length ? conditionMethods[c] : undefined,
       }));
 
       // Format DOB as YYYY-MM-DD for database
@@ -484,25 +505,71 @@ export default function Onboarding() {
               </View>
 
               <View className="gap-3">
-                {STATUS_STIS.map((condition) => (
-                  <Pressable
-                    key={condition}
-                    onPress={() => toggleCondition(condition)}
-                    className={`p-4 rounded-xl border ${
-                      selectedConditions.includes(condition)
-                        ? isDark ? "bg-dark-lavender/20 border-dark-lavender" : "bg-purple-50 border-purple-400"
-                        : `${inputBg} ${inputBorder}`
-                    }`}
-                  >
-                    <Text className={`font-inter-semibold ${
-                      selectedConditions.includes(condition)
-                        ? isDark ? "text-dark-lavender" : "text-purple-700"
-                        : textColor
-                    }`}>
-                      {condition}
-                    </Text>
-                  </Pressable>
-                ))}
+                {STATUS_STIS.map((condition) => {
+                  const isSelected = selectedConditions.includes(condition);
+                  const applicableMethods = getMethodsForCondition(condition);
+                  const methods = conditionMethods[condition] || [];
+                  return (
+                    <View key={condition}>
+                      <Pressable
+                        onPress={() => toggleCondition(condition)}
+                        className={`p-4 rounded-xl border ${
+                          isSelected
+                            ? isDark ? "bg-dark-lavender/20 border-dark-lavender" : "bg-purple-50 border-purple-400"
+                            : `${inputBg} ${inputBorder}`
+                        } ${isSelected && applicableMethods.length > 0 ? "rounded-b-none" : ""}`}
+                      >
+                        <Text className={`font-inter-semibold ${
+                          isSelected
+                            ? isDark ? "text-dark-lavender" : "text-purple-700"
+                            : textColor
+                        }`}>
+                          {condition}
+                        </Text>
+                      </Pressable>
+                      {isSelected && applicableMethods.length > 0 && (
+                        <View
+                          className={`px-4 pb-3 pt-2 border border-t-0 rounded-b-xl ${
+                            isDark ? "bg-dark-lavender/10 border-dark-lavender" : "bg-purple-50/50 border-purple-400"
+                          }`}
+                        >
+                          <Text className={`text-xs font-inter-medium mb-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                            How do you manage this?
+                          </Text>
+                          <View className="flex-row flex-wrap gap-2">
+                            {applicableMethods.map((method) => {
+                              const selected = methods.includes(method.id);
+                              return (
+                                <Pressable
+                                  key={method.id}
+                                  onPress={() => toggleMethod(condition, method.id)}
+                                  className={`px-3 py-1.5 rounded-full ${
+                                    selected
+                                      ? isDark ? "bg-dark-lavender/20" : "bg-purple-100"
+                                      : isDark ? "bg-dark-surface-light" : "bg-gray-100"
+                                  }`}
+                                  accessibilityLabel={`${method.label}, ${selected ? "selected" : "not selected"}`}
+                                  accessibilityRole="checkbox"
+                                  accessibilityState={{ checked: selected }}
+                                >
+                                  <Text
+                                    className={`text-xs font-inter-medium ${
+                                      selected
+                                        ? isDark ? "text-dark-lavender" : "text-purple-700"
+                                        : isDark ? "text-dark-text-muted" : "text-text-light"
+                                    }`}
+                                  >
+                                    {method.label}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
 
                 <View className="h-px bg-gray-200 dark:bg-dark-border my-2" />
 
@@ -527,6 +594,7 @@ export default function Onboarding() {
                   onPress={() => {
                     setNoConditions(false);
                     setSelectedConditions([]);
+                    setConditionMethods({});
                   }}
                   className={`p-4 rounded-xl border ${
                     !noConditions && selectedConditions.length === 0
@@ -657,7 +725,7 @@ export default function Onboarding() {
                   </Text>
                   {selectedConditions.length > 0 && (
                     <Text className={textSecondary}>
-                      Known conditions: {selectedConditions.join(", ")}
+                      Managed conditions: {selectedConditions.join(", ")}
                     </Text>
                   )}
                   {riskLevel && (

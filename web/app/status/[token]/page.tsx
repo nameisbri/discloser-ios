@@ -17,7 +17,19 @@ interface STIStatus {
   testDate: string;
   isVerified: boolean;
   isKnownCondition?: boolean;
+  managementMethods?: string[];
 }
+
+const METHOD_LABELS: Record<string, string> = {
+  daily_antivirals: "Daily antivirals",
+  prep: "PrEP",
+  art_treatment: "ART treatment",
+  undetectable: "Undetectable viral load",
+  barriers: "Barrier use",
+  regular_monitoring: "Regular monitoring",
+  supplements: "Supplements",
+  antiviral_as_needed: "Antivirals as needed",
+};
 
 async function getSharedStatus(token: string) {
   const { data, error } = await supabase.rpc("get_shared_status", { share_token: token });
@@ -135,9 +147,21 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
                           </span>
                         )}
                       </div>
+                      {sti.isKnownCondition && sti.managementMethods && sti.managementMethods.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {sti.managementMethods.map((methodId) => (
+                            <span
+                              key={methodId}
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-lavender/10 text-accent-lavender"
+                            >
+                              {METHOD_LABELS[methodId] || methodId}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <span className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${statusBg(sti.status, sti.isKnownCondition)} ${statusColor(sti.status, sti.isKnownCondition)}`}>
-                      {sti.isKnownCondition ? "Known" : sti.result}
+                      {sti.isKnownCondition ? "Managed" : sti.result}
                     </span>
                   </div>
                 </div>

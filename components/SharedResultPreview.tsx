@@ -11,6 +11,8 @@ import { useSharedResult } from "../lib/hooks/useShareLinks";
 import { useProfile } from "../lib/hooks/useProfile";
 import { useTheme } from "../context/theme";
 import { formatDate } from "../lib/utils/date";
+import { findMatchingKnownCondition } from "../lib/utils/stiMatching";
+import { ManagementMethodPills } from "./ManagementMethodPills";
 import type { STIResult } from "../lib/types";
 
 interface SharedResultPreviewProps {
@@ -20,7 +22,7 @@ interface SharedResultPreviewProps {
 export function SharedResultPreview({ token }: SharedResultPreviewProps) {
   const { result, loading, error } = useSharedResult(token);
   const { isDark } = useTheme();
-  const { hasKnownCondition } = useProfile();
+  const { hasKnownCondition, profile } = useProfile();
 
   const colors = useMemo(() => ({
     primary: isDark ? "#FF2D7A" : "#923D5C",
@@ -98,7 +100,7 @@ export function SharedResultPreview({ token }: SharedResultPreviewProps) {
 
   // Determine effective status for badge (use "known" if all positives are known)
   const effectiveStatus = result.status === "positive" && allPositivesAreKnown ? "known" : result.status;
-  const statusLabel = effectiveStatus === "known" ? "Known" : result.status.charAt(0).toUpperCase() + result.status.slice(1);
+  const statusLabel = effectiveStatus === "known" ? "Managed" : result.status.charAt(0).toUpperCase() + result.status.slice(1);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.gray50 }}>
@@ -164,21 +166,28 @@ export function SharedResultPreview({ token }: SharedResultPreviewProps) {
             <View style={{ backgroundColor: colors.cardBg, borderRadius: 20, overflow: "hidden", marginBottom: 24, borderWidth: 1, borderColor: colors.border }}>
               {result.sti_results.map((sti: STIResult, index: number) => {
                 const isKnown = hasKnownCondition(sti.name);
+                const matchedKc = isKnown ? findMatchingKnownCondition(sti.name, profile?.known_conditions || []) : undefined;
+                const methods = matchedKc?.management_methods || [];
                 return (
                   <View key={index}>
                     {index > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16 }} />}
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>{sti.name}</Text>
-                        {isKnown && (
-                          <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: colors.infoLight }}>
-                            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.info, textTransform: "uppercase" }}>Known</Text>
-                          </View>
-                        )}
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>{sti.name}</Text>
+                          {isKnown && (
+                            <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: colors.infoLight }}>
+                              <Text style={{ fontSize: 10, fontWeight: "700", color: colors.info, textTransform: "uppercase" }}>Managed</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status, isKnown) }}>
+                          {isKnown && sti.status === "positive" ? "Managed" : sti.result}
+                        </Text>
                       </View>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status, isKnown) }}>
-                        {isKnown && sti.status === "positive" ? "Known" : sti.result}
-                      </Text>
+                      {isKnown && methods.length > 0 && (
+                        <ManagementMethodPills methods={methods} isDark={isDark} />
+                      )}
                     </View>
                   </View>
                 );

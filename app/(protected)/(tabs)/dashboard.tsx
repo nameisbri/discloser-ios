@@ -28,6 +28,7 @@ import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { Badge } from "../../../components/Badge";
 import { ResultCard } from "../../../components/ResultCard";
+import { ManagementMethodPills } from "../../../components/ManagementMethodPills";
 import { SkeletonResultsList } from "../../../components/SkeletonLoader";
 import { LinearGradient } from "expo-linear-gradient";
 import type { TestResult } from "../../../lib/types";
@@ -314,20 +315,25 @@ export default function Dashboard() {
                 {knownConditionsStatus.map((sti, index) => (
                   <View
                     key={sti.name}
-                    className={`flex-row items-center justify-between ${index > 0 ? "mt-3 pt-3 border-t" : ""} ${isDark ? "border-dark-border" : "border-border"}`}
+                    className={`${index > 0 ? "mt-3 pt-3 border-t" : ""} ${isDark ? "border-dark-border" : "border-border"}`}
                   >
-                    <View>
-                      <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
-                        {sti.name}
-                      </Text>
-                      <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                        {sti.hasTestData
-                          ? `Last tested: ${formatDate(sti.testDate)}`
-                          : `Declared: ${formatDate(sti.testDate)}`
-                        }
-                      </Text>
+                    <View className="flex-row items-center justify-between">
+                      <View>
+                        <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                          {sti.name}
+                        </Text>
+                        <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                          {sti.hasTestData
+                            ? `Last tested: ${formatDate(sti.testDate)}`
+                            : `Declared: ${formatDate(sti.testDate)}`
+                          }
+                        </Text>
+                      </View>
+                      <Badge label="Managed" variant="info" />
                     </View>
-                    <Badge label="Known" variant="info" />
+                    {sti.managementMethods && sti.managementMethods.length > 0 && (
+                      <ManagementMethodPills methods={sti.managementMethods} isDark={isDark} />
+                    )}
                   </View>
                 ))}
               </Card>

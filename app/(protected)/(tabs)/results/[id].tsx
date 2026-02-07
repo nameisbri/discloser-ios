@@ -24,6 +24,8 @@ import { Button } from "../../../../components/Button";
 import { ShareModal } from "../../../../components/ShareModal";
 import { SkeletonLoader, SkeletonText } from "../../../../components/SkeletonLoader";
 import { hapticImpact, hapticNotification } from "../../../../lib/utils/haptics";
+import { findMatchingKnownCondition } from "../../../../lib/utils/stiMatching";
+import { ManagementMethodPills } from "../../../../components/ManagementMethodPills";
 import type { STIResult } from "../../../../lib/types";
 import { formatDate } from "../../../../lib/utils/date";
 import { HeaderLogo } from "../../../../components/HeaderLogo";
@@ -34,7 +36,7 @@ export default function ResultDetail() {
   const { isDark } = useTheme();
   const { result, loading, error } = useTestResult(id);
   const { deleteResult } = useTestResults();
-  const { hasKnownCondition } = useProfile();
+  const { hasKnownCondition, profile } = useProfile();
   const [showShareModal, setShowShareModal] = useState(false);
 
   const handleDelete = async () => {
@@ -222,18 +224,23 @@ export default function ResultDetail() {
             </Text>
 
             <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
-              {result.sti_results.map((sti, index) => (
-                <View key={index}>
-                  {index > 0 && <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />}
-                  <STILineItem
-                    name={sti.name}
-                    result={sti.result}
-                    status={sti.status}
-                    isKnown={hasKnownCondition(sti.name)}
-                    isDark={isDark}
-                  />
-                </View>
-              ))}
+              {result.sti_results.map((sti, index) => {
+                const isKnown = hasKnownCondition(sti.name);
+                const matchedKc = isKnown ? findMatchingKnownCondition(sti.name, profile?.known_conditions || []) : undefined;
+                return (
+                  <View key={index}>
+                    {index > 0 && <View className={`h-[1px] mx-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />}
+                    <STILineItem
+                      name={sti.name}
+                      result={sti.result}
+                      status={sti.status}
+                      isKnown={isKnown}
+                      managementMethods={matchedKc?.management_methods}
+                      isDark={isDark}
+                    />
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
@@ -291,12 +298,14 @@ function STILineItem({
   result,
   status,
   isKnown,
+  managementMethods,
   isDark,
 }: {
   name: string;
   result: string;
   status: STIResult["status"];
   isKnown: boolean;
+  managementMethods?: string[];
   isDark: boolean;
 }) {
   // Known conditions use purple instead of red for positive
@@ -309,16 +318,21 @@ function STILineItem({
     : isDark ? "text-dark-warning" : "text-warning";
 
   return (
-    <View className="flex-row items-center justify-between p-4">
-      <View className="flex-row items-center">
-        <Text className={`font-inter-medium ${isDark ? "text-dark-text" : "text-text"}`}>{name}</Text>
-        {isKnown && (
-          <View className={`ml-2 px-2 py-0.5 rounded-full ${isDark ? "bg-dark-lavender/20" : "bg-purple-100"}`}>
-            <Text className={`text-[10px] font-inter-bold uppercase ${isDark ? "text-dark-lavender" : "text-purple-700"}`}>Known</Text>
-          </View>
-        )}
+    <View className="p-4">
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center">
+          <Text className={`font-inter-medium ${isDark ? "text-dark-text" : "text-text"}`}>{name}</Text>
+          {isKnown && (
+            <View className={`ml-2 px-2 py-0.5 rounded-full ${isDark ? "bg-dark-lavender/20" : "bg-purple-100"}`}>
+              <Text className={`text-[10px] font-inter-bold uppercase ${isDark ? "text-dark-lavender" : "text-purple-700"}`}>Managed</Text>
+            </View>
+          )}
+        </View>
+        <Text className={`${textColor} font-inter-semibold`}>{result}</Text>
       </View>
-      <Text className={`${textColor} font-inter-semibold`}>{result}</Text>
+      {isKnown && managementMethods && managementMethods.length > 0 && (
+        <ManagementMethodPills methods={managementMethods} isDark={isDark} />
+      )}
     </View>
   );
 }
