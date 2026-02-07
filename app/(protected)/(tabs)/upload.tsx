@@ -18,6 +18,7 @@ import {
 } from "../../../lib/parsing";
 import { isStatusSTI } from "../../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../../lib/constants";
+import { parseDateOnly, toDateString } from "../../../lib/utils/date";
 
 // Maximum number of files that can be uploaded at once
 const MAX_FILES_LIMIT = 4;
@@ -60,7 +61,7 @@ export default function Upload() {
   }>>([]);
 
   // Form state
-  const [testDate, setTestDate] = useState(new Date().toISOString().split("T")[0]);
+  const [testDate, setTestDate] = useState(toDateString(new Date()));
   const [testType, setTestType] = useState("Full STI Panel");
   const [overallStatus, setOverallStatus] = useState<TestStatus>("negative");
   const [extractedResults, setExtractedResults] = useState<STIResult[]>([]);
@@ -632,9 +633,9 @@ export default function Upload() {
         if (profile?.risk_level && hasRoutine) {
           const riskLevel = profile.risk_level;
           const intervalDays = RISK_INTERVALS[riskLevel];
-          const nextDueDate = new Date(testDate);
+          const nextDueDate = parseDateOnly(testDate);
           nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
-          const nextDateStr = nextDueDate.toISOString().split("T")[0];
+          const nextDateStr = toDateString(nextDueDate);
 
           const existingReminder = activeReminders[0];
           if (existingReminder) {

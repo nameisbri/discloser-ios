@@ -12,6 +12,7 @@ import { supabase } from "../../../lib/supabase";
 import { Button } from "../../../components/Button";
 import { hapticNotification } from "../../../lib/utils/haptics";
 import { HeaderLogo } from "../../../components/HeaderLogo";
+import { formatDate } from "../../../lib/utils/date";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
@@ -30,12 +31,12 @@ export default function Settings() {
   const { activeReminders } = useReminders();
   const { theme, setTheme, isDark } = useTheme();
 
-  // Compute stats
-  const lastTestDate = results.length > 0
-    ? new Date(results.sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())[0].test_date)
+  // Compute stats — keep as YYYY-MM-DD strings to avoid UTC timezone shift
+  const lastTestDateStr = results.length > 0
+    ? results.sort((a, b) => b.test_date.localeCompare(a.test_date))[0].test_date
     : null;
-  const nextReminder = activeReminders.length > 0
-    ? new Date(activeReminders.sort((a, b) => new Date(a.next_date).getTime() - new Date(b.next_date).getTime())[0].next_date)
+  const nextReminderStr = activeReminders.length > 0
+    ? activeReminders.sort((a, b) => a.next_date.localeCompare(b.next_date))[0].next_date
     : null;
   const testingFrequency = profile?.risk_level
     ? { low: "Yearly", moderate: "Every 6 mo", high: "Every 3 mo" }[profile.risk_level]
@@ -194,8 +195,8 @@ export default function Settings() {
                 <Text className={`text-xs ml-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>Last test</Text>
               </View>
               <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
-                {lastTestDate
-                  ? lastTestDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                {lastTestDateStr
+                  ? formatDate(lastTestDateStr).replace(/, \d{4}$/, "")
                   : "None yet"}
               </Text>
             </View>
@@ -206,8 +207,8 @@ export default function Settings() {
                 <Text className={`text-xs ml-1 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>Next due</Text>
               </View>
               <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
-                {nextReminder
-                  ? nextReminder.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                {nextReminderStr
+                  ? formatDate(nextReminderStr).replace(/, \d{4}$/, "")
                   : "Not set"}
               </Text>
             </View>

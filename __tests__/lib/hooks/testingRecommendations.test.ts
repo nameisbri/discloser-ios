@@ -74,7 +74,8 @@ function calculateTestingRecommendation(
   const lastTestDate = routineResults[0].test_date;
   const intervalDays = INTERVALS[riskLevel];
 
-  const lastDate = new Date(lastTestDate);
+  const [year, month, day] = lastTestDate.split('-').map(Number);
+  const lastDate = new Date(year, month - 1, day);
   const nextDue = new Date(lastDate);
   nextDue.setDate(nextDue.getDate() + intervalDays);
 
@@ -86,7 +87,7 @@ function calculateTestingRecommendation(
 
   return {
     lastTestDate,
-    nextDueDate: nextDue.toISOString().split('T')[0],
+    nextDueDate: `${nextDue.getFullYear()}-${String(nextDue.getMonth() + 1).padStart(2, '0')}-${String(nextDue.getDate()).padStart(2, '0')}`,
     daysUntilDue,
     isOverdue: daysUntilDue < 0,
     isDueSoon: daysUntilDue >= 0 && daysUntilDue <= 14,
@@ -130,9 +131,10 @@ function createTestResult(overrides: Partial<TestResult> = {}): TestResult {
 
 // Helper to get date string N days from a base date
 function daysFromDate(baseDate: string, days: number): string {
-  const date = new Date(baseDate);
+  const [year, month, day] = baseDate.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 // ============================================
@@ -207,15 +209,15 @@ describe('calculateTestingRecommendation', () => {
       today.setHours(0, 0, 0, 0);
       const testDate = new Date(today);
       testDate.setDate(testDate.getDate() - 30); // 30 days ago
+      const testDateStr = `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}-${String(testDate.getDate()).padStart(2, '0')}`;
 
       const result = calculateTestingRecommendation(
-        [createTestResult({ test_date: testDate.toISOString().split('T')[0] })],
+        [createTestResult({ test_date: testDateStr })],
         'high' // 90 day interval
       );
 
-      // Should be due in approximately 60 days (90 - 30), allow ±1 for timezone
-      expect(result.daysUntilDue).toBeGreaterThanOrEqual(59);
-      expect(result.daysUntilDue).toBeLessThanOrEqual(61);
+      // Should be due in exactly 60 days (90 - 30)
+      expect(result.daysUntilDue).toBe(60);
       expect(result.isOverdue).toBe(false);
       expect(result.isDueSoon).toBe(false);
     });
@@ -227,16 +229,15 @@ describe('calculateTestingRecommendation', () => {
       today.setHours(0, 0, 0, 0);
       const testDate = new Date(today);
       testDate.setDate(testDate.getDate() - 100); // 100 days ago
+      const testDateStr = `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}-${String(testDate.getDate()).padStart(2, '0')}`;
 
       const result = calculateTestingRecommendation(
-        [createTestResult({ test_date: testDate.toISOString().split('T')[0] })],
+        [createTestResult({ test_date: testDateStr })],
         'high' // 90 day interval
       );
 
       expect(result.isOverdue).toBe(true);
-      // Allow ±1 for timezone edge cases
-      expect(result.daysUntilDue).toBeGreaterThanOrEqual(-11);
-      expect(result.daysUntilDue).toBeLessThanOrEqual(-9);
+      expect(result.daysUntilDue).toBe(-10);
     });
   });
 
@@ -246,15 +247,14 @@ describe('calculateTestingRecommendation', () => {
       today.setHours(0, 0, 0, 0);
       const testDate = new Date(today);
       testDate.setDate(testDate.getDate() - 80); // 80 days ago
+      const testDateStr = `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}-${String(testDate.getDate()).padStart(2, '0')}`;
 
       const result = calculateTestingRecommendation(
-        [createTestResult({ test_date: testDate.toISOString().split('T')[0] })],
+        [createTestResult({ test_date: testDateStr })],
         'high' // 90 day interval
       );
 
-      // Approximately 10 days until due
-      expect(result.daysUntilDue).toBeGreaterThanOrEqual(9);
-      expect(result.daysUntilDue).toBeLessThanOrEqual(11);
+      expect(result.daysUntilDue).toBe(10);
       expect(result.isDueSoon).toBe(true);
       expect(result.isOverdue).toBe(false);
     });
@@ -264,15 +264,14 @@ describe('calculateTestingRecommendation', () => {
       today.setHours(0, 0, 0, 0);
       const testDate = new Date(today);
       testDate.setDate(testDate.getDate() - 90); // Exactly 90 days ago
+      const testDateStr = `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}-${String(testDate.getDate()).padStart(2, '0')}`;
 
       const result = calculateTestingRecommendation(
-        [createTestResult({ test_date: testDate.toISOString().split('T')[0] })],
+        [createTestResult({ test_date: testDateStr })],
         'high'
       );
 
-      // Due today or just overdue (allow ±1 for timezone)
-      expect(result.daysUntilDue).toBeGreaterThanOrEqual(-1);
-      expect(result.daysUntilDue).toBeLessThanOrEqual(1);
+      expect(result.daysUntilDue).toBe(0);
     });
   });
 

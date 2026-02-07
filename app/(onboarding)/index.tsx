@@ -23,6 +23,7 @@ import { SHARE_BASE_URL } from "../../lib/constants";
 import { STATUS_STIS } from "../../lib/types";
 import type { KnownCondition, RiskLevel } from "../../lib/types";
 import { getMethodsForCondition, type ManagementMethod } from "../../lib/managementMethods";
+import { toDateString } from "../../lib/utils/date";
 
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
 
@@ -216,7 +217,7 @@ export default function Onboarding() {
       }));
 
       // Format DOB as YYYY-MM-DD for database
-      const formattedDob = dob ? dob.toISOString().split("T")[0] : null;
+      const formattedDob = dob ? toDateString(dob) : null;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase

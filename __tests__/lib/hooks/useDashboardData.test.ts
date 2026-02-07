@@ -168,6 +168,11 @@ const TESTING_INTERVALS: Record<RiskLevel, number> = {
   high: 90,      // 3 months
 };
 
+// Helper to format a Date as YYYY-MM-DD in local time (avoids UTC shift from toISOString)
+function toLocalDateString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 const ROUTINE_TESTS = ["chlamydia", "gonorrhea", "hiv", "syphilis"];
 const ROUTINE_PANEL_KEYWORDS = ["basic", "full", "std", "sti", "routine", "panel", "4-test"];
 
@@ -213,7 +218,8 @@ function computeTestingRecommendation(
   const lastTestDate = routineResults[0].test_date;
   const intervalDays = TESTING_INTERVALS[riskLevel];
 
-  const lastDate = new Date(lastTestDate);
+  const [yr, mo, dy] = lastTestDate.split('-').map(Number);
+  const lastDate = new Date(yr, mo - 1, dy);
   const nextDue = new Date(lastDate);
   nextDue.setDate(nextDue.getDate() + intervalDays);
 
@@ -225,7 +231,7 @@ function computeTestingRecommendation(
 
   return {
     lastTestDate,
-    nextDueDate: nextDue.toISOString().split("T")[0],
+    nextDueDate: `${nextDue.getFullYear()}-${String(nextDue.getMonth() + 1).padStart(2, '0')}-${String(nextDue.getDate()).padStart(2, '0')}`,
     daysUntilDue,
     isOverdue: daysUntilDue < 0,
     isDueSoon: daysUntilDue >= 0 && daysUntilDue <= 14,
@@ -266,6 +272,7 @@ function createProfile(overrides: Partial<Profile> = {}): Profile {
     risk_assessed_at: "2024-01-01T00:00:00Z",
     known_conditions: [],
     onboarding_completed: true,
+    welcome_email_sent_at: null,
     created_at: "2023-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
     ...overrides,
@@ -343,7 +350,7 @@ describe("computeTestingRecommendation", () => {
 
       expect(recommendation.riskLevel).toBe("moderate");
       expect(recommendation.intervalDays).toBe(180);
-      expect(recommendation.lastTestDate).toBe(testDate.toISOString().split("T")[0]);
+      expect(recommendation.lastTestDate).toBe(toLocalDateString(testDate));
       expect(recommendation.nextDueDate).toBeTruthy();
       expect(recommendation.daysUntilDue).toBeLessThan(180);
       expect(recommendation.isOverdue).toBe(false);
@@ -516,7 +523,7 @@ describe("computeTestingRecommendation", () => {
       const recommendation = computeTestingRecommendation(results, profile);
 
       // Should use the routine test date (100 days ago), not the non-routine test
-      expect(recommendation.lastTestDate).toBe(routineDate.toISOString().split("T")[0]);
+      expect(recommendation.lastTestDate).toBe(toLocalDateString(routineDate));
     });
   });
 });

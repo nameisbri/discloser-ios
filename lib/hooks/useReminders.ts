@@ -5,6 +5,7 @@ import type {
   CreateReminderInput,
   UpdateReminderInput,
 } from "../types";
+import { parseDateOnly } from "../utils/date";
 
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -136,12 +137,12 @@ export function useReminders() {
 
   // Get next upcoming reminder (future date)
   const nextReminder = reminders.find(
-    (r) => r.is_active && new Date(r.next_date) > new Date()
+    (r) => r.is_active && parseDateOnly(r.next_date) > new Date()
   );
 
   // Get overdue reminder (past date, most recent first)
   const overdueReminder = reminders.find(
-    (r) => r.is_active && new Date(r.next_date) <= new Date()
+    (r) => r.is_active && parseDateOnly(r.next_date) <= new Date()
   );
 
   return {
