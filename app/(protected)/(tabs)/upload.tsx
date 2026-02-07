@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Alert, BackHandler } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { useTestResults, useReminders, useProfile } from "../../../lib/hooks";
@@ -15,7 +15,9 @@ import {
   validatePDF,
   isPDFExtractionAvailable,
   determineTestType,
+  groupParsedDocumentsByDate,
 } from "../../../lib/parsing";
+import type { DateGroupedResult, ParsedDocumentForGrouping } from "../../../lib/parsing";
 import { isStatusSTI } from "../../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../../lib/constants";
 import { parseDateOnly, toDateString } from "../../../lib/utils/date";
@@ -75,16 +77,53 @@ export default function Upload() {
     nameMatched: boolean;
   }>>([]);
   const [resultConflicts, setResultConflicts] = useState<TestConflict[]>([]);
+  const [dateGroupedResults, setDateGroupedResults] = useState<DateGroupedResult[]>([]);
 
   // Ref to track if parsing was cancelled
   const cancelledRef = useRef(false);
 
-  // Prevent back navigation while parsing
+  // Ref to track if user is mid-flow (parsing or uploading) to prevent
+  // useFocusEffect from resetting state during an active operation
+  const flowActiveRef = useRef(false);
+
+  // Resets all upload state to initial values so the screen is fresh
+  const resetUploadState = useCallback(() => {
+    setStep("select");
+    setSelectedFiles([]);
+    setUploading(false);
+    setParsing(false);
+    setParsingProgress(null);
+    setParsingErrors([]);
+    setTestDate(toDateString(new Date()));
+    setTestType("Full STI Panel");
+    setOverallStatus("negative");
+    setExtractedResults([]);
+    setNotes("");
+    setIsVerified(false);
+    setVerificationDetails([]);
+    setResultConflicts([]);
+    setDateGroupedResults([]);
+    cancelledRef.current = false;
+    flowActiveRef.current = false;
+  }, []);
+
+  // When the upload tab gains focus, reset to a fresh state unless the user
+  // is actively in the middle of parsing or uploading (flowActiveRef guards this).
+  useFocusEffect(
+    useCallback(() => {
+      if (!flowActiveRef.current) {
+        resetUploadState();
+      }
+    }, [resetUploadState])
+  );
+
+  // Prevent back navigation on the entire details step.
+  // The Cancel button is the only way to leave without saving.
   useEffect(() => {
-    if (!parsing) return;
+    if (step !== "details") return;
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => true);
     return () => backHandler.remove();
-  }, [parsing]);
+  }, [step]);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -219,11 +258,10 @@ export default function Upload() {
     }
   };
 
-  const handleCancelParsing = () => {
+  const handleCancel = () => {
     cancelledRef.current = true;
-    setParsing(false);
-    setParsingProgress(null);
-    setStep("preview");
+    resetUploadState();
+    router.replace("/(protected)/(tabs)/dashboard");
   };
 
   const parseDocuments = async () => {
@@ -233,6 +271,7 @@ export default function Upload() {
     cancelledRef.current = false;
 
     try {
+      flowActiveRef.current = true;
       setParsing(true);
       setParsingErrors([]);
       setResultConflicts([]);
@@ -338,20 +377,10 @@ export default function Upload() {
   };
 
   const processParseResults = (parsedDocuments: Array<unknown>) => {
-    let allResults: STIResult[] = [];
-    let collectionDate: string | null = null;
-    let detectedTestType: string | null = null;
-    const extractedNotes: string[] = [];
-    let verified = false;
-    const vDetailsList: Array<{
-      labName?: string;
-      patientName?: string;
-      hasHealthCard: boolean;
-      hasAccessionNumber: boolean;
-      nameMatched: boolean;
-    }> = [];
+    // Phase 1: Separate errors from successful documents
     const errors: Array<{ fileIndex: number; fileName: string; error: DocumentParsingError }> = [];
     const errorTypes = { network: 0, ocr: 0, llm_parsing: 0, other: 0 };
+    const successfulDocs: ParsedDocumentForGrouping[] = [];
 
     parsedDocuments.forEach((parsed: unknown, index: number) => {
       const doc = parsed as {
@@ -392,49 +421,39 @@ export default function Upload() {
         return;
       }
 
-      if (!collectionDate && doc.collectionDate) collectionDate = doc.collectionDate;
-      if (!detectedTestType && doc.testType) detectedTestType = doc.testType;
-      if (doc.notes) extractedNotes.push(doc.notes);
-      if (doc.isVerified) verified = true;
-      if (doc.verificationDetails) {
-        const labName = doc.verificationDetails.labName;
-        if (!vDetailsList.some((v) => v.labName === labName)) {
-          vDetailsList.push(doc.verificationDetails);
-        }
-      }
-
-      if (doc.tests && doc.tests.length > 0) {
-        const results: STIResult[] = doc.tests.map((t) => ({
-          name: t.name,
-          result: t.result,
-          status: t.status,
-        }));
-        allResults = [...allResults, ...results];
-      }
+      // Convert successful doc to the grouping input format
+      successfulDocs.push({
+        collectionDate: doc.collectionDate || null,
+        testType: doc.testType || null,
+        tests: doc.tests || [],
+        notes: doc.notes,
+        isVerified: doc.isVerified || false,
+        verificationDetails: doc.verificationDetails,
+      });
     });
 
-    setIsVerified(verified);
-    setVerificationDetails(vDetailsList);
     setParsingErrors(errors);
 
-    if (collectionDate) setTestDate(collectionDate);
+    // Phase 2: Group successful documents by date
+    const groups = groupParsedDocumentsByDate(successfulDocs);
+    setDateGroupedResults(groups);
 
+    // Phase 3: Set existing single-result state from the first group
+    // for backward compatibility with the current DetailsStep UI
     let uniqueTestCount = 0;
-    if (allResults.length > 0) {
-      const deduplicationResult = deduplicateTestResults(allResults);
-      setExtractedResults(deduplicationResult.tests);
-      setResultConflicts(deduplicationResult.conflicts);
-      uniqueTestCount = deduplicationResult.tests.length;
+    if (groups.length > 0) {
+      const firstGroup = groups[0];
+      setTestDate(firstGroup.date || toDateString(new Date()));
+      setExtractedResults(firstGroup.tests);
+      setTestType(firstGroup.testType);
+      setOverallStatus(firstGroup.overallStatus);
+      setNotes(firstGroup.notes);
+      setIsVerified(firstGroup.isVerified);
+      setVerificationDetails(firstGroup.verificationDetails);
+      setResultConflicts(firstGroup.conflicts);
 
-      const combinedTestType = determineTestType(deduplicationResult.tests);
-      setTestType(combinedTestType);
-
-      const allNegative = deduplicationResult.tests.every((t) => t.status === "negative");
-      const anyPositive = deduplicationResult.tests.some((t) => t.status === "positive");
-      setOverallStatus(anyPositive ? "positive" : allNegative ? "negative" : "pending");
-      setNotes(extractedNotes.join("\n\n"));
-    } else if (detectedTestType) {
-      setTestType(detectedTestType);
+      // Count unique tests across ALL groups for the alert message
+      uniqueTestCount = groups.reduce((sum, g) => sum + g.tests.length, 0);
     }
 
     // Show result alert
@@ -464,6 +483,7 @@ export default function Upload() {
     if (filesToRetry.length === 0) return;
 
     try {
+      flowActiveRef.current = true;
       setParsing(true);
 
       const retryResults: Array<Awaited<ReturnType<typeof parseDocument>> | {
@@ -584,6 +604,141 @@ export default function Upload() {
       Alert.alert("Retry Failed", error instanceof Error ? error.message : "Please try again or enter manually.");
     } finally {
       setParsing(false);
+      flowActiveRef.current = false;
+    }
+  };
+
+  const submitAllResults = async () => {
+    try {
+      flowActiveRef.current = true;
+      setUploading(true);
+
+      const savedCount = { success: 0, failed: 0 };
+      const allPositiveTests: STIResult[] = [];
+      let mostRecentDate: string | null = null;
+      let hasRoutineTests = false;
+
+      for (const group of dateGroupedResults) {
+        try {
+          const groupDate = group.date || toDateString(new Date());
+
+          const result = await createResult({
+            test_date: groupDate,
+            status: group.overallStatus,
+            test_type: group.testType,
+            sti_results: group.tests,
+            notes: group.notes || undefined,
+            is_verified: group.isVerified,
+          });
+
+          if (result) {
+            savedCount.success++;
+
+            // Collect positive status STIs for auto-adding known conditions
+            const positives = group.tests.filter(
+              (sti) => sti.status === "positive" && isStatusSTI(sti.name) && !hasKnownCondition(sti.name)
+            );
+            allPositiveTests.push(...positives);
+
+            // Track whether any group has routine tests (for reminder calculation)
+            const groupHasRoutine = group.tests.some((sti) =>
+              ROUTINE_TESTS.some((r) => sti.name.toLowerCase().includes(r))
+            );
+            if (groupHasRoutine) hasRoutineTests = true;
+
+            // Track the most recent date across all groups
+            if (!mostRecentDate || groupDate > mostRecentDate) {
+              mostRecentDate = groupDate;
+            }
+          } else {
+            savedCount.failed++;
+          }
+        } catch {
+          savedCount.failed++;
+        }
+      }
+
+      // Auto-add known conditions for all positive status STIs across all groups
+      // Deduplicate by name so we don't try to add the same condition twice
+      const uniquePositives = new Map<string, STIResult>();
+      for (const sti of allPositiveTests) {
+        if (!uniquePositives.has(sti.name)) {
+          uniquePositives.set(sti.name, sti);
+        }
+      }
+      for (const sti of uniquePositives.values()) {
+        await addKnownCondition(sti.name);
+      }
+
+      // Update reminder based on risk level using the most recent date
+      if (profile?.risk_level && hasRoutineTests && mostRecentDate) {
+        const riskLevel = profile.risk_level;
+        const intervalDays = RISK_INTERVALS[riskLevel];
+        const nextDueDate = parseDateOnly(mostRecentDate);
+        nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
+        const nextDateStr = toDateString(nextDueDate);
+
+        const existingReminder = activeReminders[0];
+        if (existingReminder) {
+          await updateReminder(existingReminder.id, {
+            next_date: nextDateStr,
+            frequency: RISK_FREQUENCY[riskLevel],
+          });
+        } else {
+          await createReminder({
+            title: "Routine Checkup",
+            frequency: RISK_FREQUENCY[riskLevel],
+            next_date: nextDateStr,
+            is_active: true,
+          });
+        }
+      }
+
+      // Show appropriate alert based on partial vs full success
+      if (savedCount.failed === 0) {
+        Alert.alert(
+          "Success",
+          `Saved ${savedCount.success} test result${savedCount.success !== 1 ? "s" : ""}!`,
+          [
+            {
+              text: "Go to Dashboard",
+              onPress: () => {
+                resetUploadState();
+                router.replace("/(protected)/(tabs)/dashboard");
+              },
+            },
+          ]
+        );
+      } else if (savedCount.success > 0) {
+        Alert.alert(
+          "Partially Saved",
+          `Saved ${savedCount.success} of ${dateGroupedResults.length} result${dateGroupedResults.length !== 1 ? "s" : ""}. ${savedCount.failed} could not be saved.`,
+          [
+            {
+              text: "Go to Dashboard",
+              onPress: () => {
+                resetUploadState();
+                router.replace("/(protected)/(tabs)/dashboard");
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Couldn't Save",
+          "We couldn't save your test results. This might be a connection issue. Please check your internet and try again."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Upload Failed",
+        error instanceof Error
+          ? error.message
+          : "We couldn't upload your test results. Please check your internet connection and try again."
+      );
+    } finally {
+      setUploading(false);
+      flowActiveRef.current = false;
     }
   };
 
@@ -605,6 +760,7 @@ export default function Upload() {
 
   const submitResult = async () => {
     try {
+      flowActiveRef.current = true;
       setUploading(true);
 
       const result = await createResult({
@@ -654,8 +810,20 @@ export default function Upload() {
         }
 
         Alert.alert("Success", "Test result saved successfully!", [
-          { text: "View Result", onPress: () => router.replace(`/results/${result.id}`) },
-          { text: "Go to Dashboard", onPress: () => router.replace("/dashboard") },
+          {
+            text: "View Result",
+            onPress: () => {
+              resetUploadState();
+              router.replace(`/results/${result.id}`);
+            },
+          },
+          {
+            text: "Go to Dashboard",
+            onPress: () => {
+              resetUploadState();
+              router.replace("/dashboard");
+            },
+          },
         ]);
       } else {
         Alert.alert("Couldn't Save", "We couldn't save your test result. This might be a connection issue. Please check your internet and try again.");
@@ -669,6 +837,7 @@ export default function Upload() {
       );
     } finally {
       setUploading(false);
+      flowActiveRef.current = false;
     }
   };
 
@@ -723,10 +892,11 @@ export default function Upload() {
       resultConflicts={resultConflicts}
       parsingErrors={parsingErrors}
       hasProfile={!!profile}
-      onBack={() => !parsing && setStep(selectedFiles.length > 0 ? "preview" : "select")}
-      onCancel={handleCancelParsing}
+      dateGroupedResults={dateGroupedResults}
+      onCancel={handleCancel}
       onRetryFailed={retryFailedFiles}
       onSubmit={handleSubmit}
+      onSubmitAll={submitAllResults}
     />
   );
 }

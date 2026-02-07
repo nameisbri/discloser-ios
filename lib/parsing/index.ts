@@ -11,5 +11,7 @@ export {
   isPDFExtractionAvailable,
 } from './pdfParser';
 export type { ParsedDocument, ParsedTest, LLMResponse, UserProfileForVerification } from './types';
+export { groupParsedDocumentsByDate } from './dateGrouping';
 export type { DeduplicationResult, TestConflict, DeduplicationStats } from './testDeduplicator';
+export type { DateGroupedResult, ParsedDocumentForGrouping } from './dateGrouping';
 export type { PDFExtractionResult, PDFExtractionOptions } from './pdfParser';
