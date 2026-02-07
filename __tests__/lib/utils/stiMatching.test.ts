@@ -19,13 +19,13 @@ function matchesKnownCondition(stiName: string, knownConditions: KnownCondition[
     // Direct match
     if (cond === name) return true;
 
-    // HSV-1 variations
+    // HSV-1 variations (including generic "herpes" from interpretation results)
     if ((cond.includes('hsv-1') || cond.includes('hsv1')) &&
-        (name.includes('hsv-1') || name.includes('hsv1') || name.includes('herpes simplex virus 1') || name.includes('simplex 1'))) return true;
+        (name.includes('hsv-1') || name.includes('hsv1') || name.includes('herpes simplex virus 1') || name.includes('simplex 1') || name === 'herpes')) return true;
 
-    // HSV-2 variations
+    // HSV-2 variations (including generic "herpes" from interpretation results)
     if ((cond.includes('hsv-2') || cond.includes('hsv2')) &&
-        (name.includes('hsv-2') || name.includes('hsv2') || name.includes('herpes simplex virus 2') || name.includes('simplex 2'))) return true;
+        (name.includes('hsv-2') || name.includes('hsv2') || name.includes('herpes simplex virus 2') || name.includes('simplex 2') || name === 'herpes')) return true;
 
     // HIV variations
     if (cond.includes('hiv') && name.includes('hiv')) return true;
@@ -77,6 +77,13 @@ describe('matchesKnownCondition', () => {
       expect(matchesKnownCondition('Simplex 1 IGG', conditions)).toBe(true);
     });
 
+    test('matches generic "Herpes" from interpretation results', () => {
+      const conditions = [kc('Herpes (HSV-1)')];
+
+      expect(matchesKnownCondition('Herpes', conditions)).toBe(true);
+      expect(matchesKnownCondition('herpes', conditions)).toBe(true);
+    });
+
     test('does NOT match HSV-2 when condition is HSV-1', () => {
       const conditions = [kc('Herpes (HSV-1)')];
 
@@ -94,6 +101,13 @@ describe('matchesKnownCondition', () => {
       expect(matchesKnownCondition('HSV2', conditions)).toBe(true);
       expect(matchesKnownCondition('Herpes Simplex Virus 2', conditions)).toBe(true);
       expect(matchesKnownCondition('Simplex 2 IGG', conditions)).toBe(true);
+    });
+
+    test('matches generic "Herpes" from interpretation results', () => {
+      const conditions = [kc('Herpes (HSV-2)')];
+
+      expect(matchesKnownCondition('Herpes', conditions)).toBe(true);
+      expect(matchesKnownCondition('herpes', conditions)).toBe(true);
     });
 
     test('does NOT match HSV-1 when condition is HSV-2', () => {

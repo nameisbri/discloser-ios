@@ -57,9 +57,9 @@ function matchesKnownCondition(stiName: string, knownConditions: KnownCondition[
     const cond = kc.condition.toLowerCase();
     if (cond === name) return true;
     if ((cond.includes("hsv-1") || cond.includes("hsv1")) &&
-        (name.includes("hsv-1") || name.includes("hsv1") || name.includes("herpes simplex virus 1") || name.includes("simplex 1"))) return true;
+        (name.includes("hsv-1") || name.includes("hsv1") || name.includes("herpes simplex virus 1") || name.includes("simplex 1") || name === "herpes")) return true;
     if ((cond.includes("hsv-2") || cond.includes("hsv2")) &&
-        (name.includes("hsv-2") || name.includes("hsv2") || name.includes("herpes simplex virus 2") || name.includes("simplex 2"))) return true;
+        (name.includes("hsv-2") || name.includes("hsv2") || name.includes("herpes simplex virus 2") || name.includes("simplex 2") || name === "herpes")) return true;
     if (cond.includes("hiv") && name.includes("hiv")) return true;
     if ((cond.includes("hepatitis b") || cond.includes("hep b") || cond.includes("hbv")) &&
         (name.includes("hepatitis b") || name.includes("hep b") || name.includes("hbv"))) return true;

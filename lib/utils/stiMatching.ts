@@ -21,13 +21,13 @@ export function findMatchingKnownCondition(stiName: string, knownConditions: Kno
     // Direct match
     if (cond === name) return true;
 
-    // HSV-1 variations
+    // HSV-1 variations (including generic "herpes" from interpretation results)
     if ((cond.includes('hsv-1') || cond.includes('hsv1')) &&
-        (name.includes('hsv-1') || name.includes('hsv1') || name.includes('herpes simplex virus 1') || name.includes('simplex 1'))) return true;
+        (name.includes('hsv-1') || name.includes('hsv1') || name.includes('herpes simplex virus 1') || name.includes('simplex 1') || name === 'herpes')) return true;
 
-    // HSV-2 variations
+    // HSV-2 variations (including generic "herpes" from interpretation results)
     if ((cond.includes('hsv-2') || cond.includes('hsv2')) &&
-        (name.includes('hsv-2') || name.includes('hsv2') || name.includes('herpes simplex virus 2') || name.includes('simplex 2'))) return true;
+        (name.includes('hsv-2') || name.includes('hsv2') || name.includes('herpes simplex virus 2') || name.includes('simplex 2') || name === 'herpes')) return true;
 
     // HIV variations
     if (cond.includes('hiv') && name.includes('hiv')) return true;

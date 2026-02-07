@@ -305,50 +305,74 @@ export default function Dashboard() {
             </Pressable>
           )}
 
-          {/* Known Conditions Section */}
-          {knownConditionsStatus.length > 0 && (
-            <View className="mb-6">
-              <Text className={`text-xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-text"}`}>
+          {/* Your Status Section — most recent result + managed conditions */}
+          {(loading || results.length > 0 || knownConditionsStatus.length > 0) && (
+            <View className="mb-8">
+              <Text className={`text-2xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-text"}`}>
                 Your Status
               </Text>
-              <Card className="p-4">
-                {knownConditionsStatus.map((sti, index) => (
-                  <View
-                    key={sti.name}
-                    className={`${index > 0 ? "mt-3 pt-3 border-t" : ""} ${isDark ? "border-dark-border" : "border-border"}`}
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <View>
-                        <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
-                          {sti.name}
-                        </Text>
-                        <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                          {sti.hasTestData
-                            ? `Last tested: ${formatDate(sti.testDate)}`
-                            : `Declared: ${formatDate(sti.testDate)}`
-                          }
-                        </Text>
+
+              {/* Most recent result */}
+              {loading ? (
+                <View className="mb-3">
+                  <SkeletonResultsList count={1} />
+                </View>
+              ) : results.length > 0 ? (
+                <View className="mb-3">
+                  <ResultCard key={results[0].id} result={results[0]} index={0} isDark={isDark} hasKnownCondition={hasKnownConditionMemoized} />
+                </View>
+              ) : null}
+
+              {/* Managed conditions */}
+              {loading ? (
+                <View className="mt-1">
+                  <SkeletonResultsList count={1} />
+                </View>
+              ) : knownConditionsStatus.length > 0 ? (
+                <Card className="p-4">
+                  {knownConditionsStatus.map((sti, index) => (
+                    <View
+                      key={sti.name}
+                      className={`${index > 0 ? "mt-3 pt-3 border-t" : ""} ${isDark ? "border-dark-border" : "border-border"}`}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <View>
+                          <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
+                            {sti.name}
+                          </Text>
+                          <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+                            {sti.hasTestData
+                              ? `Last tested: ${formatDate(sti.testDate)}`
+                              : `Declared: ${formatDate(sti.testDate)}`
+                            }
+                          </Text>
+                        </View>
+                        <Badge label="Managed" variant="info" />
                       </View>
-                      <Badge label="Managed" variant="info" />
+                      {sti.managementMethods && sti.managementMethods.length > 0 && (
+                        <ManagementMethodPills methods={sti.managementMethods} isDark={isDark} />
+                      )}
                     </View>
-                    {sti.managementMethods && sti.managementMethods.length > 0 && (
-                      <ManagementMethodPills methods={sti.managementMethods} isDark={isDark} />
-                    )}
-                  </View>
-                ))}
-              </Card>
+                  ))}
+                </Card>
+              ) : null}
             </View>
           )}
 
-          {/* Results Section */}
+          {/* Divider between sections */}
+          <View className={`h-px mb-6 ${isDark ? "bg-dark-border" : "bg-border"}`} />
+
+          {/* Test History Section — full historical list */}
           <View className="flex-row items-center justify-between mb-4">
-            <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-text"}`}>
-              Your Results
+            <Text className={`text-xl font-inter-semibold ${isDark ? "text-dark-text-secondary" : "text-text"}`}>
+              Test History
             </Text>
-            {results.length > 0 && (
-              <Text className={`font-inter-medium ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
-                {results.length} total
-              </Text>
+            {results.length > 1 && (
+              <View className={`px-3 py-1 rounded-full ${isDark ? "bg-dark-accent-muted" : "bg-primary-muted"}`}>
+                <Text className={`font-inter-semibold text-xs ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                  {results.length - 1}
+                </Text>
+              </View>
             )}
           </View>
 
@@ -356,35 +380,20 @@ export default function Dashboard() {
             <View className="mb-8">
               <SkeletonResultsList count={3} />
             </View>
-          ) : results.length === 0 ? (
+          ) : results.length <= 1 ? (
             <Card className={`p-8 items-center justify-center border-2 border-dashed mb-8 ${isDark ? "border-dark-border bg-dark-surface/50" : "border-border bg-primary-muted/30"}`}>
               <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
                 <FileText size={32} color={isDark ? "#FF2D7A" : "#923D5C"} />
               </View>
-              <Text className={`text-xl font-inter-bold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>
-                Nothing here yet
+              <Text className={`font-inter-regular text-center leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                Your full history will appear here{"\n"}as you add more results.
               </Text>
-              <Text className={`font-inter-regular text-center mb-6 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                Add your first result and start sharing{"\n"}on your terms. Privacy included.
-              </Text>
-              <Link href="/upload" asChild>
-                <Pressable className={`px-8 py-3 rounded-full ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
-                  <Text className="text-white font-inter-bold">Add Your First</Text>
-                </Pressable>
-              </Link>
             </Card>
           ) : (
             <View className="gap-3 mb-8">
-              {results.slice(0, 5).map((result, index) => (
+              {results.slice(1, 5).map((result, index) => (
                 <ResultCard key={result.id} result={result} index={index} isDark={isDark} hasKnownCondition={hasKnownConditionMemoized} />
               ))}
-              {results.length > 5 && (
-                <Pressable className={`py-4 items-center rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-primary-muted"}`}>
-                  <Text className={`font-inter-bold ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                    View All Results ({results.length})
-                  </Text>
-                </Pressable>
-              )}
             </View>
           )}
 
