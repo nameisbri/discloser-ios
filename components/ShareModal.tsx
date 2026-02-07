@@ -27,6 +27,7 @@ import {
 import { useRouter } from "expo-router";
 import { useShareLinks, getShareUrl, useThemeColors } from "../lib/hooks";
 import type { ThemeColors } from "../lib/hooks";
+import { getLinkExpirationStatus, isLinkExpired, getExpirationLabel, formatViewCount } from "../lib/utils/shareLinkStatus";
 import { useTheme } from "../context/theme";
 import { HeaderLogo } from "./HeaderLogo";
 import { supabase } from "../lib/supabase";
@@ -168,11 +169,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
     return `${days}d left`;
   };
 
-  const activeLinks = links.filter(
-    (l) =>
-      new Date(l.expires_at) > new Date() &&
-      (l.max_views === null || l.view_count < l.max_views)
-  );
+  const activeLinks = links.filter((l) => !isLinkExpired(l));
+  const expiredLinks = links.filter((l) => isLinkExpired(l));
 
   return (
     <Modal
@@ -241,33 +239,57 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
                 color={colors.primary}
                 style={{ marginTop: 32 }}
               />
-            ) : activeLinks.length === 0 ? (
+            ) : activeLinks.length === 0 && expiredLinks.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 32 }}>
                 <Text style={{ fontSize: 15, color: colors.textSecondary }}>No links yet</Text>
               </View>
             ) : (
               <>
-                <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-                  Active Links ({activeLinks.length})
-                </Text>
-                <View style={{ gap: 12 }}>
-                  {activeLinks.map((link) => (
-                    <ShareLinkCard
-                      key={link.id}
-                      link={link}
-                      onCopy={() => handleCopy(link)}
-                      onDelete={() => handleDelete(link)}
-                      onShowQR={() => handleShowQR(link)}
-                      onPreview={() => {
-                        setQrLink(link);
-                        setView("preview");
-                      }}
-                      copied={copiedId === link.id}
-                      formatExpiry={formatExpiry}
-                      colors={colors}
-                    />
-                  ))}
-                </View>
+                {/* Active Links */}
+                {activeLinks.length > 0 && (
+                  <>
+                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
+                      Active Links ({activeLinks.length})
+                    </Text>
+                    <View style={{ gap: 12 }}>
+                      {activeLinks.map((link) => (
+                        <ShareLinkCard
+                          key={link.id}
+                          link={link}
+                          onCopy={() => handleCopy(link)}
+                          onDelete={() => handleDelete(link)}
+                          onShowQR={() => handleShowQR(link)}
+                          onPreview={() => {
+                            setQrLink(link);
+                            setView("preview");
+                          }}
+                          copied={copiedId === link.id}
+                          formatExpiry={formatExpiry}
+                          colors={colors}
+                        />
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {/* Expired Links */}
+                {expiredLinks.length > 0 && (
+                  <>
+                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textSecondary, marginTop: activeLinks.length > 0 ? 24 : 0, marginBottom: 16 }}>
+                      Expired Links ({expiredLinks.length})
+                    </Text>
+                    <View style={{ gap: 12 }}>
+                      {expiredLinks.map((link) => (
+                        <ExpiredShareLinkCard
+                          key={link.id}
+                          link={link}
+                          onDelete={() => handleDelete(link)}
+                          colors={colors}
+                        />
+                      ))}
+                    </View>
+                  </>
+                )}
               </>
             )}
           </ScrollView>
@@ -560,6 +582,48 @@ function ShareLinkCard({
           <Trash2 size={18} color={colors.danger} />
         </Pressable>
       </View>
+    </View>
+  );
+}
+
+function ExpiredShareLinkCard({
+  link,
+  onDelete,
+  colors,
+}: {
+  link: ShareLink;
+  onDelete: () => void;
+  colors: ThemeColors;
+}) {
+  const status = getLinkExpirationStatus(link);
+  return (
+    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border, opacity: 0.65 }}>
+      {/* Expiration badge */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.warningLight }}>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: colors.warning }}>{getExpirationLabel(status)}</Text>
+        </View>
+      </View>
+
+      {/* View count */}
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+        <Eye size={14} color={colors.textSecondary} />
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
+          {formatViewCount(link.view_count, link.max_views)}
+        </Text>
+      </View>
+
+      {/* Delete only */}
+      <Pressable
+        onPress={async () => { await hapticNotification("warning"); onDelete(); }}
+        style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 12, backgroundColor: colors.dangerLight }}
+        accessibilityLabel="Delete expired share link"
+        accessibilityRole="button"
+        accessibilityHint="Permanently deletes this expired share link"
+      >
+        <Trash2 size={18} color={colors.danger} />
+        <Text style={{ fontSize: 14, fontWeight: "500", color: colors.danger, marginLeft: 8 }}>Delete</Text>
+      </Pressable>
     </View>
   );
 }

@@ -6,6 +6,12 @@
  */
 
 import type { ShareLink, StatusShareLink } from '../../lib/types';
+import {
+  getLinkExpirationStatus,
+  isLinkExpired,
+  getExpirationLabel,
+  formatViewCount,
+} from '../../lib/utils/shareLinkStatus';
 
 // ============================================
 // UTILITY FUNCTIONS (extracted from components)
@@ -584,5 +590,118 @@ describe('Integration: Complete Share Link Lifecycle', () => {
       'active-limited',
       'active-1-view'
     ]);
+  });
+});
+
+// ============================================
+// SHARED UTILITY TESTS (shareLinkStatus.ts)
+// ============================================
+
+describe('getLinkExpirationStatus', () => {
+  test('returns "active" for fresh link with future expiry and no view limit', () => {
+    const link = createMockShareLink();
+    expect(getLinkExpirationStatus(link)).toBe('active');
+  });
+
+  test('returns "active" for link with views below limit', () => {
+    const link = createMockShareLink({ view_count: 3, max_views: 5 });
+    expect(getLinkExpirationStatus(link)).toBe('active');
+  });
+
+  test('returns "active" for link with unlimited views', () => {
+    const link = createMockShareLink({ view_count: 999, max_views: null });
+    expect(getLinkExpirationStatus(link)).toBe('active');
+  });
+
+  test('returns "time_expired" for link with past expires_at', () => {
+    const link = createMockShareLink({
+      expires_at: new Date(Date.now() - 3600000).toISOString(),
+    });
+    expect(getLinkExpirationStatus(link)).toBe('time_expired');
+  });
+
+  test('returns "time_expired" for link expiring exactly now', () => {
+    const link = createMockShareLink({
+      expires_at: new Date().toISOString(),
+    });
+    expect(getLinkExpirationStatus(link)).toBe('time_expired');
+  });
+
+  test('returns "views_exhausted" for link at max views', () => {
+    const link = createMockShareLink({ view_count: 5, max_views: 5 });
+    expect(getLinkExpirationStatus(link)).toBe('views_exhausted');
+  });
+
+  test('returns "views_exhausted" for link over max views', () => {
+    const link = createMockShareLink({ view_count: 10, max_views: 5 });
+    expect(getLinkExpirationStatus(link)).toBe('views_exhausted');
+  });
+
+  test('time_expired takes precedence over views_exhausted', () => {
+    const link = createMockShareLink({
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+      view_count: 10,
+      max_views: 5,
+    });
+    expect(getLinkExpirationStatus(link)).toBe('time_expired');
+  });
+
+  test('works with StatusShareLink', () => {
+    const link = createMockStatusShareLink({
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+    });
+    expect(getLinkExpirationStatus(link)).toBe('time_expired');
+  });
+
+  test('null max_views never triggers views_exhausted', () => {
+    const link = createMockShareLink({ view_count: Number.MAX_SAFE_INTEGER, max_views: null });
+    expect(getLinkExpirationStatus(link)).toBe('active');
+  });
+});
+
+describe('isLinkExpired', () => {
+  test('returns false for active link', () => {
+    const link = createMockShareLink();
+    expect(isLinkExpired(link)).toBe(false);
+  });
+
+  test('returns true for time-expired link', () => {
+    const link = createMockShareLink({
+      expires_at: new Date(Date.now() - 3600000).toISOString(),
+    });
+    expect(isLinkExpired(link)).toBe(true);
+  });
+
+  test('returns true for views-exhausted link', () => {
+    const link = createMockShareLink({ view_count: 1, max_views: 1 });
+    expect(isLinkExpired(link)).toBe(true);
+  });
+});
+
+describe('getExpirationLabel', () => {
+  test('returns "Expired" for time_expired', () => {
+    expect(getExpirationLabel('time_expired')).toBe('Expired');
+  });
+
+  test('returns "Max views reached" for views_exhausted', () => {
+    expect(getExpirationLabel('views_exhausted')).toBe('Max views reached');
+  });
+
+  test('returns empty string for active', () => {
+    expect(getExpirationLabel('active')).toBe('');
+  });
+});
+
+describe('formatViewCount', () => {
+  test('formats with max views', () => {
+    expect(formatViewCount(1, 1)).toBe('Viewed 1/1 time');
+    expect(formatViewCount(3, 5)).toBe('Viewed 3/5 times');
+    expect(formatViewCount(0, 10)).toBe('Viewed 0/10 times');
+  });
+
+  test('formats without max views (unlimited)', () => {
+    expect(formatViewCount(0, null)).toBe('Viewed 0 times');
+    expect(formatViewCount(1, null)).toBe('Viewed 1 time');
+    expect(formatViewCount(5, null)).toBe('Viewed 5 times');
   });
 });
