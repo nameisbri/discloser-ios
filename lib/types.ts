@@ -7,7 +7,7 @@ export type ReminderFrequency = "monthly" | "quarterly" | "biannual" | "annual";
 export type RiskLevel = "low" | "moderate" | "high";
 
 // Known conditions (chronic STIs) - must match normalized names from testNormalizer
-export const STATUS_STIS = ["HIV-1/2", "Herpes (HSV-1)", "Herpes (HSV-2)", "Hepatitis B", "Hepatitis C"] as const;
+export const STATUS_STIS = ["HIV-1/2", "Herpes (HSV-1)", "Herpes (HSV-2)", "Hepatitis B", "Hepatitis C", "HPV"] as const;
 export type StatusSTI = (typeof STATUS_STIS)[number];
 
 export interface KnownCondition {

@@ -40,6 +40,10 @@ export function findMatchingKnownCondition(stiName: string, knownConditions: Kno
     if ((cond.includes('hepatitis c') || cond.includes('hep c') || cond.includes('hcv')) &&
         (name.includes('hepatitis c') || name.includes('hep c') || name.includes('hcv'))) return true;
 
+    // HPV variations
+    if ((cond.includes('hpv') || cond.includes('papilloma')) &&
+        (name.includes('hpv') || name.includes('papilloma') || name.includes('human papilloma'))) return true;
+
     return false;
   });
 }

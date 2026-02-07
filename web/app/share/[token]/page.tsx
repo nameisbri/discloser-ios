@@ -29,13 +29,18 @@ interface SharedResult extends STIResult {
 
 const METHOD_LABELS: Record<string, string> = {
   daily_antivirals: "Daily antivirals",
+  antiviral_as_needed: "Antivirals as needed",
+  supplements: "Supplements",
   prep: "PrEP",
   art_treatment: "ART treatment",
   undetectable: "Undetectable viral load",
+  antiviral_treatment: "Antiviral treatment",
+  liver_monitoring: "Liver function monitoring",
+  vaccinated: "Vaccinated",
+  cured: "Completed treatment / cured",
+  regular_screening: "Regular screening",
   barriers: "Barrier use",
   regular_monitoring: "Regular monitoring",
-  supplements: "Supplements",
-  antiviral_as_needed: "Antivirals as needed",
 };
 
 // Prevent indexing of private share pages
@@ -60,6 +65,9 @@ function matchesKnownCondition(stiName: string, knownConditions: KnownCondition[
         (name.includes("hepatitis b") || name.includes("hep b") || name.includes("hbv"))) return true;
     if ((cond.includes("hepatitis c") || cond.includes("hep c") || cond.includes("hcv")) &&
         (name.includes("hepatitis c") || name.includes("hep c") || name.includes("hcv"))) return true;
+    // HPV variations
+    if ((cond.includes("hpv") || cond.includes("papilloma")) &&
+        (name.includes("hpv") || name.includes("papilloma") || name.includes("human papilloma"))) return true;
     return false;
   });
 }

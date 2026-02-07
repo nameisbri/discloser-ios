@@ -22,13 +22,18 @@ interface STIStatus {
 
 const METHOD_LABELS: Record<string, string> = {
   daily_antivirals: "Daily antivirals",
+  antiviral_as_needed: "Antivirals as needed",
+  supplements: "Supplements",
   prep: "PrEP",
   art_treatment: "ART treatment",
   undetectable: "Undetectable viral load",
+  antiviral_treatment: "Antiviral treatment",
+  liver_monitoring: "Liver function monitoring",
+  vaccinated: "Vaccinated",
+  cured: "Completed treatment / cured",
+  regular_screening: "Regular screening",
   barriers: "Barrier use",
   regular_monitoring: "Regular monitoring",
-  supplements: "Supplements",
-  antiviral_as_needed: "Antivirals as needed",
 };
 
 async function getSharedStatus(token: string) {
