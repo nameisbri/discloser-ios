@@ -3,6 +3,7 @@
 
 import { isStatusSTI } from "../parsing/testNormalizer";
 import { matchesKnownCondition, findMatchingKnownCondition } from "./stiMatching";
+import { toDateString } from "./date";
 import type { TestResult, TestStatus, KnownCondition } from "../types";
 
 export interface AggregatedSTI {
@@ -94,7 +95,7 @@ export function computeSTIStatus(
     // If no matching test result found, add placeholder entry
     if (!foundMatch) {
       // Convert ISO timestamp to YYYY-MM-DD format for display
-      const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : new Date().toISOString().split('T')[0];
+      const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : toDateString(new Date());
       stiMap.set(kc.condition, {
         name: kc.condition,
         status: "pending",

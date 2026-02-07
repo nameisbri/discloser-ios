@@ -10,6 +10,7 @@ import type {
 } from "../types";
 import type { AggregatedSTI } from "../utils/stiStatusComputation";
 import type { TestingRecommendation } from "../utils/testingRecommendations";
+import { parseDateOnly } from "../utils/date";
 
 /**
  * Unified dashboard data interface
@@ -213,10 +214,10 @@ export function useDashboardData(): DashboardData {
   // Compute derived data - Reminders
   const activeReminders = reminders.filter((r) => r.is_active);
   const nextReminder = reminders.find(
-    (r) => r.is_active && new Date(r.next_date) > new Date()
+    (r) => r.is_active && parseDateOnly(r.next_date) > new Date()
   );
   const overdueReminder = reminders.find(
-    (r) => r.is_active && new Date(r.next_date) <= new Date()
+    (r) => r.is_active && parseDateOnly(r.next_date) <= new Date()
   );
 
   // Compute derived data - Testing Recommendations

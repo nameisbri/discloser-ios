@@ -3,6 +3,7 @@
 
 import { ROUTINE_TESTS } from "../constants";
 import type { TestResult, RiskLevel } from "../types";
+import { parseDateOnly, toDateString } from "./date";
 
 /**
  * Testing intervals in days by risk level
@@ -71,8 +72,8 @@ export function computeTestingRecommendation(
   const lastTestDate = routineResults[0].test_date;
   const intervalDays = TESTING_INTERVALS[riskLevel];
 
-  // Calculate next due date
-  const lastDate = new Date(lastTestDate);
+  // Calculate next due date — use parseDateOnly to avoid UTC timezone shift
+  const lastDate = parseDateOnly(lastTestDate);
   const nextDue = new Date(lastDate);
   nextDue.setDate(nextDue.getDate() + intervalDays);
 
@@ -84,7 +85,7 @@ export function computeTestingRecommendation(
 
   return {
     lastTestDate,
-    nextDueDate: nextDue.toISOString().split("T")[0],
+    nextDueDate: toDateString(nextDue),
     daysUntilDue,
     isOverdue: daysUntilDue < 0,
     isDueSoon: daysUntilDue >= 0 && daysUntilDue <= 14,

@@ -32,7 +32,7 @@ import { HeaderLogo } from "../../../components/HeaderLogo";
 import { Badge } from "../../../components/Badge";
 import { Button } from "../../../components/Button";
 import type { Reminder, ReminderFrequency } from "../../../lib/types";
-import { formatDate } from "../../../lib/utils/date";
+import { formatDate, parseDateOnly, toDateString } from "../../../lib/utils/date";
 import { addToCalendar } from "../../../lib/calendar";
 
 const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
@@ -98,7 +98,7 @@ export default function Reminders() {
         date.setFullYear(date.getFullYear() + 1);
         break;
     }
-    return date.toISOString().split("T")[0];
+    return toDateString(date);
   };
 
   const handleCreateReminder = async () => {
@@ -144,7 +144,7 @@ export default function Reminders() {
 
   const inactiveReminders = reminders.filter((r) => !r.is_active);
   const pastReminders = reminders.filter(
-    (r) => new Date(r.next_date) < new Date() && r.is_active
+    (r) => parseDateOnly(r.next_date) < new Date() && r.is_active
   );
 
   return (
@@ -414,7 +414,7 @@ function ReminderItem({
     annual: "Yearly",
   };
 
-  const isPast = new Date(reminder.next_date) < new Date();
+  const isPast = parseDateOnly(reminder.next_date) < new Date();
 
   return (
     <View>
