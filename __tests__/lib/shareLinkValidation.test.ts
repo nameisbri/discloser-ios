@@ -232,6 +232,8 @@ function createTestData() {
       show_name: true,
       display_name: 'John D.',
       created_at: new Date(now).toISOString(),
+      note: null,
+      label: null,
     },
     {
       id: 'link-expired',
@@ -244,6 +246,8 @@ function createTestData() {
       show_name: false,
       display_name: null,
       created_at: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+      note: null,
+      label: null,
     },
     {
       id: 'link-at-limit',
@@ -256,6 +260,8 @@ function createTestData() {
       show_name: true,
       display_name: null,
       created_at: new Date(now).toISOString(),
+      note: null,
+      label: null,
     },
     {
       id: 'link-one-view-left',
@@ -268,6 +274,8 @@ function createTestData() {
       show_name: false,
       display_name: null,
       created_at: new Date(now).toISOString(),
+      note: null,
+      label: null,
     },
   ];
 
@@ -532,6 +540,8 @@ describe('View Count Boundary Conditions', () => {
       show_name: false,
       display_name: null,
       created_at: new Date().toISOString(),
+      note: null,
+      label: null,
     };
 
     const data = createTestData();
@@ -551,6 +561,8 @@ describe('View Count Boundary Conditions', () => {
       show_name: false,
       display_name: null,
       created_at: new Date().toISOString(),
+      note: null,
+      label: null,
     };
 
     const data = createTestData();
@@ -571,6 +583,8 @@ describe('View Count Boundary Conditions', () => {
       show_name: false,
       display_name: null,
       created_at: new Date().toISOString(),
+      note: null,
+      label: null,
     };
 
     const data = createTestData();
@@ -593,6 +607,8 @@ describe('Expiry Boundary Conditions', () => {
       show_name: false,
       display_name: null,
       created_at: new Date().toISOString(),
+      note: null,
+      label: null,
     };
 
     const data = createTestData();
@@ -613,6 +629,8 @@ describe('Expiry Boundary Conditions', () => {
       show_name: false,
       display_name: null,
       created_at: new Date().toISOString(),
+      note: null,
+      label: null,
     };
 
     const data = createTestData();
@@ -635,6 +653,8 @@ describe('Priority: Expiry vs View Limit', () => {
       show_name: false,
       display_name: null,
       created_at: new Date().toISOString(),
+      note: null,
+      label: null,
     };
 
     const data = createTestData();
