@@ -61,8 +61,8 @@ describe("Resources Data", () => {
       }
     });
 
-    it("should have 19 total resources", () => {
-      expect(resources).toHaveLength(19);
+    it("should have 16 total resources", () => {
+      expect(resources).toHaveLength(16);
     });
   });
 
@@ -126,16 +126,16 @@ describe("Resources Data", () => {
       }
     });
 
-    it("should return 7 find-testing resources (3 national + 4 ON)", () => {
-      expect(getResourcesByCategory("find-testing")).toHaveLength(7);
+    it("should return 6 find-testing resources (3 national + 3 ON)", () => {
+      expect(getResourcesByCategory("find-testing")).toHaveLength(6);
     });
 
     it("should return 6 learn-more resources (5 national + 1 ON)", () => {
       expect(getResourcesByCategory("learn-more")).toHaveLength(6);
     });
 
-    it("should return 6 get-support resources (3 national + 3 ON)", () => {
-      expect(getResourcesByCategory("get-support")).toHaveLength(6);
+    it("should return 4 get-support resources (3 national + 1 ON)", () => {
+      expect(getResourcesByCategory("get-support")).toHaveLength(4);
     });
   });
 
@@ -159,8 +159,8 @@ describe("Resources Data", () => {
       expect(getResourcesByCategoryAndRegion("find-testing", "national")).toHaveLength(3);
     });
 
-    it("should return 4 ON find-testing resources", () => {
-      expect(getResourcesByCategoryAndRegion("find-testing", "ON")).toHaveLength(4);
+    it("should return 3 ON find-testing resources", () => {
+      expect(getResourcesByCategoryAndRegion("find-testing", "ON")).toHaveLength(3);
     });
 
     it("should return 5 national learn-more resources", () => {
@@ -175,8 +175,8 @@ describe("Resources Data", () => {
       expect(getResourcesByCategoryAndRegion("get-support", "national")).toHaveLength(3);
     });
 
-    it("should return 3 ON get-support resources", () => {
-      expect(getResourcesByCategoryAndRegion("get-support", "ON")).toHaveLength(3);
+    it("should return 1 ON get-support resource", () => {
+      expect(getResourcesByCategoryAndRegion("get-support", "ON")).toHaveLength(1);
     });
 
     it("should return empty array for non-existent region", () => {
