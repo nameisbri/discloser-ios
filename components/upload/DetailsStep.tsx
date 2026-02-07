@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
-import { ChevronLeft, Check, X, Info } from "lucide-react-native";
+import { Check, X, Info, Calendar } from "lucide-react-native";
 import { Button } from "../Button";
 import { HeaderLogo } from "../HeaderLogo";
+import { parseDateOnly } from "../../lib/utils/date";
 
 
 // Helper functions for progress display
@@ -38,9 +39,59 @@ function getProgressDescription(step: "uploading" | "extracting" | "parsing"): s
   }
 }
 import { isRetryableError } from "../../lib/http/errors";
-import type { STIResult } from "../../lib/types";
-import type { DocumentParsingError, TestConflict } from "../../lib/parsing";
+import type { STIResult, TestStatus } from "../../lib/types";
+import type { DocumentParsingError, TestConflict, DateGroupedResult } from "../../lib/parsing";
 import type { SelectedFile } from "./PreviewStep";
+
+// Formats a YYYY-MM-DD string as a long-form date (e.g., "December 15, 2025")
+function formatDateLong(dateStr: string): string {
+  const date = parseDateOnly(dateStr);
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// Returns a human-readable label for an overall status
+function getStatusLabel(status: TestStatus): string {
+  switch (status) {
+    case "negative":
+      return "All Negative";
+    case "positive":
+      return "Has Positive";
+    case "pending":
+      return "Pending";
+    case "inconclusive":
+      return "Inconclusive";
+  }
+}
+
+// Returns the background color class for a status pill
+function getStatusBgClass(status: TestStatus, isDark: boolean): string {
+  switch (status) {
+    case "negative":
+      return isDark ? "bg-dark-success-bg" : "bg-success-light/50";
+    case "positive":
+      return isDark ? "bg-dark-danger-bg" : "bg-danger-light/50";
+    case "pending":
+    case "inconclusive":
+      return isDark ? "bg-dark-warning-bg" : "bg-warning-light/50";
+  }
+}
+
+// Returns the text color class for a status label
+function getStatusTextClass(status: TestStatus, isDark: boolean): string {
+  switch (status) {
+    case "negative":
+      return isDark ? "text-dark-mint" : "text-success";
+    case "positive":
+      return isDark ? "text-dark-danger" : "text-danger";
+    case "pending":
+    case "inconclusive":
+      return isDark ? "text-dark-warning" : "text-warning-dark";
+  }
+}
 
 interface VerificationDetails {
   labName?: string;
@@ -82,11 +133,13 @@ interface DetailsStepProps {
   resultConflicts: TestConflict[];
   parsingErrors: ParsingError[];
   hasProfile: boolean;
+  // Multi-date grouping
+  dateGroupedResults?: DateGroupedResult[];
   // Callbacks
-  onBack: () => void;
-  onCancel?: () => void;
+  onCancel: () => void;
   onRetryFailed: () => void;
   onSubmit: () => void;
+  onSubmitAll?: () => void;
 }
 
 export function DetailsStep({
@@ -108,10 +161,11 @@ export function DetailsStep({
   resultConflicts,
   parsingErrors,
   hasProfile,
-  onBack,
+  dateGroupedResults,
   onCancel,
   onRetryFailed,
   onSubmit,
+  onSubmitAll,
 }: DetailsStepProps) {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -139,6 +193,10 @@ export function DetailsStep({
     }
   };
 
+  // Determine if we should show the multi-date grouped view.
+  // Only when there are 2 or more date groups from the parsed documents.
+  const isMultiDate = dateGroupedResults !== undefined && dateGroupedResults.length > 1;
+
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       <KeyboardAvoidingView
@@ -146,15 +204,6 @@ export function DetailsStep({
         className="flex-1"
       >
         <View className="flex-row items-center px-6 py-4">
-          <Pressable
-            onPress={onBack}
-            disabled={parsing}
-            className={`p-2 -ml-2 ${parsing ? "opacity-30" : ""}`}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-          >
-            <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
-          </Pressable>
           <View className="ml-2">
             <HeaderLogo showText />
           </View>
@@ -192,6 +241,7 @@ export function DetailsStep({
               isDark={isDark}
               errors={parsingErrors}
               onRetry={onRetryFailed}
+              onCancel={onCancel}
             />
           )}
 
@@ -245,7 +295,19 @@ export function DetailsStep({
             </View>
           )}
 
-          {!parsing && (
+          {/* Multi-date view: shown when there are 2+ date groups */}
+          {!parsing && isMultiDate && (
+            <MultiDateSummary
+              isDark={isDark}
+              groups={dateGroupedResults!}
+              uploading={uploading}
+              onSubmitAll={onSubmitAll}
+              onCancel={onCancel}
+            />
+          )}
+
+          {/* Single-date view: the existing form UI, shown when 0 or 1 date group */}
+          {!parsing && !isMultiDate && (
             <>
               {/* Test Date */}
               <View className="mb-6">
@@ -285,8 +347,8 @@ export function DetailsStep({
             </>
           )}
 
-          {/* Extracted Results */}
-          {!parsing && extractedResults.length > 0 && (
+          {/* Extracted Results (single-date only) */}
+          {!parsing && !isMultiDate && extractedResults.length > 0 && (
             <ExtractedResultsList
               isDark={isDark}
               results={extractedResults}
@@ -302,8 +364,8 @@ export function DetailsStep({
             />
           )}
 
-          {/* No results warning */}
-          {!parsing && extractedResults.length === 0 && (
+          {/* No results warning (single-date only) */}
+          {!parsing && !isMultiDate && extractedResults.length === 0 && (
             <View className={`p-4 rounded-2xl mb-6 ${isDark ? "bg-dark-warning-bg" : "bg-warning-light/50"}`}>
               <View className="flex-row items-center mb-2">
                 <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
@@ -317,7 +379,7 @@ export function DetailsStep({
             </View>
           )}
 
-          {!parsing && (
+          {!parsing && !isMultiDate && (
             <>
               {/* Notes */}
               <View className="mb-8">
@@ -360,8 +422,16 @@ export function DetailsStep({
                 label={uploading ? "On it..." : "Save it"}
                 onPress={handleValidatedSubmit}
                 disabled={uploading || extractedResults.length === 0}
-                className="mb-8"
+                className="mb-3"
                 icon={uploading ? <ActivityIndicator size="small" color="white" /> : undefined}
+              />
+              <Button
+                label="Discard"
+                variant="outline"
+                onPress={onCancel}
+                disabled={uploading}
+                className="mb-8"
+                accessibilityHint="Discard results and return to dashboard"
               />
             </>
           )}
@@ -500,10 +570,12 @@ function ParsingErrorsDisplay({
   isDark,
   errors,
   onRetry,
+  onCancel,
 }: {
   isDark: boolean;
   errors: ParsingError[];
   onRetry: () => void;
+  onCancel: () => void;
 }) {
   const hasRetryable = errors.some(
     (e) => e.error.step === "network" || e.error.step === "ocr" || isRetryableError(e.error.originalError)
@@ -556,6 +628,13 @@ function ParsingErrorsDisplay({
           className="mt-2"
         />
       )}
+      <Button
+        label="Cancel"
+        variant="outline"
+        onPress={onCancel}
+        className="mt-2"
+        accessibilityHint="Cancel and return to dashboard"
+      />
     </View>
   );
 }
@@ -615,6 +694,138 @@ function ExtractedResultsList({
           </View>
         </View>
       ))}
+    </View>
+  );
+}
+
+// Multi-date summary view shown when documents span 2+ collection dates
+function MultiDateSummary({
+  isDark,
+  groups,
+  uploading,
+  onSubmitAll,
+  onCancel,
+}: {
+  isDark: boolean;
+  groups: DateGroupedResult[];
+  uploading: boolean;
+  onSubmitAll?: () => void;
+  onCancel: () => void;
+}) {
+  const totalTests = groups.reduce((sum, g) => sum + g.tests.length, 0);
+
+  return (
+    <View>
+      {/* Header explaining the multi-date situation */}
+      <View className={`p-4 rounded-2xl mb-4 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/50"}`}>
+        <Text className={`font-inter-bold text-base ${isDark ? "text-dark-accent" : "text-primary"}`}>
+          Found results from {groups.length} different dates
+        </Text>
+        <Text className={`text-sm font-inter-regular mt-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+          Your documents contain tests from multiple collection dates. Each date will be saved as a separate result.
+        </Text>
+      </View>
+
+      {/* Date group cards */}
+      {groups.map((group, index) => (
+        <DateGroupCard
+          key={group.date || `unknown-${index}`}
+          isDark={isDark}
+          group={group}
+        />
+      ))}
+
+      {/* Action buttons */}
+      <View className="mt-2">
+        <Button
+          label={uploading ? "Saving..." : `Save All (${totalTests} results)`}
+          onPress={onSubmitAll || (() => {})}
+          disabled={uploading || !onSubmitAll || totalTests === 0}
+          className="mb-3"
+          icon={uploading ? <ActivityIndicator size="small" color="white" /> : undefined}
+        />
+        <Button
+          label="Discard"
+          variant="outline"
+          onPress={onCancel}
+          disabled={uploading}
+          className="mb-8"
+          accessibilityHint="Discard all results and return to dashboard"
+        />
+      </View>
+    </View>
+  );
+}
+
+// Card component for a single date group within the multi-date summary
+function DateGroupCard({
+  isDark,
+  group,
+}: {
+  isDark: boolean;
+  group: DateGroupedResult;
+}) {
+  const dateLabel = group.date ? formatDateLong(group.date) : "Date Unknown";
+  const testCount = group.tests.length;
+  const statusLabel = getStatusLabel(group.overallStatus);
+  const statusBg = getStatusBgClass(group.overallStatus, isDark);
+  const statusText = getStatusTextClass(group.overallStatus, isDark);
+
+  // Build a truncated list of test names for preview
+  const MAX_PREVIEW_NAMES = 4;
+  const testNames = group.tests.map((t) => t.name);
+  const displayNames = testNames.slice(0, MAX_PREVIEW_NAMES);
+  const remainingCount = testNames.length - displayNames.length;
+
+  return (
+    <View
+      className={`border rounded-2xl p-4 mb-3 ${
+        isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"
+      }`}
+      accessibilityLabel={`${dateLabel}: ${testCount} tests, ${statusLabel}`}
+    >
+      {/* Date header row */}
+      <View className="flex-row items-center mb-2">
+        <Calendar size={18} color={isDark ? "#FF2D7A" : "#923D5C"} />
+        <Text className={`font-inter-bold text-base ml-2 flex-1 ${isDark ? "text-dark-text" : "text-text"}`}>
+          {dateLabel}
+        </Text>
+      </View>
+
+      {/* Test count and status row */}
+      <View className="flex-row items-center mb-2">
+        <Text className={`text-sm font-inter-medium ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+          {testCount} test{testCount !== 1 ? "s" : ""}
+        </Text>
+        <Text className={`text-sm mx-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+          {"\u00B7"}
+        </Text>
+        <View className={`px-3 py-1 rounded-full ${statusBg}`}>
+          <Text className={`text-xs font-inter-semibold ${statusText}`}>
+            {statusLabel} {group.overallStatus === "negative" ? "\u2713" : group.overallStatus === "positive" ? "\u2717" : ""}
+          </Text>
+        </View>
+      </View>
+
+      {/* Test names preview */}
+      {testCount > 0 && (
+        <Text
+          className={`text-xs font-inter-regular ${isDark ? "text-dark-text-muted" : "text-text-light"}`}
+          numberOfLines={2}
+        >
+          {displayNames.join(", ")}{remainingCount > 0 ? `, +${remainingCount} more` : ""}
+        </Text>
+      )}
+
+      {/* Conflict indicator if this group has conflicts */}
+      {group.conflicts.length > 0 && (
+        <View className="flex-row items-center mt-2">
+          <Info size={14} color={isDark ? "#FFD700" : "#FFA500"} />
+          <Text className={`text-xs font-inter-medium ml-1 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
+            {group.conflicts.length} conflicting result{group.conflicts.length !== 1 ? "s" : ""} resolved
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
