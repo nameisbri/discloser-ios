@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
+  TextInput,
   Modal,
   Pressable,
   ScrollView,
@@ -24,6 +25,8 @@ import {
   ShieldCheck,
   ChevronDown,
   Smartphone,
+  Tag,
+  EyeOff,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useSTIStatus, useThemeColors } from "../lib/hooks";
@@ -31,6 +34,7 @@ import { useTheme } from "../context/theme";
 import { Button } from "./Button";
 import { TabBar } from "./TabBar";
 import { HeaderLogo } from "./HeaderLogo";
+import { ManagementMethodPills } from "./ManagementMethodPills";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/utils/logger";
 import { formatDate } from "../lib/utils/date";
@@ -60,7 +64,7 @@ interface StatusShareModalProps {
 export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const { isDark } = useTheme();
   const router = useRouter();
-  const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading, refetch: refetchStatus } = useSTIStatus();
+  const { aggregatedStatus, routineStatus, knownConditionsStatus, loading: statusLoading, refetch: refetchStatus, refetchProfile: refetchSTIProfile } = useSTIStatus();
   const [view, setView] = useState<"preview" | "create" | "qr" | "links" | "recipient">("preview");
   const [links, setLinks] = useState<StatusShareLink[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,6 +73,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const [selectedViewLimit, setSelectedViewLimit] = useState(VIEW_LIMIT_OPTIONS[0]);
   const [displayNameOption, setDisplayNameOption] = useState<DisplayNameOption>("anonymous");
   const [excludeKnownConditions, setExcludeKnownConditions] = useState(false);
+  const [linkLabel, setLinkLabel] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<StatusShareLink | null>(null);
   const [previewLink, setPreviewLink] = useState<StatusShareLink | null>(null);
@@ -146,11 +151,14 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   useEffect(() => {
     if (visible) {
       setView("preview");
+      setExcludeKnownConditions(false); // Reset toggle each time modal opens
+      setLinkLabel(""); // Reset label each time modal opens
       refetchStatus(); // Refresh STI status data when modal opens
+      refetchSTIProfile(); // Refresh profile for known conditions
       fetchLinks();
       fetchUserProfile();
     }
-  }, [visible, refetchStatus, fetchLinks, fetchUserProfile]);
+  }, [visible, refetchStatus, refetchSTIProfile, fetchLinks, fetchUserProfile]);
 
   const handleCreate = useCallback(async () => {
     setCreating(true);
@@ -169,12 +177,14 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       isVerified: s.isVerified,
       isKnownCondition: s.isKnownCondition,
       hasTestData: s.hasTestData,
+      managementMethods: s.managementMethods,
     }));
 
     const { data, error } = await supabase
       .from("status_share_links")
       .insert({
         user_id: user.id,
+        label: linkLabel.trim() || null,
         expires_at: expiresAt,
         max_views: selectedViewLimit.value,
         show_name: displayNameOption !== "anonymous",
@@ -193,7 +203,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
     await fetchLinks();
     setView("links");
-  }, [selectedExpiry, selectedViewLimit, displayNameOption, statusToShare, getDisplayName, fetchLinks]);
+  }, [selectedExpiry, selectedViewLimit, displayNameOption, linkLabel, statusToShare, getDisplayName, fetchLinks]);
 
   const handleDelete = useCallback(async (id: string) => {
     await supabase.from("status_share_links").delete().eq("id", id);
@@ -218,6 +228,17 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     if (hours < 24) return `${hours}h left`;
     const days = Math.round(hours / 24);
     return `${days}d left`;
+  }, []);
+
+  const formatCreatedAt = useCallback((dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+      ", " +
+      date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }, []);
+
+  const snapshotHasKnownConditions = useCallback((snapshot: unknown[]) => {
+    return (snapshot as Array<{ isKnownCondition?: boolean }>).some(s => s.isKnownCondition);
   }, []);
 
   // Memoize color computation functions to prevent recreation on every render
@@ -289,10 +310,13 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                             </>
                           )}
                         </View>
+                        {sti.isKnownCondition && sti.managementMethods && sti.managementMethods.length > 0 && (
+                          <ManagementMethodPills methods={sti.managementMethods} isDark={isDark} />
+                        )}
                       </View>
                       <View style={{ backgroundColor: getStatusBg(sti.status, sti.isKnownCondition), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
                         <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status, sti.isKnownCondition) }}>
-                          {sti.isKnownCondition ? "Known" : sti.result}
+                          {sti.isKnownCondition ? "Managed" : sti.result}
                         </Text>
                       </View>
                     </View>
@@ -320,6 +344,30 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             <Pressable onPress={() => setView("preview")} style={{ marginBottom: 16 }} accessibilityLabel="Back to Preview" accessibilityRole="button" accessibilityHint="Returns to the status preview">
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back to Preview</Text>
             </Pressable>
+
+            {/* Label */}
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Label (optional)</Text>
+              <TextInput
+                value={linkLabel}
+                onChangeText={setLinkLabel}
+                placeholder="e.g. For Alex, Tinder date"
+                placeholderTextColor={colors.textSecondary}
+                maxLength={50}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  color: colors.text,
+                }}
+                accessibilityLabel="Link label"
+                accessibilityHint="Optional label to identify this link"
+              />
+            </View>
 
             {/* Expiry Selection */}
             <View style={{ marginBottom: 24 }}>
@@ -444,13 +492,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 onPress={() => setExcludeKnownConditions(!excludeKnownConditions)}
                 style={{
                   flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  alignItems: "flex-start",
                   padding: 16,
                   backgroundColor: colors.surface,
                   borderRadius: 16,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: excludeKnownConditions ? colors.primary : colors.border,
                   marginBottom: 32,
                 }}
                 accessibilityLabel={"Hide chronic conditions" + (excludeKnownConditions ? ", enabled" : ", disabled")}
@@ -458,12 +505,15 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 accessibilityState={{ checked: excludeKnownConditions }}
                 accessibilityHint="Toggles whether chronic conditions are included in the shared status"
               >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: excludeKnownConditions ? colors.primary : colors.border, backgroundColor: excludeKnownConditions ? colors.primary : colors.surface, alignItems: "center", justifyContent: "center" }}>
-                    {excludeKnownConditions && <Check size={16} color="#fff" />}
-                  </View>
-                  <Text style={{ marginLeft: 12, color: colors.text, fontWeight: "500" }}>
-                    Hide chronic conditions (HIV, Herpes, Hepatitis)
+                <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: excludeKnownConditions ? colors.primary : colors.border, backgroundColor: excludeKnownConditions ? colors.primary : colors.surface, alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                  {excludeKnownConditions && <Check size={16} color="#fff" />}
+                </View>
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={{ color: colors.text, fontWeight: "500", fontSize: 15 }}>
+                    Hide chronic conditions
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+                    HIV, Herpes, Hepatitis
                   </Text>
                 </View>
               </Pressable>
@@ -492,26 +542,39 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             ) : (
               links.map((link) => (
                 <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-                  <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-                          <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
-                        </View>
-                        {link.show_name && (
-                          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight }}>
-                            <Text style={{ fontSize: 12, fontWeight: "500", color: colors.primary }}>Name visible</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
-                        <Eye size={14} color={colors.textSecondary} />
-                        <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
-                          {link.view_count} view{link.view_count !== 1 ? "s" : ""}
-                          {link.max_views && ` / ${link.max_views} max`}
-                        </Text>
-                      </View>
+                  {/* Label or fallback date header */}
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 2 }}>
+                    {link.label || `Link created ${formatCreatedAt(link.created_at)}`}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+                    {link.label ? formatCreatedAt(link.created_at) : ""}
+                  </Text>
+
+                  {/* Info pills row */}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                    <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                      <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
                     </View>
+                    {link.show_name && (
+                      <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight }}>
+                        <Text style={{ fontSize: 12, fontWeight: "500", color: colors.primary }}>Name visible</Text>
+                      </View>
+                    )}
+                    {knownConditionsStatus.length > 0 && !snapshotHasKnownConditions(link.status_snapshot) && (
+                      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.warningLight }}>
+                        <EyeOff size={12} color={colors.warning} style={{ marginRight: 4 }} />
+                        <Text style={{ fontSize: 12, fontWeight: "500", color: colors.warning }}>Chronic hidden</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* View count */}
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                    <Eye size={14} color={colors.textSecondary} />
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
+                      {link.view_count} view{link.view_count !== 1 ? "s" : ""}
+                      {link.max_views && ` / ${link.max_views} max`}
+                    </Text>
                   </View>
 
                   <View style={{ flexDirection: "row", gap: 8 }}>
@@ -628,8 +691,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 </Text>
               </View>
 
-              {/* Status Items - Respect the toggle choice */}
-              {statusToShare.map((sti, index) => (
+              {/* Status Items - Render from stored snapshot to reflect what recipient actually sees */}
+              {(previewLink.status_snapshot as Array<{ name: string; status: string; result: string; testDate: string; isVerified?: boolean; isKnownCondition?: boolean; hasTestData?: boolean; managementMethods?: string[] }>).map((sti, index) => (
                 <View key={index}>
                   {index > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -647,10 +710,13 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                           </>
                         )}
                       </View>
+                      {sti.isKnownCondition && sti.managementMethods && sti.managementMethods.length > 0 && (
+                        <ManagementMethodPills methods={sti.managementMethods} isDark={isDark} />
+                      )}
                     </View>
                     <View style={{ backgroundColor: getStatusBg(sti.status, sti.isKnownCondition), paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
                       <Text style={{ fontSize: 14, fontWeight: "600", color: getStatusColor(sti.status, sti.isKnownCondition) }}>
-                        {sti.isKnownCondition ? "Known" : sti.result}
+                        {sti.isKnownCondition ? "Managed" : sti.result}
                       </Text>
                     </View>
                   </View>

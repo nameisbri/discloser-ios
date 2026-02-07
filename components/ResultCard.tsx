@@ -68,7 +68,7 @@ const getStatusConfig = (isDark: boolean): Record<string, StatusConfig> => ({
     bgLight: "bg-purple-100",
     bgDark: "bg-dark-lavender/20",
     text: isDark ? "text-dark-lavender" : "text-purple-700",
-    label: "Known",
+    label: "Managed",
     icon: isDark ? "#C9A0DC" : "#7C3AED",
   },
 });

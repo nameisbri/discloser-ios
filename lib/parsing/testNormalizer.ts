@@ -99,6 +99,6 @@ export function normalizeTestName(testName: string): string {
 
 // Checks if a test is a chronic/status STI (not routinely curable)
 export function isStatusSTI(testName: string): boolean {
-  const patterns = [/hiv/i, /hsv[-\s]?[12]/i, /herpes/i, /hepatitis\s*[bc]/i, /hep\s*[bc]/i, /hbv/i, /hcv/i];
+  const patterns = [/hiv/i, /hsv[-\s]?[12]/i, /herpes/i, /hepatitis\s*[bc]/i, /hep\s*[bc]/i, /hbv/i, /hcv/i, /hpv/i, /papilloma/i];
   return patterns.some((p) => p.test(testName));
 }

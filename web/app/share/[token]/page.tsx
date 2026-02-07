@@ -8,6 +8,13 @@ interface STIResult {
   result: string;
 }
 
+interface KnownCondition {
+  condition: string;
+  added_at: string;
+  notes?: string;
+  management_methods?: string[];
+}
+
 interface SharedResult extends STIResult {
   test_type: string;
   test_date: string;
@@ -17,7 +24,24 @@ interface SharedResult extends STIResult {
   is_valid: boolean;
   is_expired: boolean;
   is_over_limit: boolean;
+  known_conditions?: KnownCondition[];
 }
+
+const METHOD_LABELS: Record<string, string> = {
+  daily_antivirals: "Daily antivirals",
+  antiviral_as_needed: "Antivirals as needed",
+  supplements: "Supplements",
+  prep: "PrEP",
+  art_treatment: "ART treatment",
+  undetectable: "Undetectable viral load",
+  antiviral_treatment: "Antiviral treatment",
+  liver_monitoring: "Liver function monitoring",
+  vaccinated: "Vaccinated",
+  cured: "Completed treatment / cured",
+  regular_screening: "Regular screening",
+  barriers: "Barrier use",
+  regular_monitoring: "Regular monitoring",
+};
 
 // Prevent indexing of private share pages
 export const metadata: Metadata = {
@@ -26,6 +50,27 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
+
+function matchesKnownCondition(stiName: string, knownConditions: KnownCondition[]): KnownCondition | undefined {
+  const name = stiName.toLowerCase();
+  return knownConditions.find((kc) => {
+    const cond = kc.condition.toLowerCase();
+    if (cond === name) return true;
+    if ((cond.includes("hsv-1") || cond.includes("hsv1")) &&
+        (name.includes("hsv-1") || name.includes("hsv1") || name.includes("herpes simplex virus 1") || name.includes("simplex 1"))) return true;
+    if ((cond.includes("hsv-2") || cond.includes("hsv2")) &&
+        (name.includes("hsv-2") || name.includes("hsv2") || name.includes("herpes simplex virus 2") || name.includes("simplex 2"))) return true;
+    if (cond.includes("hiv") && name.includes("hiv")) return true;
+    if ((cond.includes("hepatitis b") || cond.includes("hep b") || cond.includes("hbv")) &&
+        (name.includes("hepatitis b") || name.includes("hep b") || name.includes("hbv"))) return true;
+    if ((cond.includes("hepatitis c") || cond.includes("hep c") || cond.includes("hcv")) &&
+        (name.includes("hepatitis c") || name.includes("hep c") || name.includes("hcv"))) return true;
+    // HPV variations
+    if ((cond.includes("hpv") || cond.includes("papilloma")) &&
+        (name.includes("hpv") || name.includes("papilloma") || name.includes("human papilloma"))) return true;
+    return false;
+  });
+}
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -73,7 +118,7 @@ function NotFoundPage() {
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-white mb-3">Nothing here</h1>
-        <p className="text-white/60">This link doesn't exist or got deleted.</p>
+        <p className="text-white/60">This link doesn&apos;t exist or got deleted.</p>
       </div>
     </PageWrapper>
   );
@@ -98,13 +143,14 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   }
 
   const results = (data.sti_results || []) as STIResult[];
+  const knownConditions = (data.known_conditions || []) as KnownCondition[];
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const statusColor = (s: string) =>
-    s === "negative" ? "text-accent-mint" : s === "positive" ? "text-danger" : "text-warning";
-  const statusBg = (s: string) =>
-    s === "negative" ? "bg-accent-mint/20" : s === "positive" ? "bg-danger/20" : "bg-warning/20";
+  const statusColor = (s: string, isKnown?: boolean) =>
+    isKnown ? "text-accent-lavender" : s === "negative" ? "text-accent-mint" : s === "positive" ? "text-danger" : "text-warning";
+  const statusBg = (s: string, isKnown?: boolean) =>
+    isKnown ? "bg-accent-lavender/20" : s === "negative" ? "bg-accent-mint/20" : s === "positive" ? "bg-danger/20" : "bg-warning/20";
 
   return (
     <PageWrapper>
@@ -128,19 +174,40 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         <div className="px-6 pb-6">
           {results.length > 0 ? (
             <div className="bg-surface-light/50 rounded-2xl divide-y divide-surface-light">
-              {results.map((sti, i) => (
-                <div key={i} className="flex justify-between items-center px-4 py-4">
-                  <span className="font-medium text-white">{sti.name}</span>
-                  <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${statusBg(sti.status)} ${statusColor(sti.status)}`}>
-                    {sti.result}
-                  </span>
-                </div>
-              ))}
+              {results.map((sti, i) => {
+                const matchedKc = matchesKnownCondition(sti.name, knownConditions);
+                const isKnown = !!matchedKc;
+                const methods = matchedKc?.management_methods || [];
+                return (
+                  <div key={i} className="px-4 py-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1 min-w-0 mr-3">
+                        <p className="font-medium text-white truncate">{sti.name}</p>
+                        {isKnown && methods.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {methods.map((methodId) => (
+                              <span
+                                key={methodId}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-lavender/10 text-accent-lavender"
+                              >
+                                {METHOD_LABELS[methodId] || methodId}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${statusBg(sti.status, isKnown)} ${statusColor(sti.status, isKnown)}`}>
+                        {isKnown ? "Managed" : sti.result}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className={`text-center py-6 rounded-2xl ${statusBg(data.status)}`}>
               <p className={`text-xl font-bold ${statusColor(data.status)}`}>
-                {data.status === "negative" ? "All Clear ✓" : data.status === "positive" ? "Positive" : "Pending"}
+                {data.status === "negative" ? "All Clear" : data.status === "positive" ? "Positive" : "Pending"}
               </p>
             </div>
           )}
@@ -149,12 +216,9 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         {/* Verified Badge */}
         {data.is_verified && (
           <div className="border-t border-surface-light px-6 py-4">
-            <div className="flex items-center justify-center gap-2 text-accent-mint text-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Lab verified. The real deal.</span>
-            </div>
+            <p className="text-center text-white/40 text-xs">
+              <span className="text-accent-mint">&#10003; Verified</span> = the real deal from a Canadian lab
+            </p>
           </div>
         )}
       </div>

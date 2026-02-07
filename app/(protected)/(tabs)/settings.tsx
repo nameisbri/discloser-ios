@@ -25,7 +25,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Moon }[] = 
 export default function Settings() {
   const router = useRouter();
   const { signOut, session } = useAuth();
-  const { profile, refetch: refetchProfile, addKnownCondition, removeKnownCondition } = useProfile();
+  const { profile, refetch: refetchProfile, addKnownCondition, removeKnownCondition, updateManagementMethods } = useProfile();
   const { results } = useTestResults();
   const { activeReminders } = useReminders();
   const { theme, setTheme, isDark } = useTheme();
@@ -285,7 +285,7 @@ export default function Settings() {
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
           <SettingsItem
             icon={<Heart size={20} color={isDark ? "#C9A0DC" : "#7C3AED"} />}
-            title="Known Conditions"
+            title="Managed Conditions"
             onPress={() => setShowKnownConditions(true)}
             rightElement={
               (profile?.known_conditions?.length ?? 0) > 0 ? (
@@ -521,6 +521,7 @@ export default function Settings() {
         conditions={profile?.known_conditions || []}
         onAdd={addKnownCondition}
         onRemove={removeKnownCondition}
+        onUpdateMethods={updateManagementMethods}
       />
     </SafeAreaView>
   );

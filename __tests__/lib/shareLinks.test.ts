@@ -122,6 +122,7 @@ function createMockStatusShareLink(overrides: Partial<StatusShareLink> = {}): St
     id: 'test-status-link-id',
     user_id: 'test-user-id',
     token: 'status123token',
+    label: null,
     expires_at: calculateExpiryDate(24),
     view_count: 0,
     max_views: null,

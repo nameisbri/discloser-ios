@@ -2,7 +2,7 @@
 // Used by both useSTIStatus and useDashboardData hooks
 
 import { isStatusSTI } from "../parsing/testNormalizer";
-import { matchesKnownCondition } from "./stiMatching";
+import { matchesKnownCondition, findMatchingKnownCondition } from "./stiMatching";
 import type { TestResult, TestStatus, KnownCondition } from "../types";
 
 export interface AggregatedSTI {
@@ -20,6 +20,8 @@ export interface AggregatedSTI {
    * This distinction allows UI to display known conditions even when they lack recent test results.
    */
   hasTestData?: boolean;
+  /** Management methods declared by user for this known condition */
+  managementMethods?: string[];
 }
 
 export interface STIStatusResult {
@@ -60,16 +62,17 @@ export function computeSTIStatus(
 
       // Keep if no existing or this one is more recent
       if (!existing || testDate > existing.testDate) {
-        const isKnown = matchesKnownCondition(sti.name, knownConditions);
+        const matchedKc = findMatchingKnownCondition(sti.name, knownConditions);
         stiMap.set(sti.name, {
           name: sti.name,
           status: sti.status,
           result: sti.result || sti.status.charAt(0).toUpperCase() + sti.status.slice(1),
           testDate: testDate,
           isVerified: result.is_verified || false,
-          isKnownCondition: isKnown,
+          isKnownCondition: !!matchedKc,
           isStatusSTI: isStatusSTI(sti.name),
           hasTestData: true,
+          managementMethods: matchedKc?.management_methods,
         });
       }
     }
@@ -101,6 +104,7 @@ export function computeSTIStatus(
         isKnownCondition: true,
         isStatusSTI: isStatusSTI(kc.condition),
         hasTestData: false,
+        managementMethods: kc.management_methods,
       });
     }
   }

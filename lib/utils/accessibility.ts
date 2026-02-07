@@ -185,7 +185,7 @@ export function getSTIResultLabel(item: {
   const parts = [item.name, `result: ${item.result}`];
 
   if (item.isKnown) {
-    parts.push("known condition");
+    parts.push("managed condition");
   }
 
   return parts.join(", ");
