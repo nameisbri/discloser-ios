@@ -38,6 +38,7 @@ import { ManagementMethodPills } from "./ManagementMethodPills";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/utils/logger";
 import { formatDate } from "../lib/utils/date";
+import { getLinkExpirationStatus, isLinkExpired, getExpirationLabel, formatViewCount } from "../lib/utils/shareLinkStatus";
 import type { StatusShareLink, Database } from "../lib/types";
 
 const EXPIRY_OPTIONS = [
@@ -109,6 +110,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     return aggregatedStatus;
   }, [excludeKnownConditions, routineStatus, aggregatedStatus]);
 
+  // Split links into active and expired groups
+  const activeLinks = useMemo(() => links.filter(l => !isLinkExpired(l)), [links]);
+  const expiredLinks = useMemo(() => links.filter(l => isLinkExpired(l)), [links]);
+
   const fetchLinks = useCallback(async () => {
     try {
       setLoading(true);
@@ -124,7 +129,6 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
         .from("status_share_links")
         .select("*")
         .eq("user_id", user.id)
-        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -135,12 +139,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
 
       logger.debug("fetchLinks: Found links", { count: data?.length || 0 });
 
-      // Filter out links at max_views
-      const activeLinks = (data || []).filter(
-        (link: StatusShareLink) => link.max_views === null || link.view_count < link.max_views
-      );
-
-      setLinks(activeLinks);
+      setLinks(data || []);
     } catch (err) {
       logger.error("fetchLinks exception", { error: err });
     } finally {
@@ -332,8 +331,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
             />
 
             {links.length > 0 && (
-              <Pressable onPress={() => setView("links")} style={{ marginTop: 12, padding: 12, alignItems: "center" }} accessibilityLabel={"View Active Links, " + links.length + " links"} accessibilityRole="button" accessibilityHint="Shows your active share links">
-                <Text style={{ color: colors.primary, fontWeight: "600" }}>View Active Links ({links.length})</Text>
+              <Pressable onPress={() => setView("links")} style={{ marginTop: 12, padding: 12, alignItems: "center" }} accessibilityLabel={"View Links, " + links.length + " links"} accessibilityRole="button" accessibilityHint="Shows your share links">
+                <Text style={{ color: colors.primary, fontWeight: "600" }}>View Links ({links.length})</Text>
               </Pressable>
             )}
           </ScrollView>
@@ -533,108 +532,166 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
               <Text style={{ color: colors.primary, fontWeight: "600" }}>← Back to Preview</Text>
             </Pressable>
 
-            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 12 }}>Active Links</Text>
-
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : links.length === 0 ? (
               <Text style={{ color: colors.textSecondary, textAlign: "center", padding: 20 }}>No links yet. Create one above.</Text>
             ) : (
-              links.map((link) => (
-                <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-                  {/* Label or fallback date header */}
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 2 }}>
-                    {link.label || `Link created ${formatCreatedAt(link.created_at)}`}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
-                    {link.label ? formatCreatedAt(link.created_at) : ""}
-                  </Text>
-
-                  {/* Info pills row */}
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                    <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-                      <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
-                    </View>
-                    {link.show_name && (
-                      <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight }}>
-                        <Text style={{ fontSize: 12, fontWeight: "500", color: colors.primary }}>Name visible</Text>
-                      </View>
-                    )}
-                    {knownConditionsStatus.length > 0 && !snapshotHasKnownConditions(link.status_snapshot) && (
-                      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.warningLight }}>
-                        <EyeOff size={12} color={colors.warning} style={{ marginRight: 4 }} />
-                        <Text style={{ fontSize: 12, fontWeight: "500", color: colors.warning }}>Chronic hidden</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* View count */}
-                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-                    <Eye size={14} color={colors.textSecondary} />
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
-                      {link.view_count} view{link.view_count !== 1 ? "s" : ""}
-                      {link.max_views && ` / ${link.max_views} max`}
+              <>
+                {/* Active Links */}
+                {activeLinks.length > 0 && (
+                  <>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
+                      Active Links ({activeLinks.length})
                     </Text>
-                  </View>
+                    {activeLinks.map((link) => (
+                      <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+                        {/* Label or fallback date header */}
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 2 }}>
+                          {link.label || `Link created ${formatCreatedAt(link.created_at)}`}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+                          {link.label ? formatCreatedAt(link.created_at) : ""}
+                        </Text>
 
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <Pressable
-                      onPress={() => handleCopy(link)}
-                      style={{
-                        flex: 1,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        paddingVertical: 12,
-                        borderRadius: 12,
-                        backgroundColor: copiedId === link.id ? colors.successLight : colors.primaryLight,
-                      }}
-                      accessibilityLabel={copiedId === link.id ? "Copied to clipboard" : "Copy share link"}
-                      accessibilityRole="button"
-                      accessibilityHint="Copies the share link to your clipboard"
-                    >
-                      {copiedId === link.id ? (
-                        <Check size={18} color={colors.success} />
-                      ) : (
-                        <Copy size={18} color={colors.primary} />
-                      )}
-                      <Text style={{ fontSize: 14, fontWeight: "500", color: copiedId === link.id ? colors.success : colors.primary, marginLeft: 8 }}>
-                        {copiedId === link.id ? "Copied" : "Copy"}
-                      </Text>
-                    </Pressable>
+                        {/* Info pills row */}
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                            <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textSecondary }}>{formatExpiry(link.expires_at)}</Text>
+                          </View>
+                          {link.show_name && (
+                            <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight }}>
+                              <Text style={{ fontSize: 12, fontWeight: "500", color: colors.primary }}>Name visible</Text>
+                            </View>
+                          )}
+                          {knownConditionsStatus.length > 0 && !snapshotHasKnownConditions(link.status_snapshot) && (
+                            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.warningLight }}>
+                              <EyeOff size={12} color={colors.warning} style={{ marginRight: 4 }} />
+                              <Text style={{ fontSize: 12, fontWeight: "500", color: colors.warning }}>Chronic hidden</Text>
+                            </View>
+                          )}
+                        </View>
 
-                    <Pressable
-                      onPress={() => { setPreviewLink(link); setView("recipient"); }}
-                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
-                      accessibilityLabel="Preview"
-                      accessibilityRole="button"
-                      accessibilityHint="Shows how recipients will see this link"
-                    >
-                      <Smartphone size={18} color={colors.text} />
-                    </Pressable>
+                        {/* View count */}
+                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                          <Eye size={14} color={colors.textSecondary} />
+                          <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
+                            {link.view_count} view{link.view_count !== 1 ? "s" : ""}
+                            {link.max_views && ` / ${link.max_views} max`}
+                          </Text>
+                        </View>
 
-                    <Pressable
-                      onPress={() => { setQrLink(link); setView("qr"); }}
-                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
-                      accessibilityLabel="Show QR Code"
-                      accessibilityRole="button"
-                      accessibilityHint="Displays a QR code for this share link"
-                    >
-                      <QrCode size={18} color={colors.text} />
-                    </Pressable>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <Pressable
+                            onPress={() => handleCopy(link)}
+                            style={{
+                              flex: 1,
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              paddingVertical: 12,
+                              borderRadius: 12,
+                              backgroundColor: copiedId === link.id ? colors.successLight : colors.primaryLight,
+                            }}
+                            accessibilityLabel={copiedId === link.id ? "Copied to clipboard" : "Copy share link"}
+                            accessibilityRole="button"
+                            accessibilityHint="Copies the share link to your clipboard"
+                          >
+                            {copiedId === link.id ? (
+                              <Check size={18} color={colors.success} />
+                            ) : (
+                              <Copy size={18} color={colors.primary} />
+                            )}
+                            <Text style={{ fontSize: 14, fontWeight: "500", color: copiedId === link.id ? colors.success : colors.primary, marginLeft: 8 }}>
+                              {copiedId === link.id ? "Copied" : "Copy"}
+                            </Text>
+                          </Pressable>
 
-                    <Pressable
-                      onPress={() => handleDelete(link.id)}
-                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight }}
-                      accessibilityLabel="Delete share link"
-                      accessibilityRole="button"
-                      accessibilityHint="Permanently deletes this share link"
-                    >
-                      <Trash2 size={18} color={colors.danger} />
-                    </Pressable>
-                  </View>
-                </View>
-              ))
+                          <Pressable
+                            onPress={() => { setPreviewLink(link); setView("recipient"); }}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
+                            accessibilityLabel="Preview"
+                            accessibilityRole="button"
+                            accessibilityHint="Shows how recipients will see this link"
+                          >
+                            <Smartphone size={18} color={colors.text} />
+                          </Pressable>
+
+                          <Pressable
+                            onPress={() => { setQrLink(link); setView("qr"); }}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
+                            accessibilityLabel="Show QR Code"
+                            accessibilityRole="button"
+                            accessibilityHint="Displays a QR code for this share link"
+                          >
+                            <QrCode size={18} color={colors.text} />
+                          </Pressable>
+
+                          <Pressable
+                            onPress={() => handleDelete(link.id)}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.dangerLight }}
+                            accessibilityLabel="Delete share link"
+                            accessibilityRole="button"
+                            accessibilityHint="Permanently deletes this share link"
+                          >
+                            <Trash2 size={18} color={colors.danger} />
+                          </Pressable>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {/* Expired Links */}
+                {expiredLinks.length > 0 && (
+                  <>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textSecondary, marginTop: activeLinks.length > 0 ? 8 : 0, marginBottom: 12 }}>
+                      Expired Links ({expiredLinks.length})
+                    </Text>
+                    {expiredLinks.map((link) => {
+                      const status = getLinkExpirationStatus(link);
+                      return (
+                        <View key={link.id} style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border, opacity: 0.65 }}>
+                          {/* Expiration badge */}
+                          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                            <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.warningLight }}>
+                              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.warning }}>{getExpirationLabel(status)}</Text>
+                            </View>
+                          </View>
+
+                          {/* Label or fallback date header */}
+                          <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 2 }}>
+                            {link.label || `Link created ${formatCreatedAt(link.created_at)}`}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+                            {link.label ? formatCreatedAt(link.created_at) : ""}
+                          </Text>
+
+                          {/* View count */}
+                          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                            <Eye size={14} color={colors.textSecondary} />
+                            <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 4 }}>
+                              {formatViewCount(link.view_count, link.max_views)}
+                            </Text>
+                          </View>
+
+                          {/* Delete only */}
+                          <Pressable
+                            onPress={() => handleDelete(link.id)}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 12, backgroundColor: colors.dangerLight }}
+                            accessibilityLabel="Delete expired share link"
+                            accessibilityRole="button"
+                            accessibilityHint="Permanently deletes this expired share link"
+                          >
+                            <Trash2 size={18} color={colors.danger} />
+                            <Text style={{ fontSize: 14, fontWeight: "500", color: colors.danger, marginLeft: 8 }}>Delete</Text>
+                          </Pressable>
+                        </View>
+                      );
+                    })}
+                  </>
+                )}
+              </>
             )}
 
             <Button label="Create another" onPress={() => setView("create")} variant="secondary" />
