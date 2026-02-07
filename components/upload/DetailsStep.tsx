@@ -9,10 +9,11 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 import { ChevronLeft, Check, X, Info } from "lucide-react-native";
 import { Button } from "../Button";
 import { HeaderLogo } from "../HeaderLogo";
-import { hapticSelection } from "../../lib/utils/haptics";
+
 
 // Helper functions for progress display
 function getProgressTitle(step: "uploading" | "extracting" | "parsing"): string {
@@ -37,7 +38,7 @@ function getProgressDescription(step: "uploading" | "extracting" | "parsing"): s
   }
 }
 import { isRetryableError } from "../../lib/http/errors";
-import type { TestStatus, STIResult } from "../../lib/types";
+import type { STIResult } from "../../lib/types";
 import type { DocumentParsingError, TestConflict } from "../../lib/parsing";
 import type { SelectedFile } from "./PreviewStep";
 
@@ -112,11 +113,30 @@ export function DetailsStep({
   onRetryFailed,
   onSubmit,
 }: DetailsStepProps) {
-  const updateResultStatus = async (index: number, status: TestStatus) => {
-    await hapticSelection();
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const updateResultName = (index: number, name: string) => {
+    setValidationErrors([]);
     const updated = [...extractedResults];
-    updated[index].status = status;
+    updated[index] = { ...updated[index], name };
     setExtractedResults(updated);
+  };
+
+  const validateResults = (): boolean => {
+    const errors: string[] = [];
+    extractedResults.forEach((r, i) => {
+      if (!r.name.trim()) {
+        errors.push(`Result ${i + 1}: Test name is required`);
+      }
+    });
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
+  const handleValidatedSubmit = () => {
+    if (validateResults()) {
+      onSubmit();
+    }
   };
 
   return (
@@ -270,7 +290,15 @@ export function DetailsStep({
             <ExtractedResultsList
               isDark={isDark}
               results={extractedResults}
-              onUpdateStatus={updateResultStatus}
+              onUpdateName={updateResultName}
+              invalidIndices={new Set(
+                validationErrors
+                  .map((e) => {
+                    const match = e.match(/^Result (\d+):/);
+                    return match ? parseInt(match[1], 10) - 1 : -1;
+                  })
+                  .filter((i) => i >= 0)
+              )}
             />
           )}
 
@@ -312,9 +340,25 @@ export function DetailsStep({
                 />
               </View>
 
+              {validationErrors.length > 0 && (
+                <View className={`p-4 rounded-2xl mb-4 ${isDark ? "bg-dark-danger-bg" : "bg-danger-light/50"}`}>
+                  <View className="flex-row items-center mb-1">
+                    <Info size={16} color="#DC3545" />
+                    <Text className={`font-inter-semibold ml-2 text-sm ${isDark ? "text-dark-danger" : "text-danger"}`}>
+                      Please fix the following:
+                    </Text>
+                  </View>
+                  {validationErrors.map((error, idx) => (
+                    <Text key={idx} className={`text-xs font-inter-regular ml-6 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                      {error}
+                    </Text>
+                  ))}
+                </View>
+              )}
+
               <Button
                 label={uploading ? "On it..." : "Save it"}
-                onPress={onSubmit}
+                onPress={handleValidatedSubmit}
                 disabled={uploading || extractedResults.length === 0}
                 className="mb-8"
                 icon={uploading ? <ActivityIndicator size="small" color="white" /> : undefined}
@@ -519,11 +563,13 @@ function ParsingErrorsDisplay({
 function ExtractedResultsList({
   isDark,
   results,
-  onUpdateStatus,
+  onUpdateName,
+  invalidIndices,
 }: {
   isDark: boolean;
   results: STIResult[];
-  onUpdateStatus: (index: number, status: TestStatus) => void;
+  onUpdateName: (index: number, name: string) => void;
+  invalidIndices?: Set<number>;
 }) {
   return (
     <View className="mb-6">
@@ -532,28 +578,40 @@ function ExtractedResultsList({
       </Text>
       {results.map((sti, index) => (
         <View key={index} className={`border rounded-2xl p-4 mb-3 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
-          <Text className={`font-inter-semibold mb-1 ${isDark ? "text-dark-text" : "text-text"}`}>{sti.name}</Text>
-          <Text className={`font-inter-regular text-sm mb-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>{sti.result}</Text>
-          <View className="flex-row gap-2">
-            {(["negative", "positive", "pending"] as TestStatus[]).map((status) => (
-              <Pressable
-                key={status}
-                onPress={() => onUpdateStatus(index, status)}
-                className={`px-4 py-2.5 rounded-full ${
-                  sti.status === status
-                    ? status === "negative" ? "bg-success" : status === "positive" ? "bg-danger" : "bg-warning"
-                    : isDark ? "bg-dark-surface-light" : "bg-gray-100"
+          <View className="flex-row items-center gap-3">
+            {/* Test name (editable) */}
+            <View className="flex-1">
+              <TextInput
+                value={sti.name}
+                onChangeText={(text) => onUpdateName(index, text)}
+                placeholder="Test name"
+                placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
+                returnKeyType="done"
+                maxLength={100}
+                className={`font-inter-semibold px-3 py-2 rounded-xl border ${
+                  invalidIndices?.has(index)
+                    ? "border-danger"
+                    : "border-transparent"
+                } ${
+                  isDark
+                    ? "bg-dark-surface-light text-dark-text"
+                    : "bg-gray-50 text-text"
                 }`}
-                style={{ minHeight: 44, justifyContent: "center" }}
-                accessibilityLabel={`Set ${sti.name} to ${status}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: sti.status === status }}
-              >
-                <Text className={sti.status === status ? "text-white text-xs font-inter-semibold" : isDark ? "text-dark-text-secondary text-xs" : "text-gray-600 text-xs"}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </Text>
-              </Pressable>
-            ))}
+                accessibilityLabel={`Test name for result ${index + 1}`}
+              />
+            </View>
+
+            {/* Status pill (read-only) */}
+            <View
+              className={`px-4 py-2 rounded-full ${
+                sti.status === "negative" ? "bg-success" : sti.status === "positive" ? "bg-danger" : "bg-warning"
+              }`}
+              accessibilityLabel={`${sti.name || "Result"}: ${sti.status}`}
+            >
+              <Text className="text-white text-xs font-inter-semibold">
+                {sti.status.charAt(0).toUpperCase() + sti.status.slice(1)}
+              </Text>
+            </View>
           </View>
         </View>
       ))}
