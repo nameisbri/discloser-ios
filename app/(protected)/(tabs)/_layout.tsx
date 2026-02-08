@@ -116,6 +116,10 @@ export default function TabsLayout() {
         name="reminders"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="shared-links"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

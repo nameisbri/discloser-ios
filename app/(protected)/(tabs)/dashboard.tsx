@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   AlertTriangle,
+  Link2,
 } from "lucide-react-native";
 import { StatusShareModal } from "../../../components/StatusShareModal";
 import { RiskAssessment } from "../../../components/RiskAssessment";
@@ -287,22 +288,41 @@ export default function Dashboard() {
 
           {/* Share Status Button */}
           {results.length > 0 && (
-            <Pressable
-              onPress={() => setShowStatusShare(true)}
-              className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
-                isDark
-                  ? "bg-dark-accent-muted border-dark-accent/30 active:bg-dark-accent/20"
-                  : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
-              }`}
-              accessibilityLabel="Share your status"
-              accessibilityRole="button"
-              accessibilityHint="Opens options to share your test status"
-            >
-              <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                Share without the awkward
-              </Text>
-            </Pressable>
+            <>
+              <Pressable
+                onPress={() => setShowStatusShare(true)}
+                className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
+                  isDark
+                    ? "bg-dark-accent-muted border-dark-accent/30 active:bg-dark-accent/20"
+                    : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
+                }`}
+                accessibilityLabel="Share your status"
+                accessibilityRole="button"
+                accessibilityHint="Opens options to share your test status"
+              >
+                <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                  Share without the awkward
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push("/shared-links")}
+                className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
+                  isDark
+                    ? "bg-dark-surface border-dark-border active:bg-dark-surface-light"
+                    : "bg-white border-border active:bg-gray-50"
+                }`}
+                accessibilityLabel="Manage shared links"
+                accessibilityRole="button"
+                accessibilityHint="View and manage all your share links"
+              >
+                <Link2 size={20} color={isDark ? "rgba(255,255,255,0.7)" : "#6B7280"} />
+                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                  Manage shared links
+                </Text>
+              </Pressable>
+            </>
           )}
 
           {/* Your Status Section — most recent result + managed conditions */}

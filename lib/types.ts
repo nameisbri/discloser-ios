@@ -84,6 +84,24 @@ export interface StatusShareLink {
   created_at: string;
 }
 
+// Unified share link type for centralized Shared Links screen
+export type ShareLinkType = "result" | "status";
+
+export interface UnifiedShareLink {
+  id: string;
+  type: ShareLinkType;
+  token: string;
+  label: string | null;
+  expires_at: string;
+  view_count: number;
+  max_views: number | null;
+  show_name: boolean;
+  display_name: string | null;
+  created_at: string;
+  note: string | null;
+  test_result_id: string | null;
+}
+
 export interface Reminder {
   id: string;
   user_id: string;
