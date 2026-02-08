@@ -6,7 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { logger } from '../utils/logger';
 import { fetchWithRetry, isNetworkRequestError } from '../http';
-import { supabase } from '../supabase';
+import { getAccessToken } from '../supabase';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
@@ -208,9 +208,11 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
       estimatedImageSizeKB: base64SizeKB
     });
 
-    // Get the current session for authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    // Get a fresh access token (auto-refreshes if expired)
+    let accessToken: string;
+    try {
+      accessToken = await getAccessToken();
+    } catch {
       throw new DocumentParsingError(
         'ocr',
         'Not authenticated. Please sign in to process documents.',
@@ -223,7 +225,7 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
         apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
       },
       body: JSON.stringify({ imageBase64: base64 }),

@@ -2,7 +2,7 @@
 // API keys are kept server-side for security
 
 import { LLMResponse } from "./types";
-import { supabase } from "../supabase";
+import { getAccessToken } from "../supabase";
 import { logger } from "../utils/logger";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -64,18 +64,15 @@ export async function parseDocumentWithLLM(text: string): Promise<LLMResponse> {
   try {
     const startTime = Date.now();
 
-    // Get the current session for authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error("Not authenticated. Please sign in to parse documents.");
-    }
+    // Get a fresh access token (auto-refreshes if expired)
+    const accessToken = await getAccessToken();
 
     // Call the Edge Function
     const response = await fetch(`${SUPABASE_URL}/functions/v1/parse-document`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
         apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
       },
       body: JSON.stringify({ text }),

@@ -58,3 +58,27 @@ function createSupabaseClient(): SupabaseClient<Database> {
 }
 
 export const supabase = createSupabaseClient();
+
+/**
+ * Returns a valid access token, refreshing the session if expired or about to expire.
+ * Use this instead of `supabase.auth.getSession()` when calling authenticated Edge Functions.
+ * @throws Error if the user is not authenticated
+ */
+export async function getAccessToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("Not authenticated. Please sign in.");
+  }
+
+  // If token expires within 60 seconds, proactively refresh
+  const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+  if (expiresAt > 0 && expiresAt - Date.now() < 60_000) {
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+    if (refreshed) {
+      return refreshed.access_token;
+    }
+  }
+
+  return session.access_token;
+}

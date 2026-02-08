@@ -1,7 +1,7 @@
 # Supabase Edge Functions configuration
 
 [functions.extract-text-ocr]
-verify_jwt = true
+verify_jwt = false
 
 [functions.parse-document]
-verify_jwt = true
+verify_jwt = false
