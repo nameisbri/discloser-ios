@@ -16,6 +16,7 @@ import QRCode from "react-native-qrcode-svg";
 import {
   ChevronLeft,
   Link2,
+  Plus,
   Copy,
   Check,
   Clock,
@@ -25,6 +26,7 @@ import { useAllShareLinks, getUnifiedShareUrl, useThemeColors } from "../../../l
 import { useTheme } from "../../../context/theme";
 import { HeaderLogo } from "../../../components/HeaderLogo";
 import { SharedLinkCard } from "../../../components/SharedLinkCard";
+import { StatusShareModal } from "../../../components/StatusShareModal";
 import { isLinkExpired, getLinkExpirationStatus } from "../../../lib/utils/shareLinkStatus";
 import type { UnifiedShareLink } from "../../../lib/types";
 
@@ -46,6 +48,7 @@ export default function SharedLinksScreen() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrLink, setQrLink] = useState<UnifiedShareLink | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showStatusShare, setShowStatusShare] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -112,9 +115,9 @@ export default function SharedLinksScreen() {
         <HeaderLogo />
       </View>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs + Create Button */}
       {links.length > 0 && (
-        <View style={{ flexDirection: "row", paddingHorizontal: 24, gap: 8, marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 24, gap: 8, marginBottom: 16 }}>
           {FILTER_TABS.map((tab) => (
             <Pressable
               key={tab.key}
@@ -141,6 +144,25 @@ export default function SharedLinksScreen() {
               </Text>
             </Pressable>
           ))}
+          <View style={{ flex: 1 }} />
+          <Pressable
+            onPress={() => setShowStatusShare(true)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 16,
+              backgroundColor: colors.primary,
+            }}
+            accessibilityLabel="Create status link"
+            accessibilityRole="button"
+          >
+            <Plus size={16} color="#fff" />
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#fff", marginLeft: 4 }}>
+              Status
+            </Text>
+          </Pressable>
         </View>
       )}
 
@@ -209,10 +231,29 @@ export default function SharedLinksScreen() {
                 textAlign: "center",
                 lineHeight: 20,
                 paddingHorizontal: 32,
+                marginBottom: 24,
               }}
             >
               When you share a test result or your status, your links will appear here.
             </Text>
+            <Pressable
+              onPress={() => setShowStatusShare(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 24,
+                paddingVertical: 14,
+                borderRadius: 12,
+                backgroundColor: colors.primary,
+              }}
+              accessibilityLabel="Share your status"
+              accessibilityRole="button"
+            >
+              <Plus size={18} color="#fff" />
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff", marginLeft: 8 }}>
+                Share Your Status
+              </Text>
+            </Pressable>
           </View>
         ) : (
           <>
@@ -386,6 +427,13 @@ export default function SharedLinksScreen() {
           </View>
         </View>
       </Modal>
+      <StatusShareModal
+        visible={showStatusShare}
+        onClose={() => {
+          setShowStatusShare(false);
+          refetch();
+        }}
+      />
     </SafeAreaView>
   );
 }
