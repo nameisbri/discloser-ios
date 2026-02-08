@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/auth";
 import { useTheme, ThemeMode } from "../../../context/theme";
@@ -30,6 +30,8 @@ export default function Settings() {
   const { results } = useTestResults();
   const { activeReminders } = useReminders();
   const { theme, setTheme, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 375;
 
   // Compute stats — keep as YYYY-MM-DD strings to avoid UTC timezone shift
   const lastTestDateStr = results.length > 0
@@ -117,12 +119,12 @@ export default function Settings() {
   const handleDeleteAllData = async () => {
     await hapticNotification("warning");
     Alert.alert(
-      "Start fresh?",
-      "This wipes everything - results, reminders, links, and your profile. You'll go through setup again.",
+      "Delete All Data?",
+      "This permanently deletes all your results, reminders, shared links, and profile data. This cannot be undone.",
       [
         { text: "Never mind", style: "cancel" },
         {
-          text: "Wipe it all",
+          text: "Delete Everything",
           style: "destructive",
           onPress: async () => {
             const userId = session?.user?.id;
@@ -188,7 +190,7 @@ export default function Settings() {
             </View>
           </View>
 
-          <View className="flex-row gap-3">
+          <View className={isNarrow ? "gap-2 mt-3" : "flex-row gap-3 mt-3"}>
             <View className={`flex-1 p-3 rounded-2xl ${isDark ? "bg-dark-surface-light" : "bg-gray-50"}`}>
               <View className="flex-row items-center mb-1">
                 <Calendar size={14} color={isDark ? "#00E5A0" : "#10B981"} />
@@ -314,7 +316,7 @@ export default function Settings() {
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
           <SettingsItem
             icon={<Trash2 size={20} color="#DC3545" />}
-            title="Start fresh"
+            title="Delete All Data & Start Over"
             onPress={handleDeleteAllData}
             danger
             isDark={isDark}

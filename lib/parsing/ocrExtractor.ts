@@ -5,7 +5,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { logger } from '../utils/logger';
-import { isNetworkRequestError } from '../http';
+import { fetchWithRetry, isNetworkRequestError } from '../http';
 import { supabase } from '../supabase';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -218,8 +218,8 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
       );
     }
 
-    // Call the Edge Function
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/extract-text-ocr`, {
+    // Call the Edge Function with timeout and retry
+    const response = await fetchWithRetry(`${SUPABASE_URL}/functions/v1/extract-text-ocr`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -227,6 +227,9 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
         apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
       },
       body: JSON.stringify({ imageBase64: base64 }),
+      timeout: 60000, // 60s — OCR + Google Vision can be slow on large images
+      maxRetries: 2,
+      validateSize: false, // We handle our own compression above
     });
 
     if (!response.ok) {
@@ -282,7 +285,7 @@ export async function extractTextFromImage(uri: string, fileIdentifier?: string)
 
     // Classify and wrap other errors
     let errorType: ParsingErrorType = 'ocr';
-    if (isNetworkRequestError(error) || (error instanceof Error && error.message.includes('network'))) {
+    if (isNetworkRequestError(error) || (error instanceof Error && (error.message.includes('network') || error.message.includes('timed out')))) {
       errorType = 'network';
     }
 

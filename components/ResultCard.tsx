@@ -177,6 +177,7 @@ function ResultCardComponent({
           </View>
           <View className="flex-1">
             <Text
+              numberOfLines={2}
               className={`font-inter-bold mb-1 ${
                 isDark ? "text-dark-text" : "text-text"
               }`}

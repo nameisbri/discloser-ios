@@ -8,12 +8,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter, useFocusEffect } from "expo-router";
-import { useAuth } from "../../../context/auth";
 import { useTheme } from "../../../context/theme";
 import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
 import { useReminders } from "../../../lib/hooks";
 import {
-  Plus,
   Bell,
   Settings,
   FileText,
@@ -21,25 +19,20 @@ import {
   ShieldCheck,
   Sparkles,
   AlertTriangle,
-  Link2,
 } from "lucide-react-native";
 import { StatusShareModal } from "../../../components/StatusShareModal";
 import { RiskAssessment } from "../../../components/RiskAssessment";
 import { Card } from "../../../components/Card";
-import { Button } from "../../../components/Button";
-import { Badge } from "../../../components/Badge";
 import { ResultCard } from "../../../components/ResultCard";
-import { ManagementMethodPills } from "../../../components/ManagementMethodPills";
 import { SkeletonResultsList } from "../../../components/SkeletonLoader";
+import { CurrentStatusCard, ManagedConditionCard, EmptyDashboardState } from "../../../components/dashboard";
 import { LinearGradient } from "expo-linear-gradient";
-import type { TestResult } from "../../../lib/types";
 import { formatDate } from "../../../lib/utils/date";
 import { hapticSelection } from "../../../lib/utils/haptics";
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { signOut } = useAuth();
   const { isDark } = useTheme();
   const { results, loading, refetch } = useTestResults();
   const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
@@ -49,6 +42,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const lastFetchRef = useRef<number>(0);
 
   // Optimized focus refetch: only refetch if data is stale (>10s old)
@@ -64,8 +58,8 @@ export default function Dashboard() {
           refetch();
           refetchReminders();
           refetchProfile();
-          refetchSTIProfile(); // Also refresh profile in useSTIStatus for known conditions
-        }, 300); // 300ms debounce
+          refetchSTIProfile();
+        }, 300);
 
         return () => clearTimeout(timeoutId);
       }
@@ -93,6 +87,20 @@ export default function Dashboard() {
     return "Good evening";
   };
 
+  // Map knownConditionsStatus to ManagedConditionCard format
+  const managedConditions = knownConditionsStatus.map((sti) => ({
+    condition: sti.name,
+    testDate: sti.hasTestData ? sti.testDate : null,
+    declaredDate: !sti.hasTestData ? sti.testDate : null,
+    isFromTest: sti.hasTestData ?? false,
+    managementMethods: sti.managementMethods,
+  }));
+
+  const hasData = results.length > 0 || knownConditionsStatus.length > 0;
+  const historyResults = results.slice(1);
+  const visibleHistory = showAllHistory ? historyResults : historyResults.slice(0, 4);
+  const hasMoreHistory = historyResults.length > 4 && !showAllHistory;
+
   // Dark mode gradient colors
   const gradientColors: [string, string] = isDark
     ? ["#1A1520", "#2D2438"]
@@ -110,12 +118,12 @@ export default function Dashboard() {
           />
         }
       >
-        {/* Header with gradient accent */}
+        {/* Header with gradient — includes reminder inline */}
         <LinearGradient
           colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 64, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+          style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
         >
           <View className="flex-row justify-between items-center mb-6">
             <View className="flex-row items-center">
@@ -146,125 +154,132 @@ export default function Dashboard() {
 
           {/* Status pill - based on routine tests only */}
           {routineStatus.length > 0 && routineStatus.every((s) => s.status === "negative") && (
-            <View className={`flex-row items-center self-start px-4 py-2 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-white/20"}`}>
+            <View className={`flex-row items-center self-start px-4 py-2 rounded-full mb-4 ${isDark ? "bg-dark-mint/20" : "bg-white/20"}`}>
               <ShieldCheck size={16} color={isDark ? "#00E5A0" : "#10B981"} />
               <Text className="text-white font-inter-semibold ml-2 text-sm">
                 All clear. Share with confidence.
               </Text>
             </View>
           )}
-        </LinearGradient>
 
-        <View className="px-6 -mt-8">
-          {/* Next Test Reminder Card - use recommendation (based on routine tests) not reminder table */}
+          {/* Next checkup reminder — inline inside gradient */}
           {recommendation.isOverdue && recommendation.nextDueDate ? (
-            <View
-              className={`mb-6 shadow-lg rounded-2xl p-5 border-2 ${isDark ? "bg-dark-danger-bg border-danger" : "border-danger"}`}
-              style={{ backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2" }}
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View
-                    className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? "bg-danger/30" : "bg-red-200"}`}
-                  >
-                    <Bell size={24} color="#EF4444" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-danger font-inter-medium text-sm mb-1">
-                      Overdue
-                    </Text>
-                    <Text className="text-lg font-inter-bold text-danger">
-                      {formatDate(recommendation.nextDueDate)}
-                    </Text>
-                  </View>
-                </View>
-                <Pressable
-                  onPress={() => router.push("/reminders")}
-                  className={`px-4 py-2 rounded-xl ${isDark ? "bg-danger/30" : "bg-red-200"}`}
-                >
-                  <Text className="font-inter-semibold text-sm text-danger">Edit</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Card className="mb-6 shadow-lg">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? "bg-dark-coral/20" : "bg-accent-soft"}`}>
-                    <Bell size={24} color={isDark ? "#FF6B8A" : "#FF6B8A"} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className={`font-inter-medium text-sm mb-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                      Next checkup
-                    </Text>
-                    <Text className={`text-lg font-inter-bold ${isDark ? "text-dark-text" : "text-text"}`}>
-                      {nextReminder
-                        ? formatDate(nextReminder.next_date)
-                        : "Set a reminder"}
-                    </Text>
-                  </View>
-                </View>
-                <Pressable
-                  onPress={() => router.push("/reminders")}
-                  className={`px-4 py-2 rounded-xl ${isDark ? "bg-dark-accent-muted" : "bg-primary-muted"}`}
-                >
-                  <Text className={`font-inter-semibold text-sm ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                    {nextReminder ? "Edit" : "Add"}
-                  </Text>
-                </Pressable>
-              </View>
-            </Card>
-          )}
-
-          {/* Quick Actions */}
-          <View className="flex-row gap-3 mb-4">
-            <Link href="/upload" asChild>
-              <Pressable
-                className={`flex-1 py-5 rounded-2xl items-center active:opacity-90 ${isDark ? "bg-dark-accent" : "bg-primary"}`}
-                accessibilityLabel="Add Result"
-                accessibilityRole="button"
-                accessibilityHint="Upload a new test result"
-              >
-                <Plus size={24} color="white" />
-                <Text className="text-white font-inter-bold mt-2">Add Result</Text>
-              </Pressable>
-            </Link>
-            <Link href="/reminders" asChild>
-              <Pressable
-                className={`flex-1 border-2 py-5 rounded-2xl items-center ${isDark ? "bg-dark-surface border-dark-border active:bg-dark-surface-light" : "bg-background-card border-border active:bg-gray-50"}`}
-                accessibilityLabel="Reminders"
-                accessibilityRole="button"
-                accessibilityHint="Manage your testing reminders"
-              >
-                <Sparkles size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                <Text className={`font-inter-bold mt-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>Reminders</Text>
-              </Pressable>
-            </Link>
-          </View>
-
-          {/* No Reminders Prompt */}
-          {!overdueReminder && activeReminders.length === 0 && results.length > 0 && (
             <Pressable
               onPress={() => router.push("/reminders")}
-              className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
-                isDark
-                  ? "bg-dark-coral/10 border-dark-coral/30 active:bg-dark-coral/20"
-                  : "bg-accent-soft/50 border-accent/30 active:bg-accent-soft"
-              }`}
+              className="flex-row items-center justify-between px-4 py-3 rounded-xl bg-red-500/20 active:bg-red-500/30"
             >
-              <Bell size={20} color={isDark ? "#FF6B8A" : "#FF6B8A"} />
-              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-coral" : "text-accent-dark"}`}>
-                No reminders set. Stay proactive with testing.
+              <View className="flex-row items-center flex-1">
+                <Bell size={18} color="#EF4444" />
+                <View className="ml-3">
+                  <Text className="text-red-300 font-inter-medium text-xs">Overdue</Text>
+                  <Text className="text-white font-inter-bold text-sm">
+                    {formatDate(recommendation.nextDueDate)}
+                  </Text>
+                </View>
+              </View>
+              <Text className="font-inter-semibold text-sm text-red-300">Edit</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => router.push("/reminders")}
+              className="flex-row items-center justify-between px-4 py-3 rounded-xl bg-white/10 active:bg-white/15"
+            >
+              <View className="flex-row items-center flex-1">
+                <Bell size={18} color="rgba(255,255,255,0.7)" />
+                <View className="ml-3">
+                  <Text className="text-white/60 font-inter-medium text-xs">Next checkup</Text>
+                  <Text className="text-white font-inter-bold text-sm">
+                    {nextReminder
+                      ? formatDate(nextReminder.next_date)
+                      : "Set a reminder"}
+                  </Text>
+                </View>
+              </View>
+              <Text className="font-inter-semibold text-sm text-white/70">
+                {nextReminder ? "Edit" : "Add"}
               </Text>
             </Pressable>
           )}
+        </LinearGradient>
 
+        <View className="px-6 mt-6">
           {/* Testing Overdue - Small inline warning */}
           {(recommendation.isOverdue || recommendation.isDueSoon) && (
             <View className="flex-row items-center justify-center mb-4">
               <AlertTriangle size={14} color="#F59E0B" />
               <Text className={`font-inter-medium text-xs ml-1.5 ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
                 {formatDueMessage(recommendation)}
+              </Text>
+            </View>
+          )}
+
+          {/* Empty state for zero results + zero conditions */}
+          {!loading && !hasData && (
+            <EmptyDashboardState
+              isDark={isDark}
+              onUpload={() => router.push("/upload")}
+            />
+          )}
+
+          {/* Current Status Section — most recent result + managed conditions */}
+          {(loading || hasData) && (
+            <View className="mb-6">
+              <Text className={`text-2xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-text"}`}>
+                Current Status
+              </Text>
+
+              {/* Most recent result as prominent card */}
+              {loading ? (
+                <View className="mb-3">
+                  <SkeletonResultsList count={1} />
+                </View>
+              ) : results.length > 0 ? (
+                <View className="mb-3">
+                  <CurrentStatusCard
+                    result={results[0]}
+                    isDark={isDark}
+                    hasKnownCondition={hasKnownConditionMemoized}
+                    onShare={() => router.push(`/results/${results[0].id}`)}
+                    onPress={() => router.push(`/results/${results[0].id}`)}
+                  />
+                </View>
+              ) : null}
+
+              {/* Managed conditions with purple tint */}
+              {loading ? (
+                <View className="mt-1">
+                  <SkeletonResultsList count={1} />
+                </View>
+              ) : managedConditions.length > 0 ? (
+                <ManagedConditionCard
+                  conditions={managedConditions}
+                  isDark={isDark}
+                />
+              ) : null}
+            </View>
+          )}
+
+          {/* Share My Current Status — below status section for context */}
+          {results.length > 0 && (
+            <View className="mb-4">
+              <Pressable
+                onPress={() => setShowStatusShare(true)}
+                className={`border-2 py-4 rounded-2xl flex-row items-center justify-center ${
+                  isDark
+                    ? "bg-dark-accent-muted border-dark-accent/30 active:bg-dark-accent/20"
+                    : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
+                }`}
+                accessibilityLabel="Share your current status"
+                accessibilityRole="button"
+                accessibilityHint="Opens options to share your test status"
+              >
+                <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                  Share My Current Status
+                </Text>
+              </Pressable>
+              <Text className={`text-xs text-center mt-1.5 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
+                Send a link with your latest results
               </Text>
             </View>
           )}
@@ -286,121 +301,57 @@ export default function Dashboard() {
             </Pressable>
           )}
 
-          {/* Share Status Button */}
-          {results.length > 0 && (
-            <>
-              <Pressable
-                onPress={() => setShowStatusShare(true)}
-                className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
-                  isDark
-                    ? "bg-dark-accent-muted border-dark-accent/30 active:bg-dark-accent/20"
-                    : "bg-primary-light/50 border-primary/20 active:bg-primary-light"
-                }`}
-                accessibilityLabel="Share your status"
-                accessibilityRole="button"
-                accessibilityHint="Opens options to share your test status"
-              >
-                <Share2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                  Share without the awkward
-                </Text>
-              </Pressable>
+          {/* Divider between sections */}
+          {hasData && (
+            <View className={`h-px mb-6 ${isDark ? "bg-dark-border" : "bg-border"}`} />
+          )}
 
-              <Pressable
-                onPress={() => router.push("/shared-links")}
-                className={`border-2 py-4 rounded-2xl flex-row items-center justify-center mb-4 ${
-                  isDark
-                    ? "bg-dark-surface border-dark-border active:bg-dark-surface-light"
-                    : "bg-white border-border active:bg-gray-50"
-                }`}
-                accessibilityLabel="Manage shared links"
-                accessibilityRole="button"
-                accessibilityHint="View and manage all your share links"
-              >
-                <Link2 size={20} color={isDark ? "rgba(255,255,255,0.7)" : "#6B7280"} />
-                <Text className={`font-inter-semibold ml-2 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                  Manage shared links
+          {/* Test History Section */}
+          {(loading || results.length > 1) && (
+            <>
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className={`text-xl font-inter-semibold ${isDark ? "text-dark-text-secondary" : "text-text"}`}>
+                  Test History
                 </Text>
-              </Pressable>
+                {historyResults.length > 0 && (
+                  <View className={`px-3 py-1 rounded-full ${isDark ? "bg-dark-accent-muted" : "bg-primary-muted"}`}>
+                    <Text className={`font-inter-semibold text-xs ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                      {historyResults.length}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {loading ? (
+                <View className="mb-8">
+                  <SkeletonResultsList count={3} />
+                </View>
+              ) : (
+                <View className="gap-3 mb-4">
+                  {visibleHistory.map((result, index) => (
+                    <ResultCard key={result.id} result={result} index={index} isDark={isDark} hasKnownCondition={hasKnownConditionMemoized} />
+                  ))}
+                </View>
+              )}
+
+              {/* View All Results expand */}
+              {hasMoreHistory && (
+                <Pressable
+                  onPress={() => setShowAllHistory(true)}
+                  className="py-3 items-center mb-4"
+                  accessibilityRole="button"
+                  accessibilityLabel={`View all results, ${historyResults.length - 4} more`}
+                >
+                  <Text className={`font-inter-semibold ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                    View All Results ({historyResults.length - 4} more)
+                  </Text>
+                </Pressable>
+              )}
             </>
           )}
 
-          {/* Your Status Section — most recent result + managed conditions */}
-          {(loading || results.length > 0 || knownConditionsStatus.length > 0) && (
-            <View className="mb-8">
-              <Text className={`text-2xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-text"}`}>
-                Your Status
-              </Text>
-
-              {/* Most recent result */}
-              {loading ? (
-                <View className="mb-3">
-                  <SkeletonResultsList count={1} />
-                </View>
-              ) : results.length > 0 ? (
-                <View className="mb-3">
-                  <ResultCard key={results[0].id} result={results[0]} index={0} isDark={isDark} hasKnownCondition={hasKnownConditionMemoized} />
-                </View>
-              ) : null}
-
-              {/* Managed conditions */}
-              {loading ? (
-                <View className="mt-1">
-                  <SkeletonResultsList count={1} />
-                </View>
-              ) : knownConditionsStatus.length > 0 ? (
-                <Card className="p-4">
-                  {knownConditionsStatus.map((sti, index) => (
-                    <View
-                      key={sti.name}
-                      className={`${index > 0 ? "mt-3 pt-3 border-t" : ""} ${isDark ? "border-dark-border" : "border-border"}`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View>
-                          <Text className={`font-inter-semibold ${isDark ? "text-dark-text" : "text-text"}`}>
-                            {sti.name}
-                          </Text>
-                          <Text className={`text-xs mt-0.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-                            {sti.hasTestData
-                              ? `Last tested: ${formatDate(sti.testDate)}`
-                              : `Declared: ${formatDate(sti.testDate)}`
-                            }
-                          </Text>
-                        </View>
-                        <Badge label="Managed" variant="info" />
-                      </View>
-                      {sti.managementMethods && sti.managementMethods.length > 0 && (
-                        <ManagementMethodPills methods={sti.managementMethods} isDark={isDark} />
-                      )}
-                    </View>
-                  ))}
-                </Card>
-              ) : null}
-            </View>
-          )}
-
-          {/* Divider between sections */}
-          <View className={`h-px mb-6 ${isDark ? "bg-dark-border" : "bg-border"}`} />
-
-          {/* Test History Section — full historical list */}
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className={`text-xl font-inter-semibold ${isDark ? "text-dark-text-secondary" : "text-text"}`}>
-              Test History
-            </Text>
-            {results.length > 1 && (
-              <View className={`px-3 py-1 rounded-full ${isDark ? "bg-dark-accent-muted" : "bg-primary-muted"}`}>
-                <Text className={`font-inter-semibold text-xs ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                  {results.length - 1}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {loading ? (
-            <View className="mb-8">
-              <SkeletonResultsList count={3} />
-            </View>
-          ) : results.length <= 1 ? (
+          {/* Empty history state (has 1 result but no history) */}
+          {!loading && results.length === 1 && (
             <Card className={`p-8 items-center justify-center border-2 border-dashed mb-8 ${isDark ? "border-dark-border bg-dark-surface/50" : "border-border bg-primary-muted/30"}`}>
               <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
                 <FileText size={32} color={isDark ? "#FF2D7A" : "#923D5C"} />
@@ -409,22 +360,10 @@ export default function Dashboard() {
                 Your full history will appear here{"\n"}as you add more results.
               </Text>
             </Card>
-          ) : (
-            <View className="gap-3 mb-8">
-              {results.slice(1, 5).map((result, index) => (
-                <ResultCard key={result.id} result={result} index={index} isDark={isDark} hasKnownCondition={hasKnownConditionMemoized} />
-              ))}
-            </View>
           )}
 
-          <Pressable
-            onPress={signOut}
-            className="mb-12 py-4 items-center"
-          >
-            <Text className={`font-inter-medium ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
-              Sign Out
-            </Text>
-          </Pressable>
+          {/* Bottom spacer */}
+          <View className="h-8" />
         </View>
       </ScrollView>
 
@@ -437,7 +376,6 @@ export default function Dashboard() {
         visible={showRiskAssessment}
         onClose={() => setShowRiskAssessment(false)}
         onComplete={(level) => {
-          // Update local state immediately for instant UI update
           updateRiskLevel(level);
         }}
       />

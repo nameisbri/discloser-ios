@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronRight, ChevronLeft, User, Calendar, Heart, Activity } from "lucide-react-native";
+import { WelcomeScreens } from "../../components/onboarding";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTheme } from "../../context/theme";
 import { useProfile } from "../../lib/hooks";
@@ -82,6 +83,7 @@ export default function Onboarding() {
   const { isDark } = useTheme();
   const { profile, refetch } = useProfile();
 
+  const [showWelcome, setShowWelcome] = useState(true);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -135,10 +137,10 @@ export default function Onboarding() {
   };
 
   const handleBack = () => {
-    if (step === 3) {
+    if (step === 2) {
       // Handle back within risk assessment
       if (riskLevel) {
-        // On result screen - reset and stay on step 3
+        // On result screen - reset and stay on step 2
         resetRiskAssessment();
         return;
       }
@@ -149,7 +151,7 @@ export default function Onboarding() {
       }
     }
     if (step > 1) {
-      if (step === 4) resetRiskAssessment(); // Reset when going back from summary
+      if (step === 3) resetRiskAssessment(); // Reset when going back from conditions
       setStep(step - 1);
     }
   };
@@ -270,6 +272,15 @@ export default function Onboarding() {
   const textSecondary = isDark ? "text-dark-text-secondary" : "text-text-light";
   const inputBg = isDark ? "bg-dark-surface" : "bg-white";
   const inputBorder = isDark ? "border-dark-border" : "border-gray-200";
+
+  if (showWelcome) {
+    return (
+      <WelcomeScreens
+        isDark={isDark}
+        onComplete={() => setShowWelcome(false)}
+      />
+    );
+  }
 
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-base" : "bg-background"}`}>
@@ -490,8 +501,97 @@ export default function Onboarding() {
             </View>
           )}
 
-          {/* Step 2: Known Conditions */}
+          {/* Step 2: Risk Assessment */}
           {step === 2 && (
+            <View className="py-4">
+              <View className="items-center mb-6">
+                <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-success-bg" : "bg-green-100"}`}>
+                  <Activity size={32} color={isDark ? "#00E5A0" : "#10B981"} />
+                </View>
+                <Text className={`text-2xl font-inter-bold text-center ${textColor}`}>
+                  {riskLevel ? "Your vibe" : "Quick check-in"}
+                </Text>
+                <Text className={`text-center mt-2 px-4 ${textSecondary}`}>
+                  {riskLevel
+                    ? "We'll remind you when it's time to test."
+                    : "A few questions to personalize your testing schedule."}
+                </Text>
+              </View>
+
+              {!riskLevel ? (
+                <>
+                  {/* Risk question progress */}
+                  <View className="flex-row gap-1 mb-6">
+                    {RISK_QUESTIONS.map((_, i) => (
+                      <View
+                        key={i}
+                        className={`flex-1 h-1 rounded-full ${
+                          i <= riskStep
+                            ? isDark ? "bg-dark-success" : "bg-green-500"
+                            : isDark ? "bg-dark-surface-light" : "bg-gray-200"
+                        }`}
+                      />
+                    ))}
+                  </View>
+
+                  <Text className={`text-xl font-inter-semibold mb-6 ${textColor}`}>
+                    {RISK_QUESTIONS[riskStep].question}
+                  </Text>
+
+                  <View className="gap-3">
+                    {RISK_QUESTIONS[riskStep].options.map((opt) => (
+                      <Pressable
+                        key={opt.label}
+                        onPress={() => handleRiskAnswer(RISK_QUESTIONS[riskStep].id, opt.points)}
+                        className={`p-4 rounded-xl border flex-row items-center justify-between ${inputBg} ${inputBorder}`}
+                      >
+                        <Text className={`font-inter-medium ${textColor}`}>{opt.label}</Text>
+                        <ChevronRight size={20} color={isDark ? "#6B6B6B" : "#9CA3AF"} />
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <Text className={`text-xs text-center mt-6 ${textSecondary}`}>
+                    Based on CDC guidelines. No judgment, just smart reminders.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {/* Risk result */}
+                  <View className="items-center">
+                    <View
+                      className="w-20 h-20 rounded-full items-center justify-center mb-4"
+                      style={{ backgroundColor: RISK_INFO[riskLevel].color + "20" }}
+                    >
+                      <Text className="text-3xl">
+                        {riskLevel === "low" ? "✓" : riskLevel === "moderate" ? "!" : "!!"}
+                      </Text>
+                    </View>
+
+                    <Text
+                      className="text-2xl font-inter-bold mb-2"
+                      style={{ color: RISK_INFO[riskLevel].color }}
+                    >
+                      {RISK_INFO[riskLevel].label}
+                    </Text>
+
+                    <Text className={`text-center mb-6 ${textSecondary}`}>
+                      Testing {RISK_INFO[riskLevel].interval} keeps you in the clear.
+                    </Text>
+
+                    <Pressable onPress={resetRiskAssessment}>
+                      <Text className={`font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>
+                        Retake assessment
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Step 3: Known Conditions */}
+          {step === 3 && (
             <View className="py-4">
               <View className="items-center mb-6">
                 <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-lavender/20" : "bg-purple-100"}`}>
@@ -609,95 +709,6 @@ export default function Onboarding() {
             </View>
           )}
 
-          {/* Step 3: Risk Assessment */}
-          {step === 3 && (
-            <View className="py-4">
-              <View className="items-center mb-6">
-                <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-success-bg" : "bg-green-100"}`}>
-                  <Activity size={32} color={isDark ? "#00E5A0" : "#10B981"} />
-                </View>
-                <Text className={`text-2xl font-inter-bold text-center ${textColor}`}>
-                  {riskLevel ? "Your vibe" : "Quick check-in"}
-                </Text>
-                <Text className={`text-center mt-2 px-4 ${textSecondary}`}>
-                  {riskLevel
-                    ? "We'll remind you when it's time to test."
-                    : "A few questions to personalize your testing schedule."}
-                </Text>
-              </View>
-
-              {!riskLevel ? (
-                <>
-                  {/* Risk question progress */}
-                  <View className="flex-row gap-1 mb-6">
-                    {RISK_QUESTIONS.map((_, i) => (
-                      <View
-                        key={i}
-                        className={`flex-1 h-1 rounded-full ${
-                          i <= riskStep
-                            ? isDark ? "bg-dark-success" : "bg-green-500"
-                            : isDark ? "bg-dark-surface-light" : "bg-gray-200"
-                        }`}
-                      />
-                    ))}
-                  </View>
-
-                  <Text className={`text-xl font-inter-semibold mb-6 ${textColor}`}>
-                    {RISK_QUESTIONS[riskStep].question}
-                  </Text>
-
-                  <View className="gap-3">
-                    {RISK_QUESTIONS[riskStep].options.map((opt) => (
-                      <Pressable
-                        key={opt.label}
-                        onPress={() => handleRiskAnswer(RISK_QUESTIONS[riskStep].id, opt.points)}
-                        className={`p-4 rounded-xl border flex-row items-center justify-between ${inputBg} ${inputBorder}`}
-                      >
-                        <Text className={`font-inter-medium ${textColor}`}>{opt.label}</Text>
-                        <ChevronRight size={20} color={isDark ? "#6B6B6B" : "#9CA3AF"} />
-                      </Pressable>
-                    ))}
-                  </View>
-
-                  <Text className={`text-xs text-center mt-6 ${textSecondary}`}>
-                    Based on CDC guidelines. No judgment, just smart reminders.
-                  </Text>
-                </>
-              ) : (
-                <>
-                  {/* Risk result */}
-                  <View className="items-center">
-                    <View
-                      className="w-20 h-20 rounded-full items-center justify-center mb-4"
-                      style={{ backgroundColor: RISK_INFO[riskLevel].color + "20" }}
-                    >
-                      <Text className="text-3xl">
-                        {riskLevel === "low" ? "✓" : riskLevel === "moderate" ? "!" : "!!"}
-                      </Text>
-                    </View>
-
-                    <Text
-                      className="text-2xl font-inter-bold mb-2"
-                      style={{ color: RISK_INFO[riskLevel].color }}
-                    >
-                      {RISK_INFO[riskLevel].label}
-                    </Text>
-
-                    <Text className={`text-center mb-6 ${textSecondary}`}>
-                      Testing {RISK_INFO[riskLevel].interval} keeps you in the clear.
-                    </Text>
-
-                    <Pressable onPress={resetRiskAssessment}>
-                      <Text className={`font-inter-medium ${isDark ? "text-dark-accent" : "text-primary"}`}>
-                        Retake assessment
-                      </Text>
-                    </Pressable>
-                  </View>
-                </>
-              )}
-            </View>
-          )}
-
           {/* Step 4: Summary */}
           {step === 4 && (
             <View className="py-4">
@@ -745,7 +756,7 @@ export default function Onboarding() {
         {/* Navigation */}
         <View className={`px-6 py-4 border-t ${isDark ? "border-dark-border bg-dark-base" : "border-gray-200 bg-background"}`}>
           <View className="flex-row gap-3">
-            {(step > 1 || (step === 3 && riskStep > 0)) && (
+            {(step > 1 || (step === 2 && riskStep > 0)) && (
               <Pressable
                 onPress={handleBack}
                 className={`flex-row items-center justify-center px-6 py-3 rounded-xl border ${inputBorder}`}
@@ -754,8 +765,8 @@ export default function Onboarding() {
                 <Text className={`ml-1 font-inter-semibold ${textColor}`}>Back</Text>
               </Pressable>
             )}
-            {/* Hide Continue button while answering risk questions (step 3 without result) */}
-            {!(step === 3 && !riskLevel) && (
+            {/* Hide Continue button while answering risk questions (step 2 without result) */}
+            {!(step === 2 && !riskLevel) && (
               <Button
                 onPress={step === totalSteps ? handleComplete : handleNext}
                 disabled={loading}
