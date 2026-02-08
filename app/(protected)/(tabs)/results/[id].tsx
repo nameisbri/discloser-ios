@@ -280,6 +280,9 @@ export default function ResultDetail() {
 
       <View className={`p-6 border-t ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
         <Button label="Share This Result" onPress={handleShare} />
+        <Text className={`text-xs text-center mt-1.5 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
+          Share just this test
+        </Text>
       </View>
 
       {id && (

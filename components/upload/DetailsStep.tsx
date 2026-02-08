@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
-import { Check, X, Info, Calendar } from "lucide-react-native";
+import { Check, X, Info, Calendar, ShieldCheck } from "lucide-react-native";
 import { Button } from "../Button";
 import { HeaderLogo } from "../HeaderLogo";
 import { parseDateOnly } from "../../lib/utils/date";
@@ -280,6 +280,12 @@ export function DetailsStep({
               <Text className={`mt-2 text-xs font-inter-medium text-center ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
                 Please stay in the app while we process
               </Text>
+              <View className="flex-row items-center justify-center mt-3">
+                <ShieldCheck size={14} color={isDark ? "#00E5A0" : "#10B981"} />
+                <Text className={`text-xs font-inter-medium ml-1.5 ${isDark ? "text-dark-mint" : "text-success"}`}>
+                  Processing on-device. Your data stays on your phone.
+                </Text>
+              </View>
               {onCancel && (
                 <Pressable
                   onPress={onCancel}
@@ -419,7 +425,7 @@ export function DetailsStep({
               )}
 
               <Button
-                label={uploading ? "On it..." : "Save it"}
+                label={uploading ? "Saving..." : "Save Result"}
                 onPress={handleValidatedSubmit}
                 disabled={uploading || extractedResults.length === 0}
                 className="mb-3"
@@ -458,16 +464,16 @@ function VerificationStatus({
     <View className={`p-4 rounded-2xl mb-3 ${isVerified ? (isDark ? "bg-dark-accent-muted" : "bg-primary-light/50") : (isDark ? "bg-dark-warning-bg" : "bg-warning-light/50")}`}>
       <View className="flex-row items-center mb-2">
         {isVerified ? (
-          <Check size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
+          <Info size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
         ) : (
           <Info size={20} color={isDark ? "#FFD700" : "#FFA500"} />
         )}
         <Text className={`font-inter-semibold ml-2 ${isVerified ? (isDark ? "text-dark-accent" : "text-primary") : (isDark ? "text-dark-warning" : "text-warning-dark")}`}>
           {isVerified
             ? verificationDetails.length > 1
-              ? `${verificationDetails.length} documents verified`
-              : "Document verified"
-            : "Document not verified"}
+              ? `Auto-detected from ${verificationDetails.length} documents`
+              : "Auto-detected from document"
+            : "Could not auto-detect"}
         </Text>
       </View>
 
@@ -607,13 +613,6 @@ function ParsingErrorsDisplay({
                 <Text className={`text-xs font-inter-medium mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
                   Error type: {errorInfo.error.step}
                 </Text>
-                {canRetry && (
-                  <View className={`mt-2 px-2 py-1 rounded-full self-start ${isDark ? "bg-dark-warning-bg" : "bg-warning-light"}`}>
-                    <Text className={`text-xs font-inter-medium ${isDark ? "text-dark-warning" : "text-warning-dark"}`}>
-                      Can retry
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           </View>
@@ -624,7 +623,7 @@ function ParsingErrorsDisplay({
         <Button
           label="Retry Auto-Extract"
           onPress={onRetry}
-          variant="secondary"
+          variant="primary"
           className="mt-2"
         />
       )}
@@ -655,6 +654,12 @@ function ExtractedResultsList({
       <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
         Extracted Test Results ({results.length})
       </Text>
+      <View className="flex-row items-center mb-3">
+        <Info size={14} color={isDark ? "#C9A0DC" : "#6B7280"} />
+        <Text className={`text-xs font-inter-medium ml-1.5 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
+          AI-assisted extraction. Review before saving.
+        </Text>
+      </View>
       {results.map((sti, index) => (
         <View key={index} className={`border rounded-2xl p-4 mb-3 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
           <View className="flex-row items-center gap-3">
@@ -738,7 +743,7 @@ function MultiDateSummary({
       {/* Action buttons */}
       <View className="mt-2">
         <Button
-          label={uploading ? "Saving..." : `Save All (${totalTests} results)`}
+          label={uploading ? "Saving..." : `Save All Results (${totalTests})`}
           onPress={onSubmitAll || (() => {})}
           disabled={uploading || !onSubmitAll || totalTests === 0}
           className="mb-3"
