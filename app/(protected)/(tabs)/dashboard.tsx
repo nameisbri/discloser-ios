@@ -249,7 +249,6 @@ export default function Dashboard() {
                     result={results[0]}
                     isDark={isDark}
                     hasKnownCondition={hasKnownConditionMemoized}
-                    onShare={() => router.push(`/results/${results[0].id}`)}
                     onPress={() => router.push(`/results/${results[0].id}`)}
                   />
                 </View>
