@@ -230,7 +230,7 @@ begin
   update public.status_share_links
   set view_count = view_count + 1
   where token = share_token
-    and expires_at > now()
+    and (expires_at is null or expires_at > now())
     and (max_views is null or view_count < max_views)
   returning * into link_record;
 
@@ -255,7 +255,7 @@ begin
     return;
   end if;
 
-  if link_record.expires_at <= now() then
+  if link_record.expires_at is not null and link_record.expires_at <= now() then
     return query select
       link_record.status_snapshot,
       link_record.show_name,
@@ -346,7 +346,7 @@ begin
   update public.share_links
   set view_count = view_count + 1
   where token = share_token
-    and expires_at > now()
+    and (expires_at is null or expires_at > now())
     and (max_views is null or view_count < max_views)
   returning * into link_record;
 
@@ -378,7 +378,7 @@ begin
     return;
   end if;
 
-  if link_record.expires_at <= now() then
+  if link_record.expires_at is not null and link_record.expires_at <= now() then
     return query select
       tr.test_date,
       tr.status,
