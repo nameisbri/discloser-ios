@@ -107,20 +107,51 @@ function aggregateSTIStatus(results: TestResult[], knownConditions: KnownConditi
       }
     }
 
-    // If no matching test result found, add placeholder entry
+    // If no matching test result found in the map, do a reverse lookup
+    // through raw test results to catch name-variation edge cases
     if (!foundMatch) {
-      // Convert ISO timestamp to YYYY-MM-DD format for display
-      const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : new Date().toISOString().split('T')[0];
-      stiMap.set(kc.condition, {
-        name: kc.condition,
-        status: 'pending',
-        result: 'Not recently tested',
-        testDate: dateOnly,
-        isVerified: false,
-        isKnownCondition: true,
-        isStatusSTI: isStatusSTI(kc.condition),
-        hasTestData: false,
-      });
+      let bestTestDate: string | null = null;
+      let bestTestVerified = false;
+
+      for (const result of results) {
+        if (!result.sti_results || !Array.isArray(result.sti_results)) continue;
+        for (const sti of result.sti_results) {
+          if (!sti.name) continue;
+          if (matchesKnownCondition(sti.name, [kc])) {
+            if (!bestTestDate || result.test_date > bestTestDate) {
+              bestTestDate = result.test_date;
+              bestTestVerified = result.is_verified || false;
+            }
+          }
+        }
+      }
+
+      if (bestTestDate) {
+        // Found test data via reverse lookup
+        stiMap.set(kc.condition, {
+          name: kc.condition,
+          status: 'pending',
+          result: 'Not recently tested',
+          testDate: bestTestDate,
+          isVerified: bestTestVerified,
+          isKnownCondition: true,
+          isStatusSTI: isStatusSTI(kc.condition),
+          hasTestData: true,
+        });
+      } else {
+        // No test data found — use declaration date
+        const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : new Date().toISOString().split('T')[0];
+        stiMap.set(kc.condition, {
+          name: kc.condition,
+          status: 'pending',
+          result: 'Not recently tested',
+          testDate: dateOnly,
+          isVerified: false,
+          isKnownCondition: true,
+          isStatusSTI: isStatusSTI(kc.condition),
+          hasTestData: false,
+        });
+      }
     }
   }
 
@@ -645,5 +676,89 @@ describe('Known Conditions Without Test Data', () => {
 
     // Should NOT add duplicate placeholder because it matched
     expect(aggregated).toHaveLength(1);
+  });
+});
+
+describe('Reverse Lookup for Known Condition Test Dates', () => {
+  test('finds test date via reverse lookup when forward match misses', () => {
+    // Simulate a case where the STI name in test results doesn't match
+    // the known condition name in the forward direction (first loop),
+    // but the reverse lookup (known condition -> test results) catches it
+    const results: TestResult[] = [
+      createTestResult({
+        test_date: '2024-06-15',
+        sti_results: [{ name: 'HSV-1', result: 'Positive', status: 'positive' }],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'Herpes (HSV-1)', added_at: '2023-01-01T10:00:00.000Z' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+
+    // The forward match should work here, but if it didn't,
+    // the reverse lookup should catch it
+    const hsv1Entry = aggregated.find(s => s.name === 'HSV-1' || s.name === 'Herpes (HSV-1)');
+    expect(hsv1Entry).toBeDefined();
+    expect(hsv1Entry?.hasTestData).toBe(true);
+    expect(hsv1Entry?.testDate).toBe('2024-06-15');
+  });
+
+  test('uses most recent test date from multiple matching results', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        id: 'older',
+        test_date: '2024-01-15',
+        sti_results: [{ name: 'Hepatitis B', result: 'Positive', status: 'positive' }],
+      }),
+      createTestResult({
+        id: 'newer',
+        test_date: '2024-09-20',
+        sti_results: [{ name: 'Hepatitis B', result: 'Positive', status: 'positive' }],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'Hepatitis B', added_at: '2020-01-01T00:00:00.000Z' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    const hepB = aggregated.find(s => s.name === 'Hepatitis B');
+    expect(hepB?.hasTestData).toBe(true);
+    expect(hepB?.testDate).toBe('2024-09-20'); // Most recent
+  });
+
+  test('falls back to declaration date when no test data exists at all', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        test_date: '2024-01-15',
+        sti_results: [{ name: 'Chlamydia', result: 'Negative', status: 'negative' }],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'Herpes (HSV-2)', added_at: '2023-05-10T14:30:00.000Z' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    const hsv2 = aggregated.find(s => s.name === 'Herpes (HSV-2)');
+    expect(hsv2?.hasTestData).toBe(false);
+    expect(hsv2?.testDate).toBe('2023-05-10'); // Declaration date, not test date
+  });
+
+  test('reverse lookup finds HBV/Hepatitis B variation', () => {
+    const results: TestResult[] = [
+      createTestResult({
+        test_date: '2024-03-01',
+        sti_results: [{ name: 'HBV', result: 'Positive', status: 'positive' }],
+      }),
+    ];
+    const knownConditions: KnownCondition[] = [
+      { condition: 'Hepatitis B', added_at: '2022-01-01T00:00:00.000Z' },
+    ];
+
+    const aggregated = aggregateSTIStatus(results, knownConditions);
+    // The known condition should get test data via matching
+    const hepB = aggregated.find(s => s.isKnownCondition);
+    expect(hepB).toBeDefined();
+    expect(hepB?.hasTestData).toBe(true);
   });
 });

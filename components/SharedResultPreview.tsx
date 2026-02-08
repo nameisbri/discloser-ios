@@ -177,7 +177,7 @@ export function SharedResultPreview({ token }: SharedResultPreviewProps) {
                           <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text }}>{sti.name}</Text>
                           {isKnown && (
                             <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: colors.infoLight }}>
-                              <Text style={{ fontSize: 10, fontWeight: "700", color: colors.info, textTransform: "uppercase" }}>Managed</Text>
+                              <Text style={{ fontSize: 10, fontWeight: "700", color: colors.info }}>Managed</Text>
                             </View>
                           )}
                         </View>

@@ -324,7 +324,7 @@ function STILineItem({
           <Text className={`font-inter-medium ${isDark ? "text-dark-text" : "text-text"}`}>{name}</Text>
           {isKnown && (
             <View className={`ml-2 px-2 py-0.5 rounded-full ${isDark ? "bg-dark-lavender/20" : "bg-purple-100"}`}>
-              <Text className={`text-[10px] font-inter-bold uppercase ${isDark ? "text-dark-lavender" : "text-purple-700"}`}>Managed</Text>
+              <Text className={`text-[10px] font-inter-bold ${isDark ? "text-dark-lavender" : "text-purple-700"}`}>Managed</Text>
             </View>
           )}
         </View>
