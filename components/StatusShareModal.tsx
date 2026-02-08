@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -83,6 +83,8 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   // Theme colors from shared hook
   const colors = useThemeColors();
 
+  const scrollViewRef = useRef<ScrollView>(null);
+
   const fetchUserProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -156,6 +158,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       refetchSTIProfile(); // Refresh profile for known conditions
       fetchLinks();
       fetchUserProfile();
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     }
   }, [visible, refetchStatus, refetchSTIProfile, fetchLinks, fetchUserProfile]);
 
@@ -272,7 +275,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
         </View>
 
         {view === "preview" && (
-          <ScrollView style={{ flex: 1, padding: 16 }}>
+          <ScrollView ref={scrollViewRef} style={{ flex: 1, padding: 16 }}>
             <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16, textAlign: "center" }}>
               Preview what they'll see. No surprises.
             </Text>

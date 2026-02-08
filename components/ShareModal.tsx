@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -85,6 +85,8 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   // Theme colors from shared hook
   const colors = useThemeColors();
 
+  const scrollViewRef = useRef<ScrollView>(null);
+
   useEffect(() => {
     if (visible && testResultId) {
       fetchLinks();
@@ -92,6 +94,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       setView("list");
       setLinkLabel("");
       setLinkNote("");
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     }
   }, [visible, testResultId, fetchLinks]);
 
@@ -232,7 +235,7 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
         {/* List View */}
         {view === "list" && (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+          <ScrollView ref={scrollViewRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
             <View style={{ alignItems: "center", marginBottom: 32 }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
                 <LinkIcon size={32} color={colors.primary} />
