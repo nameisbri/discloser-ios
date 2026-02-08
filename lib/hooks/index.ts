@@ -6,6 +6,7 @@ export { useProfile } from "./useProfile";
 export { useTestingRecommendations, formatDueMessage } from "./useTestingRecommendations";
 export { useDashboardData } from "./useDashboardData";
 export { useThemeColors } from "./useThemeColors";
+export { useAllShareLinks, getUnifiedShareUrl } from "./useAllShareLinks";
 export type { AggregatedSTI } from "./useSTIStatus";
 export type { TestingRecommendation } from "./useTestingRecommendations";
 export type { DashboardData } from "./useDashboardData";

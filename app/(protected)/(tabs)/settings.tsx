@@ -2,7 +2,7 @@ import { View, Text, Pressable, ScrollView, Modal, TextInput, Alert, KeyboardAvo
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/auth";
 import { useTheme, ThemeMode } from "../../../context/theme";
-import { User, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock } from "lucide-react-native";
+import { User, LogOut, ChevronRight, ChevronLeft, Trash2, Activity, Moon, Sun, Smartphone, Heart, Calendar, Clock, Link2 } from "lucide-react-native";
 import { useProfile, useTestResults, useReminders } from "../../../lib/hooks";
 import { RiskAssessment } from "../../../components/RiskAssessment";
 import { KnownConditionsModal } from "../../../components/KnownConditionsModal";
@@ -295,6 +295,13 @@ export default function Settings() {
                 </Text>
               ) : null
             }
+            showChevron
+            isDark={isDark}
+          />
+          <SettingsItem
+            icon={<Link2 size={20} color={isDark ? "#FF2D7A" : "#374151"} />}
+            title="Shared Links"
+            onPress={() => router.push("/shared-links")}
             showChevron
             isDark={isDark}
           />
