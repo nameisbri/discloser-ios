@@ -9,8 +9,6 @@
 // Export HTTP client functions
 export {
   fetchWithRetry,
-  postJSON,
-  getJSON,
   type FetchOptions,
 } from './httpClient';
 

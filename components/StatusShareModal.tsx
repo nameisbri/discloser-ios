@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
+import { SHARE_BASE_URL } from "../lib/constants";
 import QRCode from "react-native-qrcode-svg";
 import {
   X,
@@ -213,8 +214,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   }, []);
 
   const getShareUrl = useCallback((token: string) => {
-    const baseUrl = process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app";
-    return `${baseUrl}/status/${token}`;
+    return `${SHARE_BASE_URL}/status/${token}`;
   }, []);
 
   const handleCopy = useCallback(async (link: StatusShareLink) => {

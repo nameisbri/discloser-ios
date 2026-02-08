@@ -37,6 +37,10 @@ supabase/.branches/
 # Testing
 coverage/
 __tests__/coverage/
+test-fetch.js
+
+# Data files
+*.csv
 
 # TypeScript
 *.tsbuildinfo
@@ -78,3 +82,4 @@ docs/
 .beads/
 .claude/
 .zai/
+.CLAUDE.md

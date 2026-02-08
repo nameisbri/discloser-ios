@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "../supabase";
 import { logger } from "../utils/logger";
+import { SHARE_BASE_URL } from "../constants";
 import type { ShareLink, CreateShareLinkInput, SharedResult } from "../types";
 
 export function useShareLinks(testResultId?: string) {
@@ -107,8 +108,7 @@ export function useShareLinks(testResultId?: string) {
 
 // Utility to generate share URL
 export function getShareUrl(token: string): string {
-  const baseUrl = (process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app").trim();
-  return `${baseUrl}/share/${token}`;
+  return `${SHARE_BASE_URL}/share/${token}`;
 }
 
 // Hook for fetching shared result (public, no auth required)

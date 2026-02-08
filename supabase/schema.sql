@@ -226,17 +226,35 @@ returns table (
 declare
   link_record record;
 begin
-  -- First, find the link
+  -- Atomic check-and-increment: only succeeds if within view limit
+  update public.status_share_links
+  set view_count = view_count + 1
+  where token = share_token
+    and expires_at > now()
+    and (max_views is null or view_count < max_views)
+  returning * into link_record;
+
+  -- If the atomic update succeeded, the link is valid
+  if link_record is not null then
+    return query select
+      link_record.status_snapshot,
+      link_record.show_name,
+      link_record.display_name,
+      true as is_valid,
+      false as is_expired,
+      false as is_over_limit;
+    return;
+  end if;
+
+  -- Update failed — re-fetch to determine why (expired vs over-limit vs not-found)
   select * into link_record
   from public.status_share_links
   where token = share_token;
 
-  -- If not found, return nothing
   if link_record is null then
     return;
   end if;
 
-  -- Check if expired
   if link_record.expires_at <= now() then
     return query select
       link_record.status_snapshot,
@@ -248,30 +266,14 @@ begin
     return;
   end if;
 
-  -- Check if over view limit
-  if link_record.max_views is not null and link_record.view_count >= link_record.max_views then
-    return query select
-      link_record.status_snapshot,
-      link_record.show_name,
-      link_record.display_name,
-      false as is_valid,
-      false as is_expired,
-      true as is_over_limit;
-    return;
-  end if;
-
-  -- Valid link - increment view count and return
-  update public.status_share_links
-  set view_count = view_count + 1
-  where token = share_token;
-
+  -- Must be over view limit
   return query select
     link_record.status_snapshot,
     link_record.show_name,
     link_record.display_name,
-    true as is_valid,
+    false as is_valid,
     false as is_expired,
-    false as is_over_limit;
+    true as is_over_limit;
 end;
 $$ language plpgsql security definer;
 
@@ -340,17 +342,42 @@ returns table (
 declare
   link_record record;
 begin
-  -- First, find the link
+  -- Atomic check-and-increment: only succeeds if within view limit
+  update public.share_links
+  set view_count = view_count + 1
+  where token = share_token
+    and expires_at > now()
+    and (max_views is null or view_count < max_views)
+  returning * into link_record;
+
+  -- If the atomic update succeeded, the link is valid
+  if link_record is not null then
+    return query select
+      tr.test_date,
+      tr.status,
+      tr.test_type,
+      tr.sti_results,
+      tr.is_verified,
+      link_record.show_name,
+      case when link_record.show_name then p.display_name else null end,
+      true as is_valid,
+      false as is_expired,
+      false as is_over_limit
+    from public.test_results tr
+    left join public.profiles p on p.id = link_record.user_id
+    where tr.id = link_record.test_result_id;
+    return;
+  end if;
+
+  -- Update failed — re-fetch to determine why
   select sl.* into link_record
   from public.share_links sl
   where sl.token = share_token;
 
-  -- If not found, return nothing
   if link_record is null then
     return;
   end if;
 
-  -- Check if expired
   if link_record.expires_at <= now() then
     return query select
       tr.test_date,
@@ -369,30 +396,7 @@ begin
     return;
   end if;
 
-  -- Check if over view limit
-  if link_record.max_views is not null and link_record.view_count >= link_record.max_views then
-    return query select
-      tr.test_date,
-      tr.status,
-      tr.test_type,
-      tr.sti_results,
-      tr.is_verified,
-      link_record.show_name,
-      case when link_record.show_name then p.display_name else null end,
-      false as is_valid,
-      false as is_expired,
-      true as is_over_limit
-    from public.test_results tr
-    left join public.profiles p on p.id = link_record.user_id
-    where tr.id = link_record.test_result_id;
-    return;
-  end if;
-
-  -- Valid link - increment view count and return
-  update public.share_links
-  set view_count = view_count + 1
-  where token = share_token;
-
+  -- Must be over view limit
   return query select
     tr.test_date,
     tr.status,
@@ -401,9 +405,9 @@ begin
     tr.is_verified,
     link_record.show_name,
     case when link_record.show_name then p.display_name else null end,
-    true as is_valid,
+    false as is_valid,
     false as is_expired,
-    false as is_over_limit
+    true as is_over_limit
   from public.test_results tr
   left join public.profiles p on p.id = link_record.user_id
   where tr.id = link_record.test_result_id;

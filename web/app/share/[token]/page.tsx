@@ -1,18 +1,15 @@
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { Metadata } from "next";
+import { METHOD_LABELS } from "@/app/components/share/constants";
+import { KnownCondition, matchesKnownCondition } from "@/app/components/share/matching";
+import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayout";
+import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
 
 interface STIResult {
   name: string;
   status: string;
   result: string;
-}
-
-interface KnownCondition {
-  condition: string;
-  added_at: string;
-  notes?: string;
-  management_methods?: string[];
 }
 
 interface SharedResult extends STIResult {
@@ -30,22 +27,6 @@ interface SharedResult extends STIResult {
   label: string | null;
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  daily_antivirals: "Daily antivirals",
-  antiviral_as_needed: "Antivirals as needed",
-  supplements: "Supplements",
-  prep: "PrEP",
-  art_treatment: "ART treatment",
-  undetectable: "Undetectable viral load",
-  antiviral_treatment: "Antiviral treatment",
-  liver_monitoring: "Liver function monitoring",
-  vaccinated: "Vaccinated",
-  cured: "Completed treatment / cured",
-  regular_screening: "Regular screening",
-  barriers: "Barrier use",
-  regular_monitoring: "Regular monitoring",
-};
-
 // Prevent indexing of private share pages
 export const metadata: Metadata = {
   robots: {
@@ -53,79 +34,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-function matchesKnownCondition(stiName: string, knownConditions: KnownCondition[]): KnownCondition | undefined {
-  const name = stiName.toLowerCase();
-  return knownConditions.find((kc) => {
-    const cond = kc.condition.toLowerCase();
-    if (cond === name) return true;
-    if ((cond.includes("hsv-1") || cond.includes("hsv1")) &&
-        (name.includes("hsv-1") || name.includes("hsv1") || name.includes("herpes simplex virus 1") || name.includes("simplex 1") || name === "herpes")) return true;
-    if ((cond.includes("hsv-2") || cond.includes("hsv2")) &&
-        (name.includes("hsv-2") || name.includes("hsv2") || name.includes("herpes simplex virus 2") || name.includes("simplex 2") || name === "herpes")) return true;
-    if (cond.includes("hiv") && name.includes("hiv")) return true;
-    if ((cond.includes("hepatitis b") || cond.includes("hep b") || cond.includes("hbv")) &&
-        (name.includes("hepatitis b") || name.includes("hep b") || name.includes("hbv"))) return true;
-    if ((cond.includes("hepatitis c") || cond.includes("hep c") || cond.includes("hcv")) &&
-        (name.includes("hepatitis c") || name.includes("hep c") || name.includes("hcv"))) return true;
-    // HPV variations
-    if ((cond.includes("hpv") || cond.includes("papilloma")) &&
-        (name.includes("hpv") || name.includes("papilloma") || name.includes("human papilloma"))) return true;
-    return false;
-  });
-}
-
-function PageWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        {children}
-        <div className="flex items-center justify-center gap-2 mt-8 text-white/40 text-sm">
-          <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
-          <span>Discloser</span>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function ExpiredPage({ isOverLimit }: { isOverLimit?: boolean }) {
-  return (
-    <PageWrapper>
-      <div className="bg-surface rounded-3xl border border-surface-light p-8 text-center">
-        <div className="w-16 h-16 bg-warning/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-3">
-          {isOverLimit ? "That's a wrap" : "This link vanished"}
-        </h1>
-        <p className="text-white/60">
-          {isOverLimit
-            ? "Max views reached. Ask for a fresh link if you need one."
-            : "It expired or got revoked. Privacy in action."}
-        </p>
-      </div>
-    </PageWrapper>
-  );
-}
-
-function NotFoundPage() {
-  return (
-    <PageWrapper>
-      <div className="bg-surface rounded-3xl border border-surface-light p-8 text-center">
-        <div className="w-16 h-16 bg-surface-light rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-3">Nothing here</h1>
-        <p className="text-white/60">This link doesn&apos;t exist or got deleted.</p>
-      </div>
-    </PageWrapper>
-  );
-}
 
 async function getSharedResult(token: string) {
   const { data, error } = await supabase.rpc("get_shared_result", { share_token: token });
@@ -147,13 +55,6 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 
   const results = (data.sti_results || []) as STIResult[];
   const knownConditions = (data.known_conditions || []) as KnownCondition[];
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  const statusColor = (s: string, isKnown?: boolean) =>
-    isKnown ? "text-accent-lavender" : s === "negative" ? "text-accent-mint" : s === "positive" ? "text-danger" : "text-warning";
-  const statusBg = (s: string, isKnown?: boolean) =>
-    isKnown ? "bg-accent-lavender/20" : s === "negative" ? "bg-accent-mint/20" : s === "positive" ? "bg-danger/20" : "bg-warning/20";
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8">

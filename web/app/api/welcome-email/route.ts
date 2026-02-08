@@ -3,6 +3,28 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { welcomeEmail } from "@/lib/emails/welcome-email";
 
+// Simple in-memory rate limiting (per user, resets on server restart)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 5 * 60 * 1000; // 5 minutes
+const MAX_REQUESTS_PER_WINDOW = 3;
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(userId);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return false;
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return true;
+  }
+
+  record.count++;
+  return false;
+}
+
 export async function POST(req: Request) {
   try {
     // Extract JWT from Authorization header
@@ -24,6 +46,11 @@ export async function POST(req: Request) {
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check rate limit per user
+    if (isRateLimited(user.id)) {
+      return NextResponse.json({ success: true });
     }
 
     if (!user.email) {
