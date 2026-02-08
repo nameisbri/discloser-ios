@@ -238,7 +238,7 @@ Parse only the medical test results from the document above and return the JSON 
   } catch (error) {
     console.error("parse-document error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An internal error occurred. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

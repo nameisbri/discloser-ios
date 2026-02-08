@@ -7,6 +7,7 @@ interface ResourceTapEvent {
   timestamp: string;
 }
 
+const MAX_EVENT_LOG_SIZE = 1000;
 const eventLog: ResourceTapEvent[] = [];
 
 export function trackResourceTap(resourceId: string, category: string, region: string): void {
@@ -17,6 +18,9 @@ export function trackResourceTap(resourceId: string, category: string, region: s
     timestamp: new Date().toISOString(),
   };
 
+  if (eventLog.length >= MAX_EVENT_LOG_SIZE) {
+    eventLog.shift();
+  }
   eventLog.push(event);
   logger.info("resource_tap", event);
 }

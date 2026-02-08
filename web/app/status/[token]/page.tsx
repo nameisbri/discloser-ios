@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { Metadata } from "next";
+import { METHOD_LABELS } from "@/app/components/share/constants";
+import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayout";
+import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
 
 // Prevent indexing of private status pages
 export const metadata: Metadata = {
@@ -20,78 +23,10 @@ interface STIStatus {
   managementMethods?: string[];
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  daily_antivirals: "Daily antivirals",
-  antiviral_as_needed: "Antivirals as needed",
-  supplements: "Supplements",
-  prep: "PrEP",
-  art_treatment: "ART treatment",
-  undetectable: "Undetectable viral load",
-  antiviral_treatment: "Antiviral treatment",
-  liver_monitoring: "Liver function monitoring",
-  vaccinated: "Vaccinated",
-  cured: "Completed treatment / cured",
-  regular_screening: "Regular screening",
-  barriers: "Barrier use",
-  regular_monitoring: "Regular monitoring",
-};
-
 async function getSharedStatus(token: string) {
   const { data, error } = await supabase.rpc("get_shared_status", { share_token: token });
   if (error || !data?.length) return null;
   return data[0];
-}
-
-function PageWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        {children}
-        <div className="flex items-center justify-center gap-2 mt-8 text-white/40 text-sm">
-          <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
-          <span>Discloser</span>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function ExpiredPage({ isOverLimit }: { isOverLimit?: boolean }) {
-  return (
-    <PageWrapper>
-      <div className="bg-surface rounded-3xl border border-surface-light p-8 text-center">
-        <div className="w-16 h-16 bg-warning/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-3">
-          {isOverLimit ? "That's a wrap" : "This link vanished"}
-        </h1>
-        <p className="text-white/60">
-          {isOverLimit
-            ? "Max views reached. Ask for a fresh link if you need one."
-            : "It expired or got revoked. Privacy in action."}
-        </p>
-      </div>
-    </PageWrapper>
-  );
-}
-
-function NotFoundPage() {
-  return (
-    <PageWrapper>
-      <div className="bg-surface rounded-3xl border border-surface-light p-8 text-center">
-        <div className="w-16 h-16 bg-surface-light rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-3">Nothing here</h1>
-        <p className="text-white/60">This link doesn't exist or got deleted.</p>
-      </div>
-    </PageWrapper>
-  );
 }
 
 export default async function StatusPage({ params }: { params: Promise<{ token: string }> }) {
@@ -107,13 +42,6 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   }
 
   const statuses = data.status_snapshot as STIStatus[];
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  const statusColor = (s: string, isKnown?: boolean) =>
-    isKnown ? "text-accent-lavender" : s === "negative" ? "text-accent-mint" : s === "positive" ? "text-danger" : "text-warning";
-  const statusBg = (s: string, isKnown?: boolean) =>
-    isKnown ? "bg-accent-lavender/20" : s === "negative" ? "bg-accent-mint/20" : s === "positive" ? "bg-danger/20" : "bg-warning/20";
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8">
@@ -177,7 +105,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
           {/* Footer Note */}
           <div className="border-t border-surface-light px-6 py-4">
             <p className="text-center text-white/40 text-xs">
-              <span className="text-accent-mint">✓ Verified</span> = the real deal from a Canadian lab
+              <span className="text-accent-mint">&#10003; Verified</span> = the real deal from a Canadian lab
             </p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "../supabase";
 import { logger } from "../utils/logger";
+import { SHARE_BASE_URL } from "../constants";
 import type { ShareLink, StatusShareLink, UnifiedShareLink, ShareLinkType } from "../types";
 
 function normalizeShareLink(link: ShareLink): UnifiedShareLink {
@@ -38,10 +39,9 @@ function normalizeStatusShareLink(link: StatusShareLink): UnifiedShareLink {
 }
 
 export function getUnifiedShareUrl(link: UnifiedShareLink): string {
-  const baseUrl = (process.env.EXPO_PUBLIC_SHARE_BASE_URL || "https://discloser.app").trim();
   return link.type === "status"
-    ? `${baseUrl}/status/${link.token}`
-    : `${baseUrl}/share/${link.token}`;
+    ? `${SHARE_BASE_URL}/status/${link.token}`
+    : `${SHARE_BASE_URL}/share/${link.token}`;
 }
 
 export function useAllShareLinks() {

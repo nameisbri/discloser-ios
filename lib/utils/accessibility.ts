@@ -1,54 +1,8 @@
-import { AccessibilityInfo, AccessibilityRole } from "react-native";
+import { AccessibilityInfo } from "react-native";
 
 /**
  * Accessibility utility functions for consistent screen reader support
  */
-
-/**
- * Component types that map to accessibility roles
- */
-export type ComponentType =
-  | "button"
-  | "link"
-  | "image"
-  | "text"
-  | "header"
-  | "search"
-  | "switch"
-  | "checkbox"
-  | "radio"
-  | "slider"
-  | "tab"
-  | "menu"
-  | "alert";
-
-/**
- * Maps component types to React Native accessibility roles
- */
-const roleMap: Record<ComponentType, AccessibilityRole> = {
-  button: "button",
-  link: "link",
-  image: "image",
-  text: "text",
-  header: "header",
-  search: "search",
-  switch: "switch",
-  checkbox: "checkbox",
-  radio: "radio",
-  slider: "adjustable",
-  tab: "tab",
-  menu: "menu",
-  alert: "alert",
-};
-
-/**
- * Get the appropriate accessibility role for a component type
- */
-export function getAccessibilityRole(
-  componentType: ComponentType
-): AccessibilityRole {
-  return roleMap[componentType] || "none";
-}
 
 /**
  * Generate a context-aware accessibility label
@@ -98,48 +52,6 @@ export function getAccessibilityLabel(
 }
 
 /**
- * Generate an accessibility hint describing what will happen on interaction
- *
- * @example
- * getAccessibilityHint("navigate", "settings") // "Opens settings"
- * getAccessibilityHint("toggle", "notifications") // "Toggles notifications"
- * getAccessibilityHint("delete", "result") // "Deletes this result permanently"
- */
-export function getAccessibilityHint(
-  action:
-    | "navigate"
-    | "toggle"
-    | "select"
-    | "delete"
-    | "share"
-    | "copy"
-    | "submit"
-    | "cancel"
-    | "refresh"
-    | "expand"
-    | "collapse",
-  target?: string
-): string {
-  const hintMap: Record<string, string> = {
-    navigate: target ? `Opens ${target}` : "Navigates to new screen",
-    toggle: target ? `Toggles ${target}` : "Toggles this option",
-    select: target ? `Selects ${target}` : "Selects this option",
-    delete: target
-      ? `Deletes this ${target} permanently`
-      : "Deletes this item permanently",
-    share: target ? `Shares ${target}` : "Opens sharing options",
-    copy: target ? `Copies ${target} to clipboard` : "Copies to clipboard",
-    submit: target ? `Submits ${target}` : "Submits the form",
-    cancel: "Cancels and goes back",
-    refresh: "Refreshes the content",
-    expand: target ? `Expands ${target}` : "Expands for more details",
-    collapse: target ? `Collapses ${target}` : "Collapses details",
-  };
-
-  return hintMap[action] || "";
-}
-
-/**
  * Announce a message to screen readers
  * Useful for dynamic content updates, loading states, and action confirmations
  *
@@ -174,19 +86,3 @@ export function getResultCardLabel(result: {
   return parts.join(", ");
 }
 
-/**
- * Generate label for an STI result line item
- */
-export function getSTIResultLabel(item: {
-  name: string;
-  result: string;
-  isKnown?: boolean;
-}): string {
-  const parts = [item.name, `result: ${item.result}`];
-
-  if (item.isKnown) {
-    parts.push("managed condition");
-  }
-
-  return parts.join(", ");
-}
