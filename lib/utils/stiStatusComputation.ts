@@ -92,21 +92,53 @@ export function computeSTIStatus(
       }
     }
 
-    // If no matching test result found, add placeholder entry
+    // If no matching test result found in the map, do a reverse lookup
+    // through raw test results to catch name-variation edge cases
     if (!foundMatch) {
-      // Convert ISO timestamp to YYYY-MM-DD format for display
-      const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : toDateString(new Date());
-      stiMap.set(kc.condition, {
-        name: kc.condition,
-        status: "pending",
-        result: "Not recently tested",
-        testDate: dateOnly,
-        isVerified: false,
-        isKnownCondition: true,
-        isStatusSTI: isStatusSTI(kc.condition),
-        hasTestData: false,
-        managementMethods: kc.management_methods,
-      });
+      let bestTestDate: string | null = null;
+      let bestTestVerified = false;
+
+      for (const result of results) {
+        if (!result.sti_results || !Array.isArray(result.sti_results)) continue;
+        for (const sti of result.sti_results) {
+          if (!sti.name) continue;
+          if (matchesKnownCondition(sti.name, [kc])) {
+            if (!bestTestDate || result.test_date > bestTestDate) {
+              bestTestDate = result.test_date;
+              bestTestVerified = result.is_verified || false;
+            }
+          }
+        }
+      }
+
+      if (bestTestDate) {
+        // Found test data via reverse lookup
+        stiMap.set(kc.condition, {
+          name: kc.condition,
+          status: "pending",
+          result: "Not recently tested",
+          testDate: bestTestDate,
+          isVerified: bestTestVerified,
+          isKnownCondition: true,
+          isStatusSTI: isStatusSTI(kc.condition),
+          hasTestData: true,
+          managementMethods: kc.management_methods,
+        });
+      } else {
+        // No test data found — use declaration date
+        const dateOnly = kc.added_at ? kc.added_at.split('T')[0] : toDateString(new Date());
+        stiMap.set(kc.condition, {
+          name: kc.condition,
+          status: "pending",
+          result: "Not recently tested",
+          testDate: dateOnly,
+          isVerified: false,
+          isKnownCondition: true,
+          isStatusSTI: isStatusSTI(kc.condition),
+          hasTestData: false,
+          managementMethods: kc.management_methods,
+        });
+      }
     }
   }
 

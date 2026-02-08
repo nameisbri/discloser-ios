@@ -42,7 +42,7 @@ const badgeVariantsDark = cva(
 );
 
 const badgeTextVariantsLight = cva(
-  "text-xs font-inter-bold uppercase tracking-wider",
+  "text-xs font-inter-bold tracking-wider",
   {
     variants: {
       variant: {
@@ -61,7 +61,7 @@ const badgeTextVariantsLight = cva(
 );
 
 const badgeTextVariantsDark = cva(
-  "text-xs font-inter-bold uppercase tracking-wider",
+  "text-xs font-inter-bold tracking-wider",
   {
     variants: {
       variant: {
