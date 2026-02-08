@@ -14,6 +14,12 @@ export const TESTING_INTERVALS: Record<RiskLevel, number> = {
   high: 90,      // 3 months
 };
 
+export const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "annual"> = {
+  low: "annual",
+  moderate: "biannual",
+  high: "quarterly",
+};
+
 const ROUTINE_PANEL_KEYWORDS = ["basic", "full", "std", "sti", "routine", "panel", "4-test"];
 
 /**
@@ -29,6 +35,33 @@ export function hasRoutineTests(result: TestResult): boolean {
   // Fallback: check test_type for routine panel keywords
   const testType = result.test_type?.toLowerCase() || "";
   return ROUTINE_PANEL_KEYWORDS.some((kw) => testType.includes(kw));
+}
+
+/**
+ * Returns the most recent routine test date across existing results and a
+ * candidate date. Used during upload to determine the correct base date
+ * for reminder calculation — prevents older uploads from overriding
+ * reminders set by newer test results.
+ */
+export function getMostRecentRoutineTestDate(
+  existingResults: TestResult[],
+  candidateDate: string,
+  candidateHasRoutineTests: boolean
+): string {
+  const existingRoutineDates = existingResults
+    .filter(hasRoutineTests)
+    .map((r) => r.test_date);
+
+  if (candidateHasRoutineTests) {
+    existingRoutineDates.push(candidateDate);
+  }
+
+  if (existingRoutineDates.length === 0) {
+    return candidateDate;
+  }
+
+  // YYYY-MM-DD strings sort lexicographically in chronological order
+  return existingRoutineDates.reduce((latest, d) => (d > latest ? d : latest));
 }
 
 export interface TestingRecommendation {
@@ -111,4 +144,42 @@ export function formatDueMessage(rec: TestingRecommendation): string | null {
   }
 
   return null;
+}
+
+// Days to first test when user has no results yet
+const FIRST_TEST_NUDGE_DAYS = 7;
+
+/**
+ * Computes the expected next reminder date based on results and risk level.
+ * Single source of truth for what a reminder's next_date should be.
+ *
+ * - Has routine results → most_recent_routine_date + interval
+ * - No routine results → today + 7 days (encourages getting tested soon)
+ * - No risk level → null
+ */
+export function computeExpectedNextDate(
+  results: TestResult[],
+  riskLevel: RiskLevel | null
+): string | null {
+  if (!riskLevel) return null;
+
+  const routineResults = results.filter(hasRoutineTests);
+
+  let baseDate: Date;
+  let intervalDays: number;
+
+  if (routineResults.length > 0) {
+    // Results are sorted descending by test_date from the query
+    baseDate = parseDateOnly(routineResults[0].test_date);
+    intervalDays = TESTING_INTERVALS[riskLevel];
+  } else {
+    // No results yet — nudge to get tested within the week
+    baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+    intervalDays = FIRST_TEST_NUDGE_DAYS;
+  }
+
+  const nextDue = new Date(baseDate);
+  nextDue.setDate(nextDue.getDate() + intervalDays);
+  return toDateString(nextDue);
 }

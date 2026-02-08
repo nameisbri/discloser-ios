@@ -437,6 +437,224 @@ describe('formatDueMessage', () => {
   });
 });
 
+// ============================================
+// getMostRecentRoutineTestDate tests
+// ============================================
+
+// Re-implement the function here for testing (mirrors lib/utils/testingRecommendations.ts)
+function getMostRecentRoutineTestDate(
+  existingResults: TestResult[],
+  candidateDate: string,
+  candidateHasRoutineTests: boolean
+): string {
+  const existingRoutineDates = existingResults
+    .filter(hasRoutineTests)
+    .map((r) => r.test_date);
+
+  if (candidateHasRoutineTests) {
+    existingRoutineDates.push(candidateDate);
+  }
+
+  if (existingRoutineDates.length === 0) {
+    return candidateDate;
+  }
+
+  return existingRoutineDates.reduce((latest, d) => (d > latest ? d : latest));
+}
+
+describe('getMostRecentRoutineTestDate', () => {
+  test('returns candidate date when it is newer than all existing results', () => {
+    const existing = [
+      createTestResult({ test_date: '2024-06-15' }),
+      createTestResult({ test_date: '2024-01-10' }),
+    ];
+    const result = getMostRecentRoutineTestDate(existing, '2026-01-08', true);
+    expect(result).toBe('2026-01-08');
+  });
+
+  test('returns existing date when it is newer than candidate (bug scenario)', () => {
+    // User uploaded Jan 2026 results first, then uploads Oct 2022 results
+    const existing = [
+      createTestResult({ test_date: '2026-01-08' }),
+    ];
+    const result = getMostRecentRoutineTestDate(existing, '2022-10-31', true);
+    expect(result).toBe('2026-01-08');
+  });
+
+  test('returns candidate date when no existing results', () => {
+    const result = getMostRecentRoutineTestDate([], '2026-01-08', true);
+    expect(result).toBe('2026-01-08');
+  });
+
+  test('returns candidate date as fallback when no routine results exist and candidate is not routine', () => {
+    const nonRoutine = [
+      createTestResult({
+        test_type: 'Herpes Only',
+        sti_results: [{ name: 'HSV-1', result: 'Negative', status: 'negative' }],
+      }),
+    ];
+    const result = getMostRecentRoutineTestDate(nonRoutine, '2026-01-08', false);
+    expect(result).toBe('2026-01-08');
+  });
+
+  test('returns most recent existing routine date when candidate is not routine', () => {
+    const existing = [
+      createTestResult({ test_date: '2026-01-08' }),
+      createTestResult({ test_date: '2024-06-15' }),
+    ];
+    // Candidate is not routine — should still use existing routine dates
+    const result = getMostRecentRoutineTestDate(existing, '2022-10-31', false);
+    expect(result).toBe('2026-01-08');
+  });
+
+  test('handles multiple existing results and picks the latest', () => {
+    const existing = [
+      createTestResult({ test_date: '2024-01-10' }),
+      createTestResult({ test_date: '2025-03-20' }),
+      createTestResult({ test_date: '2024-06-15' }),
+    ];
+    const result = getMostRecentRoutineTestDate(existing, '2024-12-01', true);
+    expect(result).toBe('2025-03-20');
+  });
+
+  test('ignores non-routine existing results', () => {
+    const existing = [
+      createTestResult({
+        test_date: '2026-06-01',
+        test_type: 'Herpes Only',
+        sti_results: [{ name: 'HSV-1', result: 'Reactive', status: 'positive' }],
+      }),
+      createTestResult({ test_date: '2024-01-10' }), // routine
+    ];
+    const result = getMostRecentRoutineTestDate(existing, '2025-01-08', true);
+    // The 2026-06-01 result is non-routine so ignored; candidate 2025-01-08 > existing routine 2024-01-10
+    expect(result).toBe('2025-01-08');
+  });
+
+  describe('exact bug scenario: Jan 2026 then Oct 2022 upload', () => {
+    test('reminder should calculate from Jan 2026, not Oct 2022', () => {
+      // After uploading Jan 2026 results, they exist in the DB
+      const existingAfterFirstUpload = [
+        createTestResult({ test_date: '2026-01-08' }),
+      ];
+      // Now uploading Oct 2022 results
+      const candidateDate = '2022-10-31';
+      const baseDate = getMostRecentRoutineTestDate(existingAfterFirstUpload, candidateDate, true);
+
+      expect(baseDate).toBe('2026-01-08');
+
+      // With high risk (90 days), next due should be ~April 8, 2026
+      const nextDue = new Date(2026, 0, 8); // Jan 8, 2026
+      nextDue.setDate(nextDue.getDate() + 90);
+      expect(nextDue.getFullYear()).toBe(2026);
+      expect(nextDue.getMonth()).toBe(3); // April (0-indexed)
+      expect(nextDue.getDate()).toBe(8);
+    });
+  });
+});
+
+// ============================================
+// computeExpectedNextDate tests
+// ============================================
+
+const FIRST_TEST_NUDGE_DAYS = 7;
+
+// Re-implement for testing (mirrors lib/utils/testingRecommendations.ts)
+function computeExpectedNextDate(
+  results: TestResult[],
+  riskLevel: RiskLevel | null
+): string | null {
+  if (!riskLevel) return null;
+
+  const routineResults = results.filter(hasRoutineTests);
+
+  let baseDate: Date;
+  let intervalDays: number;
+
+  if (routineResults.length > 0) {
+    const [year, month, day] = routineResults[0].test_date.split('-').map(Number);
+    baseDate = new Date(year, month - 1, day);
+    intervalDays = INTERVALS[riskLevel];
+  } else {
+    baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+    intervalDays = FIRST_TEST_NUDGE_DAYS;
+  }
+
+  const nextDue = new Date(baseDate);
+  nextDue.setDate(nextDue.getDate() + intervalDays);
+  return `${nextDue.getFullYear()}-${String(nextDue.getMonth() + 1).padStart(2, '0')}-${String(nextDue.getDate()).padStart(2, '0')}`;
+}
+
+describe('computeExpectedNextDate', () => {
+  test('returns null when no risk level', () => {
+    const result = computeExpectedNextDate([createTestResult()], null);
+    expect(result).toBeNull();
+  });
+
+  test('returns today + 7 days when no results exist (encourages first test)', () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expected = new Date(today);
+    expected.setDate(expected.getDate() + 7);
+    const expectedStr = `${expected.getFullYear()}-${String(expected.getMonth() + 1).padStart(2, '0')}-${String(expected.getDate()).padStart(2, '0')}`;
+
+    // Same 7-day nudge regardless of risk level
+    expect(computeExpectedNextDate([], 'high')).toBe(expectedStr);
+    expect(computeExpectedNextDate([], 'moderate')).toBe(expectedStr);
+    expect(computeExpectedNextDate([], 'low')).toBe(expectedStr);
+  });
+
+  test('returns most recent routine test date + interval when results exist', () => {
+    const results = [
+      createTestResult({ test_date: '2026-01-08' }), // most recent (sorted desc)
+      createTestResult({ test_date: '2022-10-31' }),
+    ];
+    const result = computeExpectedNextDate(results, 'high');
+    expect(result).toBe('2026-04-08'); // Jan 8 + 90 days = April 8
+  });
+
+  test('ignores non-routine results and falls back to 7-day nudge', () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expected = new Date(today);
+    expected.setDate(expected.getDate() + 7);
+    const expectedStr = `${expected.getFullYear()}-${String(expected.getMonth() + 1).padStart(2, '0')}-${String(expected.getDate()).padStart(2, '0')}`;
+
+    const results = [
+      createTestResult({
+        test_date: '2026-01-08',
+        test_type: 'Herpes Only',
+        sti_results: [{ name: 'HSV-1', result: 'Reactive', status: 'positive' }],
+      }),
+    ];
+    // Non-routine result should be ignored, falls back to today + 7 days
+    const result = computeExpectedNextDate(results, 'high');
+    expect(result).toBe(expectedStr);
+  });
+
+  test('uses correct interval per risk level', () => {
+    const results = [createTestResult({ test_date: '2026-01-08' })];
+
+    expect(computeExpectedNextDate(results, 'high')).toBe('2026-04-08');    // +90 days
+    expect(computeExpectedNextDate(results, 'moderate')).toBe('2026-07-07'); // +180 days
+    expect(computeExpectedNextDate(results, 'low')).toBe('2027-01-08');      // +365 days
+  });
+
+  describe('self-correcting scenario: stale reminder from old upload', () => {
+    test('computed date reflects Jan 2026 results regardless of Oct 2022 upload order', () => {
+      // Both results in DB, sorted desc by test_date
+      const results = [
+        createTestResult({ test_date: '2026-01-08' }),
+        createTestResult({ test_date: '2022-10-31' }),
+      ];
+      const expectedDate = computeExpectedNextDate(results, 'high');
+      // Should compute from Jan 2026 (most recent), not Oct 2022
+      expect(expectedDate).toBe('2026-04-08');
+    });
+  });
+});
+
 describe('Risk Level Intervals', () => {
   test('low risk = yearly (365 days)', () => {
     expect(INTERVALS.low).toBe(365);

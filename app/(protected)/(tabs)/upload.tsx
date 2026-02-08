@@ -21,22 +21,10 @@ import type { DateGroupedResult, ParsedDocumentForGrouping } from "../../../lib/
 import { isStatusSTI } from "../../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../../lib/constants";
 import { parseDateOnly, toDateString } from "../../../lib/utils/date";
+import { getMostRecentRoutineTestDate, TESTING_INTERVALS, RISK_FREQUENCY } from "../../../lib/utils/testingRecommendations";
 
 // Maximum number of files that can be uploaded at once
 const MAX_FILES_LIMIT = 4;
-
-// Risk level to testing interval in days
-const RISK_INTERVALS: Record<RiskLevel, number> = {
-  low: 365,
-  moderate: 180,
-  high: 90,
-};
-
-const RISK_FREQUENCY: Record<RiskLevel, "monthly" | "quarterly" | "biannual" | "annual"> = {
-  low: "annual",
-  moderate: "biannual",
-  high: "quarterly",
-};
 
 type Step = "select" | "preview" | "details";
 
@@ -671,16 +659,18 @@ export default function Upload() {
       }
 
       // Update reminder based on risk level using the most recent date
+      // Compare against ALL existing results to avoid older uploads overriding newer ones
       if (profile?.risk_level && hasRoutineTests && mostRecentDate) {
         const riskLevel = profile.risk_level;
-        const intervalDays = RISK_INTERVALS[riskLevel];
-        const nextDueDate = parseDateOnly(mostRecentDate);
+        const intervalDays = TESTING_INTERVALS[riskLevel];
+        const baseDate = getMostRecentRoutineTestDate(results, mostRecentDate, hasRoutineTests);
+        const nextDueDate = parseDateOnly(baseDate);
         nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
         const nextDateStr = toDateString(nextDueDate);
 
-        const existingReminder = activeReminders[0];
-        if (existingReminder) {
-          await updateReminder(existingReminder.id, {
+        const routineReminder = activeReminders.find((r) => r.title === "Routine Checkup");
+        if (routineReminder) {
+          await updateReminder(routineReminder.id, {
             next_date: nextDateStr,
             frequency: RISK_FREQUENCY[riskLevel],
           });
@@ -788,14 +778,15 @@ export default function Upload() {
 
         if (profile?.risk_level && hasRoutine) {
           const riskLevel = profile.risk_level;
-          const intervalDays = RISK_INTERVALS[riskLevel];
-          const nextDueDate = parseDateOnly(testDate);
+          const intervalDays = TESTING_INTERVALS[riskLevel];
+          const baseDate = getMostRecentRoutineTestDate(results, testDate, hasRoutine);
+          const nextDueDate = parseDateOnly(baseDate);
           nextDueDate.setDate(nextDueDate.getDate() + intervalDays);
           const nextDateStr = toDateString(nextDueDate);
 
-          const existingReminder = activeReminders[0];
-          if (existingReminder) {
-            await updateReminder(existingReminder.id, {
+          const routineReminder = activeReminders.find((r) => r.title === "Routine Checkup");
+          if (routineReminder) {
+            await updateReminder(routineReminder.id, {
               next_date: nextDateStr,
               frequency: RISK_FREQUENCY[riskLevel],
             });

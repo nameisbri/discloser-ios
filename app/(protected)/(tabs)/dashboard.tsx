@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "../../../context/theme";
-import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
+import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage, useReminderSync } from "../../../lib/hooks";
 import { useReminders } from "../../../lib/hooks";
 import {
   Bell,
@@ -35,10 +35,20 @@ export default function Dashboard() {
   const router = useRouter();
   const { isDark } = useTheme();
   const { results, loading, refetch } = useTestResults();
-  const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders } = useReminders();
+  const { nextReminder, overdueReminder, activeReminders, refetch: refetchReminders, createReminder, deleteReminder } = useReminders();
   const { routineStatus, knownConditionsStatus, refetchProfile: refetchSTIProfile } = useSTIStatus();
   const { profile, refetch: refetchProfile, updateRiskLevel, hasKnownCondition } = useProfile();
   const recommendation = useTestingRecommendations(results);
+
+  // Keep the stored reminder in sync with the computed recommendation
+  useReminderSync({
+    results,
+    riskLevel: profile?.risk_level ?? null,
+    activeReminders,
+    createReminder,
+    deleteReminder,
+  });
+
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);

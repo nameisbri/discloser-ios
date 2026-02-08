@@ -1,5 +1,6 @@
 export { useTestResults, useTestResult } from "./useTestResults";
 export { useReminders } from "./useReminders";
+export { useReminderSync } from "./useReminderSync";
 export { useShareLinks, useSharedResult, getShareUrl } from "./useShareLinks";
 export { useSTIStatus } from "./useSTIStatus";
 export { useProfile } from "./useProfile";
