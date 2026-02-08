@@ -5,31 +5,26 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Modal,
-  TextInput,
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   Bell,
   Calendar,
   CalendarPlus,
-  Plus,
   Clock,
   CheckCircle2,
   ChevronLeft,
   X,
-  Trash2,
-  Sparkles,
+  Pencil,
   AlertTriangle,
 } from "lucide-react-native";
 import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
 import { useTheme } from "../../../context/theme";
 import { Card } from "../../../components/Card";
 import { HeaderLogo } from "../../../components/HeaderLogo";
-import { Badge } from "../../../components/Badge";
 import { Button } from "../../../components/Button";
 import type { Reminder, ReminderFrequency } from "../../../lib/types";
 import { formatDate, parseDateOnly, toDateString } from "../../../lib/utils/date";
@@ -49,32 +44,72 @@ const FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
   annual: "Yearly",
 };
 
-const RISK_FREQUENCY: Record<string, ReminderFrequency> = {
-  low: "annual",
-  moderate: "biannual",
-  high: "quarterly",
-};
+/**
+ * Computes the next reminder date for a given frequency.
+ * Uses last test date as base; falls back to today if no results or if computed date is in the past.
+ */
+function computeNextDateForFrequency(
+  lastTestDate: string | null,
+  frequency: ReminderFrequency
+): string {
+  const base = lastTestDate ? parseDateOnly(lastTestDate) : new Date();
+  base.setHours(0, 0, 0, 0);
+
+  const next = new Date(base);
+  addFrequencyInterval(next, frequency);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // If the computed date is in the past, calculate from today instead
+  if (next <= today) {
+    const fromToday = new Date(today);
+    addFrequencyInterval(fromToday, frequency);
+    return toDateString(fromToday);
+  }
+
+  return toDateString(next);
+}
+
+function addFrequencyInterval(date: Date, frequency: ReminderFrequency): void {
+  switch (frequency) {
+    case "monthly":
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case "quarterly":
+      date.setMonth(date.getMonth() + 3);
+      break;
+    case "biannual":
+      date.setMonth(date.getMonth() + 6);
+      break;
+    case "annual":
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+  }
+}
 
 export default function Reminders() {
   const router = useRouter();
   const { isDark } = useTheme();
   const {
-    reminders,
     activeReminders,
     loading,
     refetch,
-    createReminder,
     updateReminder,
-    deleteReminder,
   } = useReminders();
   const { results } = useTestResults();
   const recommendation = useTestingRecommendations(results);
 
+  // Refetch when tab gains focus so data is fresh after uploads or dashboard sync
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
   const [refreshing, setRefreshing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [newTitle, setNewTitle] = useState("Routine Checkup");
-  const [newFrequency, setNewFrequency] =
-    useState<ReminderFrequency>("quarterly");
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const [editFrequency, setEditFrequency] = useState<ReminderFrequency>("quarterly");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -82,69 +117,32 @@ export default function Reminders() {
     setRefreshing(false);
   }, [refetch]);
 
-  const getNextDate = (frequency: ReminderFrequency): string => {
-    const date = new Date();
-    switch (frequency) {
-      case "monthly":
-        date.setMonth(date.getMonth() + 1);
-        break;
-      case "quarterly":
-        date.setMonth(date.getMonth() + 3);
-        break;
-      case "biannual":
-        date.setMonth(date.getMonth() + 6);
-        break;
-      case "annual":
-        date.setFullYear(date.getFullYear() + 1);
-        break;
-    }
-    return toDateString(date);
+  const routineReminder = activeReminders.find((r) => r.title === "Routine Checkup") ?? activeReminders[0] ?? null;
+
+  const handleEdit = (reminder: Reminder) => {
+    setEditFrequency(reminder.frequency);
+    setEditingReminder(reminder);
   };
 
-  const handleCreateReminder = async () => {
-    if (!newTitle.trim()) {
-      Alert.alert("Title Required", "Give your reminder a name so you know what it's for.");
-      return;
-    }
+  const handleSaveEdit = async () => {
+    if (!editingReminder) return;
 
-    const result = await createReminder({
-      title: newTitle,
-      frequency: newFrequency,
-      next_date: getNextDate(newFrequency),
-      is_active: true,
+    const newNextDate = computeNextDateForFrequency(
+      recommendation.lastTestDate,
+      editFrequency
+    );
+
+    await updateReminder(editingReminder.id, {
+      frequency: editFrequency,
+      next_date: newNextDate,
     });
 
-    if (result) {
-      setShowModal(false);
-      setNewTitle("Routine Checkup");
-      setNewFrequency("quarterly");
-    } else {
-      Alert.alert("Couldn't Save Reminder", "Something went wrong. Please check your connection and try again.");
-    }
+    setEditingReminder(null);
   };
 
-  const handleToggleActive = async (reminder: Reminder) => {
-    await updateReminder(reminder.id, { is_active: !reminder.is_active });
-  };
-
-  const handleDelete = (reminder: Reminder) => {
-    Alert.alert(
-      "Delete Reminder",
-      `Are you sure you want to delete "${reminder.title}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => deleteReminder(reminder.id),
-        },
-      ]
-    );
-  };
-
-  const inactiveReminders = reminders.filter((r) => !r.is_active);
-  const pastReminders = reminders.filter(
-    (r) => parseDateOnly(r.next_date) < new Date() && r.is_active
+  const previewDate = computeNextDateForFrequency(
+    recommendation.lastTestDate,
+    editFrequency
   );
 
   return (
@@ -203,155 +201,70 @@ export default function Reminders() {
           </Card>
         )}
 
-        {/* Suggested Reminder based on risk */}
-        {recommendation.riskLevel && recommendation.nextDueDate && activeReminders.length === 0 && (
-          <Card className={`mb-6 border-2 ${isDark ? "bg-dark-accent-muted border-dark-accent/30" : "bg-primary-light/30 border-primary/20"}`}>
-            <View className="flex-row items-center mb-3">
-              <Sparkles size={18} color={isDark ? "#FF2D7A" : "#923D5C"} />
-              <Text className={`font-inter-bold ml-2 ${isDark ? "text-dark-accent" : "text-primary"}`}>Just for you</Text>
-            </View>
-            <Text className={`font-inter-medium mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-              Based on your vibe, we'd say{" "}
-              {recommendation.intervalDays === 365 ? "yearly" : recommendation.intervalDays === 180 ? "every 6 months" : "every 3 months"} works.
-            </Text>
-            <Text className={`text-sm mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              Mark your calendar: {formatDate(recommendation.nextDueDate)}
-            </Text>
-            <Button
-              label="Set it up"
-              size="sm"
-              onPress={async () => {
-                await createReminder({
-                  title: "Routine Checkup",
-                  frequency: RISK_FREQUENCY[recommendation.riskLevel!],
-                  next_date: recommendation.nextDueDate!,
-                  is_active: true,
-                });
-              }}
-            />
-          </Card>
-        )}
-
         {loading ? (
           <View className="py-12 items-center">
             <ActivityIndicator size="large" color={isDark ? "#FF2D7A" : "#923D5C"} />
           </View>
+        ) : routineReminder ? (
+          <Card className="mb-8">
+            <Text className={`text-xl font-inter-bold mb-6 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
+              Your Testing Schedule
+            </Text>
+            <ReminderDisplay
+              reminder={routineReminder}
+              onEdit={() => handleEdit(routineReminder)}
+              onAddToCalendar={() => addToCalendar(routineReminder.title, routineReminder.next_date, FREQUENCY_LABELS[routineReminder.frequency])}
+              isDark={isDark}
+            />
+          </Card>
         ) : (
-          <>
-            <Card className="mb-8">
-              <View className="flex-row items-center justify-between mb-6">
-                <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-                  Active Reminders
-                </Text>
-                <Pressable
-                  onPress={() => setShowModal(true)}
-                  className={`p-2 rounded-xl ${isDark ? "bg-dark-accent-muted active:bg-dark-accent/30" : "bg-primary-light/50 active:bg-primary-light"}`}
-                >
-                  <Plus size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
-                </Pressable>
-              </View>
-
-              {activeReminders.length === 0 ? (
-                <View className="items-center py-6">
-                  <Text className={`font-inter-regular mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                    Nothing set up yet
-                  </Text>
-                  <Button
-                    label="Add one"
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => setShowModal(true)}
-                  />
-                </View>
-              ) : (
-                activeReminders.map((reminder, index) => (
-                  <View key={reminder.id}>
-                    {index > 0 && <View className={`h-[1px] my-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />}
-                    <ReminderItem
-                      reminder={reminder}
-                      onToggle={() => handleToggleActive(reminder)}
-                      onDelete={() => handleDelete(reminder)}
-                      onAddToCalendar={() => addToCalendar(reminder.title, reminder.next_date, FREQUENCY_LABELS[reminder.frequency])}
-                      isDark={isDark}
-                    />
-                  </View>
-                ))
-              )}
-            </Card>
-
-            {inactiveReminders.length > 0 && (
-              <>
-                <Text className={`text-xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-                  Paused Reminders
-                </Text>
-                <Card className="mb-8 opacity-60">
-                  {inactiveReminders.map((reminder, index) => (
-                    <View key={reminder.id}>
-                      {index > 0 && <View className={`h-[1px] my-4 ${isDark ? "bg-dark-border" : "bg-border"}`} />}
-                      <ReminderItem
-                        reminder={reminder}
-                        onToggle={() => handleToggleActive(reminder)}
-                        onDelete={() => handleDelete(reminder)}
-                        onAddToCalendar={() => addToCalendar(reminder.title, reminder.next_date, FREQUENCY_LABELS[reminder.frequency])}
-                        isDark={isDark}
-                      />
-                    </View>
-                  ))}
-                </Card>
-              </>
-            )}
-          </>
+          <Card className="mb-8">
+            <Text className={`text-xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
+              Your Testing Schedule
+            </Text>
+            <View className="items-center py-6">
+              <Calendar size={32} color={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"} />
+              <Text className={`font-inter-regular text-center mt-3 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                Your reminder will appear here once{"\n"}you complete your risk assessment.
+              </Text>
+            </View>
+          </Card>
         )}
       </ScrollView>
 
-      {/* Create Reminder Modal */}
+      {/* Edit Reminder Modal */}
       <Modal
-        visible={showModal}
+        visible={editingReminder !== null}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={() => setEditingReminder(null)}
       >
         <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
           <View className={`flex-row items-center justify-between px-6 py-4 border-b ${isDark ? "border-dark-border" : "border-border"}`}>
             <Pressable
-              onPress={() => setShowModal(false)}
+              onPress={() => setEditingReminder(null)}
               className="p-2 -ml-2"
             >
               <X size={24} color={isDark ? "#FFFFFF" : "#374151"} />
             </Pressable>
             <Text className={`text-lg font-inter-semibold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-              New Reminder
+              Edit Reminder
             </Text>
             <View className="w-10" />
           </View>
 
           <View className="flex-1 px-6 py-6">
-            <View className="mb-6">
-              <Text className={`font-inter-semibold mb-2 ${isDark ? "text-dark-text" : "text-text"}`}>Title</Text>
-              <TextInput
-                value={newTitle}
-                onChangeText={setNewTitle}
-                placeholder="e.g., 3-Month Checkup"
-                placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"}
-                className={`border rounded-2xl px-4 py-4 font-inter-regular ${
-                  isDark
-                    ? "bg-dark-surface border-dark-border text-dark-text"
-                    : "bg-white border-border text-text"
-                }`}
-              />
-            </View>
-
             <View className="mb-8">
               <Text className={`font-inter-semibold mb-3 ${isDark ? "text-dark-text" : "text-text"}`}>
-                Frequency
+                How often do you want to test?
               </Text>
               <View className="gap-3">
                 {FREQUENCY_OPTIONS.map((option) => (
                   <Pressable
                     key={option.value}
-                    onPress={() => setNewFrequency(option.value)}
+                    onPress={() => setEditFrequency(option.value)}
                     className={`p-4 rounded-2xl border flex-row items-center justify-between ${
-                      newFrequency === option.value
+                      editFrequency === option.value
                         ? isDark
                           ? "bg-dark-accent-muted border-dark-accent"
                           : "bg-primary-light/30 border-primary"
@@ -362,14 +275,14 @@ export default function Reminders() {
                   >
                     <Text
                       className={`font-inter-medium ${
-                        newFrequency === option.value
+                        editFrequency === option.value
                           ? isDark ? "text-dark-accent" : "text-primary"
                           : isDark ? "text-dark-text" : "text-text"
                       }`}
                     >
                       {option.label}
                     </Text>
-                    {newFrequency === option.value && (
+                    {editFrequency === option.value && (
                       <CheckCircle2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />
                     )}
                   </Pressable>
@@ -379,14 +292,14 @@ export default function Reminders() {
 
             <View className={`p-5 rounded-3xl mb-8 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/20"}`}>
               <Text className={`font-inter-medium text-sm ${isDark ? "text-dark-accent" : "text-primary-dark"}`}>
-                We'll nudge you on{" "}
+                Next checkup on{" "}
                 <Text className="font-inter-bold">
-                  {formatDate(getNextDate(newFrequency))}
+                  {formatDate(previewDate)}
                 </Text>
               </Text>
             </View>
 
-            <Button label="Set it" onPress={handleCreateReminder} />
+            <Button label="Save Changes" onPress={handleSaveEdit} />
           </View>
         </SafeAreaView>
       </Modal>
@@ -394,26 +307,17 @@ export default function Reminders() {
   );
 }
 
-function ReminderItem({
+function ReminderDisplay({
   reminder,
-  onToggle,
-  onDelete,
+  onEdit,
   onAddToCalendar,
   isDark,
 }: {
   reminder: Reminder;
-  onToggle: () => void;
-  onDelete: () => void;
+  onEdit: () => void;
   onAddToCalendar: () => void;
   isDark: boolean;
 }) {
-  const frequencyLabels: Record<ReminderFrequency, string> = {
-    monthly: "Monthly",
-    quarterly: "Every 3 months",
-    biannual: "Every 6 months",
-    annual: "Yearly",
-  };
-
   const isPast = parseDateOnly(reminder.next_date) < new Date();
 
   return (
@@ -421,14 +325,12 @@ function ReminderItem({
       <View className="flex-row items-start">
         <View
           className={`p-3 rounded-2xl mr-4 ${
-            reminder.is_active
-              ? isDark ? "bg-dark-accent-muted" : "bg-primary-light"
-              : isDark ? "bg-dark-surface-light" : "bg-gray-100"
+            isDark ? "bg-dark-accent-muted" : "bg-primary-light"
           }`}
         >
           <Calendar
             size={24}
-            color={reminder.is_active ? (isDark ? "#FF2D7A" : "#923D5C") : "#9CA3AF"}
+            color={isDark ? "#FF2D7A" : "#923D5C"}
           />
         </View>
         <View className="flex-1">
@@ -436,28 +338,21 @@ function ReminderItem({
             <Text className={`font-inter-semibold flex-1 ${isDark ? "text-dark-text" : "text-text"}`}>
               {reminder.title}
             </Text>
-            {/* Status indicator - icon instead of badge to save space */}
             <View className={`flex-row items-center ml-2 px-2 py-1 rounded-full ${
-              reminder.is_active
-                ? isPast
-                  ? isDark ? "bg-dark-warning-bg" : "bg-warning-light"
-                  : isDark ? "bg-dark-success-bg" : "bg-success-light/50"
-                : isDark ? "bg-dark-surface-light" : "bg-gray-100"
+              isPast
+                ? isDark ? "bg-dark-warning-bg" : "bg-warning-light"
+                : isDark ? "bg-dark-success-bg" : "bg-success-light/50"
             }`}>
               <CheckCircle2
                 size={12}
-                color={
-                  reminder.is_active
-                    ? isPast ? "#F59E0B" : (isDark ? "#00E5A0" : "#10B981")
-                    : "#9CA3AF"
-                }
+                color={isPast ? "#F59E0B" : (isDark ? "#00E5A0" : "#10B981")}
               />
             </View>
           </View>
           <View className="flex-row items-center flex-wrap">
             <Clock size={12} color={isDark ? "rgba(255,255,255,0.5)" : "#6B7280"} />
             <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-              {frequencyLabels[reminder.frequency]}
+              {FREQUENCY_LABELS[reminder.frequency]}
             </Text>
             <Text className={`text-xs mx-1 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>•</Text>
             <Text className={`text-xs font-inter-medium ${
@@ -482,12 +377,12 @@ function ReminderItem({
           </Text>
         </Pressable>
         <Pressable
-          onPress={onDelete}
-          className={`flex-row items-center px-3 py-2 rounded-xl ${isDark ? "bg-danger/10 active:bg-danger/20" : "bg-danger/5 active:bg-danger/10"}`}
+          onPress={onEdit}
+          className={`flex-row items-center px-3 py-2 rounded-xl ${isDark ? "bg-dark-accent-muted active:bg-dark-accent/30" : "bg-primary-light/50 active:bg-primary-light"}`}
         >
-          <Trash2 size={14} color="#DC3545" />
-          <Text className="text-xs font-inter-medium ml-1.5 text-danger">
-            Delete
+          <Pencil size={14} color={isDark ? "#FF2D7A" : "#923D5C"} />
+          <Text className={`text-xs font-inter-medium ml-1.5 ${isDark ? "text-dark-accent" : "text-primary"}`}>
+            Edit
           </Text>
         </Pressable>
       </View>
