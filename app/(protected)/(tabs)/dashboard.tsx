@@ -7,13 +7,12 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link, useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "../../../context/theme";
 import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage, useReminderSync } from "../../../lib/hooks";
 import { useReminders } from "../../../lib/hooks";
 import {
   Bell,
-  Settings,
   FileText,
   Share2,
   ShieldCheck,
@@ -135,24 +134,12 @@ export default function Dashboard() {
           end={{ x: 1, y: 1 }}
           style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
         >
-          <View className="flex-row justify-between items-center mb-6">
-            <View className="flex-row items-center">
+          <View className="flex-row items-center mb-6">
               <Image
                 source={require("../../../assets/logomark.png")}
                 style={{ width: 40, height: 40, marginRight: 12 }}
               />
               <Text className="text-white/90 font-inter-bold text-lg">Discloser</Text>
-            </View>
-            <Link href="/settings" asChild>
-              <Pressable
-                className={`p-3 rounded-xl active:opacity-80 ${isDark ? "bg-dark-accent/20" : "bg-white/20"}`}
-                accessibilityLabel="Settings"
-                accessibilityRole="button"
-                accessibilityHint="Opens app settings"
-              >
-                <Settings size={20} color="white" />
-              </Pressable>
-            </Link>
           </View>
 
           <Text className="text-white/70 font-inter-medium mb-1">
