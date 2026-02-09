@@ -158,6 +158,41 @@ export function computeSimHash(text: string): string {
  * // result.hash -> '3a7f2b...' (64-char SHA-256 hex)
  * // result.simhash -> 'a1b2c3d4e5f6a7b8' (16-char SimHash hex)
  */
+/**
+ * Computes the Hamming distance between two SimHash hex strings.
+ *
+ * The Hamming distance is the number of bit positions where the two
+ * hashes differ. A low distance indicates the original texts are similar.
+ *
+ * @param hex1 - First SimHash as a 16-character hex string
+ * @param hex2 - Second SimHash as a 16-character hex string
+ * @returns Number of differing bits (0 = identical, 64 = maximally different)
+ *
+ * @example
+ * hammingDistance('ffffffffffffffff', 'fffffffffffffffe')
+ * // returns 1 (only the last bit differs)
+ *
+ * @example
+ * hammingDistance('0000000000000000', 'ffffffffffffffff')
+ * // returns 64 (all bits differ)
+ */
+export function hammingDistance(hex1: string, hex2: string): number {
+  if (!hex1 || !hex2 || hex1.length !== 16 || hex2.length !== 16) {
+    return 64; // max distance if invalid input
+  }
+
+  let distance = 0;
+
+  // Compare nibble by nibble (4 bits at a time)
+  for (let i = 0; i < 16; i++) {
+    const xor = parseInt(hex1[i], 16) ^ parseInt(hex2[i], 16);
+    // Count set bits in the XOR result (popcount for 4 bits)
+    distance += ((xor >> 0) & 1) + ((xor >> 1) & 1) + ((xor >> 2) & 1) + ((xor >> 3) & 1);
+  }
+
+  return distance;
+}
+
 export async function generateContentHash(text: string): Promise<ContentHashResult> {
   const normalizedText = normalizeTextForHashing(text);
 

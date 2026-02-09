@@ -4,7 +4,7 @@
  * Tests document verification, test type determination, and name matching.
  */
 
-import { matchesCanadianLab } from '../../../lib/utils/labNameNormalizer';
+import { matchesRecognizedLab } from '../../../lib/utils/labNameNormalizer';
 
 interface ParsedTest {
   name: string;
@@ -61,7 +61,7 @@ function matchNames(extractedName: string | undefined, userProfile?: UserProfile
 }
 
 function verifyDocument(llm: LLMResponse, userProfile?: UserProfileForVerification) {
-  const isRecognizedLab = matchesCanadianLab(llm.lab_name || '');
+  const isRecognizedLab = matchesRecognizedLab(llm.lab_name || '');
   const hasHealthCard = llm.health_card_present === true;
   const hasAccession = !!llm.accession_number;
   const nameMatched = matchNames(llm.patient_name, userProfile);

@@ -57,7 +57,7 @@ NOTES EXTRACTION:
 VERIFICATION FIELDS (for document authenticity):
 - lab_name: Name of the laboratory (e.g., "LifeLabs", "Public Health Ontario", "Dynacare", "BC CDC", "Alberta Precision Labs")
 - patient_name: Patient's full name as shown on document
-- health_card_present: true if a Canadian health card number is visible (OHIP, MSP, Alberta Health, RAMQ, etc.)
+- health_card_present: true if a government health card or patient ID number is visible (OHIP, MSP, Alberta Health, RAMQ, US insurance ID, NHS number, etc.)
 - accession_number: Lab specimen/requisition/accession number if present
 
 Example output:

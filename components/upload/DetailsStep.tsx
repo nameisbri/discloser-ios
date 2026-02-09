@@ -541,6 +541,26 @@ function VerificationStatus({
         </VerificationRow>
       )}
 
+      {/* Informational: suspiciously fast upload (collection date very recent) */}
+      {verificationResult?.isSuspiciouslyFast && (
+        <View className="flex-row items-center ml-7 mb-1">
+          <Info size={14} color={isDark ? "#87CEEB" : "#3B82F6"} />
+          <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-blue-300" : "text-blue-600"}`}>
+            This result appears to be from today
+          </Text>
+        </View>
+      )}
+
+      {/* Informational: old result (over 2 years) */}
+      {verificationResult?.isOlderThan2Years && (
+        <View className="flex-row items-center ml-7 mb-1">
+          <Info size={14} color={isDark ? "#FFD700" : "#FFA500"} />
+          <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-yellow-300" : "text-amber-600"}`}>
+            This result is over 2 years old and may not reflect current status
+          </Text>
+        </View>
+      )}
+
       {!isVerified && (
         <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
           {verificationResult?.hasFutureDate

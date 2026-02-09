@@ -6,6 +6,7 @@ import type { TestConflict } from './testDeduplicator';
 import type { VerificationResult } from './types';
 import { deduplicateTestResults } from './testDeduplicator';
 import { determineTestType } from './documentParser';
+import { mergeVerificationResults } from './verificationMerger';
 
 // ---------------------------------------------------------------------------
 // Input type: represents a single parsed document with its metadata.
@@ -84,7 +85,8 @@ interface DateGroupAccumulator {
     hasAccessionNumber: boolean;
     nameMatched: boolean;
   }>;
-  bestVerificationResult: VerificationResult | undefined;
+  /** All verification results from documents in this group, for merging */
+  allVerificationResults: VerificationResult[];
   contentHashes: string[];
   contentSimhashes: string[];
   notes: string[];
@@ -125,7 +127,7 @@ function createAccumulator(): DateGroupAccumulator {
     tests: [],
     verified: false,
     verificationDetails: [],
-    bestVerificationResult: undefined,
+    allVerificationResults: [],
     contentHashes: [],
     contentSimhashes: [],
     notes: [],
@@ -203,11 +205,9 @@ export function groupParsedDocumentsByDate(
       }
     }
 
-    // Track best verification result (highest score wins)
+    // Collect all verification results for merging
     if (doc.verificationResult) {
-      if (!accumulator.bestVerificationResult || doc.verificationResult.score > accumulator.bestVerificationResult.score) {
-        accumulator.bestVerificationResult = doc.verificationResult;
-      }
+      accumulator.allVerificationResults.push(doc.verificationResult);
     }
 
     // Collect content hashes
@@ -237,6 +237,9 @@ export function groupParsedDocumentsByDate(
   for (const [key, accumulator] of dateMap) {
     const date = key === NO_DATE_KEY ? null : key;
 
+    // Merge verification results across all documents in this group
+    const mergedVerification = mergeVerificationResults(accumulator.allVerificationResults);
+
     if (accumulator.tests.length > 0) {
       // Deduplicate within this group
       const deduplicationResult = deduplicateTestResults(accumulator.tests);
@@ -249,9 +252,9 @@ export function groupParsedDocumentsByDate(
         tests: deduplicationResult.tests,
         testType,
         overallStatus: computeOverallStatus(deduplicationResult.tests),
-        isVerified: accumulator.verified,
+        isVerified: mergedVerification?.isVerified ?? accumulator.verified,
         verificationDetails: accumulator.verificationDetails,
-        verificationResult: accumulator.bestVerificationResult,
+        verificationResult: mergedVerification,
         contentHashes: accumulator.contentHashes,
         contentSimhashes: accumulator.contentSimhashes,
         notes: accumulator.notes.join('\n\n'),
@@ -266,9 +269,9 @@ export function groupParsedDocumentsByDate(
         tests: [],
         testType: accumulator.detectedTestType || 'STI Panel',
         overallStatus: 'pending',
-        isVerified: accumulator.verified,
+        isVerified: mergedVerification?.isVerified ?? accumulator.verified,
         verificationDetails: accumulator.verificationDetails,
-        verificationResult: accumulator.bestVerificationResult,
+        verificationResult: mergedVerification,
         contentHashes: accumulator.contentHashes,
         contentSimhashes: accumulator.contentSimhashes,
         notes: accumulator.notes.join('\n\n'),

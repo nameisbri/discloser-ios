@@ -6,46 +6,46 @@
  *
  * Tests cover:
  * - PHO variations are now recognized
- * - All existing Canadian labs still work (no regression)
+ * - All existing recognized labs still work (no regression)
  * - Integration with document verification system
  */
 
-import { normalizeLabName, matchesCanadianLab } from '../../../lib/utils/labNameNormalizer';
+import { normalizeLabName, matchesRecognizedLab } from '../../../lib/utils/labNameNormalizer';
 
 describe('PHO Bug Fix - Specific Validation', () => {
   describe('PHO Abbreviation Recognition (Core Bug Fix)', () => {
     test('PHO abbreviation now recognized', () => {
-      expect(matchesCanadianLab('PHO')).toBe(true);
+      expect(matchesRecognizedLab('PHO')).toBe(true);
       expect(normalizeLabName('PHO')).toBe('public health ontario');
     });
 
     test('PHO with suffix variations recognized', () => {
-      expect(matchesCanadianLab('PHO Laboratory')).toBe(true);
-      expect(matchesCanadianLab('PHO Lab')).toBe(true);
-      expect(matchesCanadianLab('PHO Medical Laboratory')).toBe(true);
+      expect(matchesRecognizedLab('PHO Laboratory')).toBe(true);
+      expect(matchesRecognizedLab('PHO Lab')).toBe(true);
+      expect(matchesRecognizedLab('PHO Medical Laboratory')).toBe(true);
     });
 
     test('PHO case variations recognized', () => {
-      expect(matchesCanadianLab('pho')).toBe(true);
-      expect(matchesCanadianLab('Pho')).toBe(true);
-      expect(matchesCanadianLab('PHO')).toBe(true);
+      expect(matchesRecognizedLab('pho')).toBe(true);
+      expect(matchesRecognizedLab('Pho')).toBe(true);
+      expect(matchesRecognizedLab('PHO')).toBe(true);
     });
   });
 
   describe('Public Health Ontario Full Name Recognition', () => {
     test('full name variations recognized', () => {
-      expect(matchesCanadianLab('Public Health Ontario')).toBe(true);
-      expect(matchesCanadianLab('Public Health Ontario Laboratory')).toBe(true);
-      expect(matchesCanadianLab('PUBLIC HEALTH ONTARIO')).toBe(true);
+      expect(matchesRecognizedLab('Public Health Ontario')).toBe(true);
+      expect(matchesRecognizedLab('Public Health Ontario Laboratory')).toBe(true);
+      expect(matchesRecognizedLab('PUBLIC HEALTH ONTARIO')).toBe(true);
     });
 
     test('full name with suffixes recognized', () => {
-      expect(matchesCanadianLab('Public Health Ontario Lab')).toBe(true);
-      expect(matchesCanadianLab('Public Health Ontario Medical Laboratory')).toBe(true);
+      expect(matchesRecognizedLab('Public Health Ontario Lab')).toBe(true);
+      expect(matchesRecognizedLab('Public Health Ontario Medical Laboratory')).toBe(true);
     });
   });
 
-  describe('Backward Compatibility - All 11 Canadian Labs Still Recognized', () => {
+  describe('Backward Compatibility - All Recognized Labs Still Work', () => {
     const allCanadianLabs = [
       { name: 'LifeLabs', variations: ['LifeLabs', 'LifeLabs Medical Laboratory', 'LIFELABS'] },
       { name: 'Public Health Ontario', variations: ['Public Health Ontario', 'PHO', 'Public Health Ontario Laboratory'] },
@@ -64,7 +64,7 @@ describe('PHO Bug Fix - Specific Validation', () => {
       let totalVariations = 0;
       for (const lab of allCanadianLabs) {
         for (const variation of lab.variations) {
-          expect(matchesCanadianLab(variation)).toBe(true);
+          expect(matchesRecognizedLab(variation)).toBe(true);
           totalVariations++;
         }
       }
@@ -80,16 +80,23 @@ describe('PHO Bug Fix - Specific Validation', () => {
       ];
 
       for (const lab of basicLabNames) {
-        expect(matchesCanadianLab(lab)).toBe(true);
+        expect(matchesRecognizedLab(lab)).toBe(true);
       }
       expect(basicLabNames).toHaveLength(11);
+    });
+
+    test('US and UK labs also recognized', () => {
+      expect(matchesRecognizedLab('Quest Diagnostics')).toBe(true);
+      expect(matchesRecognizedLab('LabCorp')).toBe(true);
+      expect(matchesRecognizedLab('NHS Blood and Transplant')).toBe(true);
+      expect(matchesRecognizedLab('UK Health Security Agency')).toBe(true);
     });
   });
 
   describe('Document Verification Integration', () => {
     // Mock the verification function behavior
     function simulateDocumentVerification(labName: string, hasIdentifier: boolean) {
-      const isRecognizedLab = matchesCanadianLab(labName);
+      const isRecognizedLab = matchesRecognizedLab(labName);
       return isRecognizedLab && hasIdentifier;
     }
 
@@ -105,15 +112,16 @@ describe('PHO Bug Fix - Specific Validation', () => {
       expect(simulateDocumentVerification('Public Health Ontario', false)).toBe(false);
     });
 
-    test('other Canadian labs still verify correctly', () => {
+    test('other recognized labs still verify correctly', () => {
       expect(simulateDocumentVerification('LifeLabs', true)).toBe(true);
       expect(simulateDocumentVerification('Dynacare', true)).toBe(true);
       expect(simulateDocumentVerification('Alberta Precision Labs', true)).toBe(true);
+      expect(simulateDocumentVerification('Quest Diagnostics', true)).toBe(true);
     });
 
     test('unrecognized labs still fail', () => {
       expect(simulateDocumentVerification('Unknown Lab', true)).toBe(false);
-      expect(simulateDocumentVerification('Quest Diagnostics', true)).toBe(false);
+      expect(simulateDocumentVerification('Random Lab', true)).toBe(false);
     });
   });
 
@@ -154,20 +162,18 @@ describe('PHO Bug Fix - Specific Validation', () => {
       ];
 
       for (const variation of llmVariations) {
-        expect(matchesCanadianLab(variation)).toBe(true);
+        expect(matchesRecognizedLab(variation)).toBe(true);
       }
     });
 
     test('correctly rejects clearly non-matching inputs', () => {
       // Short strings that don't match
-      expect(matchesCanadianLab('PH')).toBe(false);
-      expect(matchesCanadianLab('Lab')).toBe(false);
-      expect(matchesCanadianLab('Test')).toBe(false);
+      expect(matchesRecognizedLab('PH')).toBe(false);
+      expect(matchesRecognizedLab('Lab')).toBe(false);
+      expect(matchesRecognizedLab('Test')).toBe(false);
 
       // Completely unrelated labs
-      expect(matchesCanadianLab('Quest Diagnostics')).toBe(false);
-      expect(matchesCanadianLab('LabCorp')).toBe(false);
-      expect(matchesCanadianLab('Mayo Clinic')).toBe(false);
+      expect(matchesRecognizedLab('Random Diagnostics')).toBe(false);
     });
 
     test('partial matches handled by fuzzy matching strategy', () => {
@@ -177,23 +183,23 @@ describe('PHO Bug Fix - Specific Validation', () => {
       // This is intentional to handle LLM extraction variations while preventing false positives
 
       // Single word >= 6 chars that appears in a lab name will match
-      expect(matchesCanadianLab('ontario')).toBe(true); // in "public health ontario"
-      expect(matchesCanadianLab('lifelabs')).toBe(true); // exact match
+      expect(matchesRecognizedLab('ontario')).toBe(true); // in "public health ontario"
+      expect(matchesRecognizedLab('lifelabs')).toBe(true); // exact match
 
       // Multi-word with insufficient overlap correctly rejects
       // "health ontario" = 2 words, "public health ontario" = 3 words
       // overlap = 2/3 = 66.7% < 80% threshold
-      expect(matchesCanadianLab('Health Ontario')).toBe(false);
+      expect(matchesRecognizedLab('Health Ontario')).toBe(false);
 
       // But full or near-full matches work
-      expect(matchesCanadianLab('Public Health Ontario')).toBe(true); // 100% overlap
+      expect(matchesRecognizedLab('Public Health Ontario')).toBe(true); // 100% overlap
     });
 
     test('handles lab names with extra text (real-world variations)', () => {
       // Lab name with additional context - these should still match
-      expect(matchesCanadianLab('Public Health Ontario - Toronto')).toBe(true);
-      expect(matchesCanadianLab('Public Health Ontario Laboratory Services')).toBe(true);
-      expect(matchesCanadianLab('LifeLabs Toronto Branch')).toBe(true);
+      expect(matchesRecognizedLab('Public Health Ontario - Toronto')).toBe(true);
+      expect(matchesRecognizedLab('Public Health Ontario Laboratory Services')).toBe(true);
+      expect(matchesRecognizedLab('LifeLabs Toronto Branch')).toBe(true);
     });
   });
 
@@ -217,9 +223,9 @@ describe('PHO Bug Fix - Specific Validation', () => {
       const start = performance.now();
 
       for (let i = 0; i < 1000; i++) {
-        matchesCanadianLab('Public Health Ontario Laboratory');
-        matchesCanadianLab('PHO');
-        matchesCanadianLab('LifeLabs Medical Laboratory');
+        matchesRecognizedLab('Public Health Ontario Laboratory');
+        matchesRecognizedLab('PHO');
+        matchesRecognizedLab('LifeLabs Medical Laboratory');
       }
 
       const duration = performance.now() - start;

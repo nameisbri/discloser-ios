@@ -56,6 +56,7 @@ export interface TestResult {
   verification_checks?: Array<{ name: string; passed: boolean; points: number; maxPoints: number; details?: string }> | null;
   content_hash?: string | null;
   content_simhash?: string | null;
+  extracted_patient_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -147,6 +148,7 @@ export interface CreateTestResultInput {
   verification_checks?: Array<{ name: string; passed: boolean; points: number; maxPoints: number; details?: string }> | null;
   content_hash?: string | null;
   content_simhash?: string | null;
+  extracted_patient_name?: string | null;
 }
 
 export interface UpdateTestResultInput {
@@ -163,6 +165,7 @@ export interface UpdateTestResultInput {
   verification_checks?: Array<{ name: string; passed: boolean; points: number; maxPoints: number; details?: string }> | null;
   content_hash?: string | null;
   content_simhash?: string | null;
+  extracted_patient_name?: string | null;
 }
 
 export interface CreateShareLinkInput {

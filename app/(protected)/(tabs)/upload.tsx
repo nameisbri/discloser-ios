@@ -21,6 +21,7 @@ import type { DateGroupedResult, ParsedDocumentForGrouping, VerificationResult }
 import { isStatusSTI } from "../../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../../lib/constants";
 import { parseDateOnly, toDateString } from "../../../lib/utils/date";
+import { hammingDistance } from "../../../lib/utils/contentHash";
 import { getMostRecentRoutineTestDate, TESTING_INTERVALS, RISK_FREQUENCY } from "../../../lib/utils/testingRecommendations";
 
 // Maximum number of files that can be uploaded at once
@@ -632,6 +633,9 @@ export default function Upload() {
         try {
           const groupDate = group.date || toDateString(new Date());
 
+          // Extract patient name from verification details for re-verification on name change
+          const extractedPatientName = group.verificationDetails.find((v) => v.patientName)?.patientName ?? null;
+
           const result = await createResult({
             test_date: groupDate,
             status: group.overallStatus,
@@ -644,6 +648,7 @@ export default function Upload() {
             verification_checks: group.verificationResult?.checks ?? null,
             content_hash: group.contentHashes[0] ?? null,
             content_simhash: group.contentSimhashes[0] ?? null,
+            extracted_patient_name: extractedPatientName,
           });
 
           if (result) {
@@ -789,7 +794,7 @@ export default function Upload() {
     if (score === 0) {
       Alert.alert(
         "No Lab Information Detected",
-        "We couldn't detect any lab information from this document. This may not be a valid test result.\n\nPlease upload a clear photo or PDF of your lab report.",
+        "We couldn't detect any lab information from this document.\n\nMake sure you're uploading a lab report — not a referral, requisition, or receipt. Try uploading the original PDF from your lab's online portal for best results.",
         [
           { text: "Go Back", style: "cancel" },
           { text: "Save Anyway", style: "destructive", onPress: onProceed },
@@ -797,11 +802,26 @@ export default function Upload() {
       );
       return false;
     }
+
+    // Build specific reasons and actionable guidance from failed checks
+    const checks = verificationResult.checks;
+    const guidance: string[] = [];
+
+    const labFailed = checks.find((c) => c.name === "recognized_lab")?.passed === false;
+    const nameFailed = checks.find((c) => c.name === "name_match")?.passed === false;
+    const structureFailed = checks.find((c) => c.name === "structural_completeness")?.passed === false;
+    const healthCardFailed = checks.find((c) => c.name === "health_card")?.passed === false;
+
+    if (labFailed) guidance.push("Lab not recognized — try uploading the original PDF from your lab's online portal");
+    if (nameFailed) guidance.push("Patient name doesn't match — check that your profile name matches your lab report (Settings → Profile)");
+    if (structureFailed) guidance.push("Incomplete document — try a clearer photo that includes the full report with header and results");
+    if (healthCardFailed && !labFailed) guidance.push("No health card detected — include the portion of the document showing your health card number");
+    if (guidance.length === 0) guidance.push("Some verification checks did not pass");
 
     if (score < 25) {
       Alert.alert(
         "Low Confidence Result",
-        "This document has very few verification signals. Make sure you're uploading an authentic lab report.",
+        `This document has very few verification signals.\n\n${guidance.join(".\n\n")}.`,
         [
           { text: "Go Back", style: "cancel" },
           { text: "Save Anyway", style: "destructive", onPress: onProceed },
@@ -810,19 +830,10 @@ export default function Upload() {
       return false;
     }
 
-    // Score 25+ but not verified — build specific reason from failed checks
-    const reasons: string[] = [];
-    const checks = verificationResult.checks;
-    const labFailed = checks.find((c) => c.name === "recognized_lab")?.passed === false;
-    const nameFailed = checks.find((c) => c.name === "name_match")?.passed === false;
-
-    if (labFailed) reasons.push("The lab was not recognized");
-    if (nameFailed) reasons.push("The patient name doesn't match your profile");
-    if (reasons.length === 0) reasons.push("Some verification checks did not pass");
-
+    // Score 25+ but not verified
     Alert.alert(
       "Unverified Result",
-      `${reasons.join(". ")}.\n\nThis result will be saved but won't be marked as verified.`,
+      `${guidance.join(".\n\n")}.\n\nThis result will be saved but won't be marked as verified.`,
       [
         { text: "Go Back", style: "cancel" },
         { text: "Save Anyway", onPress: onProceed },
@@ -832,11 +843,12 @@ export default function Upload() {
   };
 
   /**
-   * Checks for duplicate documents (exact content hash match).
+   * Checks for duplicate documents (exact content hash match, then SimHash near-duplicate).
    * Shows an alert and calls onSave if the user confirms, or proceeds directly if no duplicate.
    */
-  const checkDuplicateAndSave = (contentHash: string | undefined, onSave: () => void) => {
+  const checkDuplicateAndSave = (contentHash: string | undefined, contentSimhash: string | undefined, onSave: () => void) => {
     if (contentHash) {
+      // Check 1: Exact SHA-256 match
       const duplicateResult = results.find((r) => r.content_hash === contentHash);
       if (duplicateResult) {
         const dupDate = duplicateResult.test_date;
@@ -850,6 +862,27 @@ export default function Upload() {
         );
         return;
       }
+
+      // Check 2: SimHash near-duplicate (same document re-photographed at different angle/crop)
+      if (contentSimhash) {
+        const SIMHASH_THRESHOLD = 5; // bits
+        const nearDuplicate = results.find((r) => {
+          if (!r.content_simhash) return false;
+          return hammingDistance(contentSimhash, r.content_simhash) < SIMHASH_THRESHOLD;
+        });
+        if (nearDuplicate) {
+          const dupDate = nearDuplicate.test_date;
+          Alert.alert(
+            "Similar Document",
+            `This document appears very similar to one you've already uploaded${dupDate ? ` (saved on ${dupDate})` : ""}. It may be the same document photographed differently.`,
+            [
+              { text: "Go Back", style: "cancel" },
+              { text: "Save Anyway", onPress: onSave },
+            ]
+          );
+          return;
+        }
+      }
     }
 
     onSave();
@@ -857,16 +890,17 @@ export default function Upload() {
 
   const handleSubmit = async () => {
     const contentHash = dateGroupedResults[0]?.contentHashes[0];
+    const contentSimhash = dateGroupedResults[0]?.contentSimhashes[0];
 
     // Check for unverified result first
     const proceed = confirmLowVerification(dateGroupedResults[0]?.verificationResult, () => {
       // User confirmed "Save Anyway" — check for duplicate document then save
-      checkDuplicateAndSave(contentHash, submitResult);
+      checkDuplicateAndSave(contentHash, contentSimhash, submitResult);
     });
     if (!proceed) return;
 
     // Verified or no scoring data: check for duplicate document then save
-    checkDuplicateAndSave(contentHash, submitResult);
+    checkDuplicateAndSave(contentHash, contentSimhash, submitResult);
   };
 
   const submitResult = async () => {
@@ -876,6 +910,7 @@ export default function Upload() {
 
       // Use verification result from first group if available
       const firstGroupResult = dateGroupedResults[0]?.verificationResult;
+      const extractedPatientName = dateGroupedResults[0]?.verificationDetails.find((v) => v.patientName)?.patientName ?? null;
       const result = await createResult({
         test_date: testDate,
         status: overallStatus,
@@ -888,6 +923,7 @@ export default function Upload() {
         verification_checks: firstGroupResult?.checks ?? null,
         content_hash: dateGroupedResults[0]?.contentHashes[0] ?? null,
         content_simhash: dateGroupedResults[0]?.contentSimhashes[0] ?? null,
+        extracted_patient_name: extractedPatientName,
       });
 
       if (result) {
