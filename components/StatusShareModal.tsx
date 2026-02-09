@@ -178,6 +178,7 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       result: s.result,
       testDate: s.testDate,
       isVerified: s.isVerified,
+      verificationLevel: s.verificationLevel,
       isKnownCondition: s.isKnownCondition,
       hasTestData: s.hasTestData,
       managementMethods: s.managementMethods,

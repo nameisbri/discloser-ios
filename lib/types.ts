@@ -51,6 +51,11 @@ export interface TestResult {
   file_name: string | null;
   notes: string | null;
   is_verified: boolean;
+  verification_score?: number | null;
+  verification_level?: string | null;
+  verification_checks?: Array<{ name: string; passed: boolean; points: number; maxPoints: number; details?: string }> | null;
+  content_hash?: string | null;
+  content_simhash?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -137,6 +142,11 @@ export interface CreateTestResultInput {
   file_name?: string;
   notes?: string;
   is_verified?: boolean;
+  verification_score?: number | null;
+  verification_level?: string | null;
+  verification_checks?: Array<{ name: string; passed: boolean; points: number; maxPoints: number; details?: string }> | null;
+  content_hash?: string | null;
+  content_simhash?: string | null;
 }
 
 export interface UpdateTestResultInput {
@@ -148,6 +158,11 @@ export interface UpdateTestResultInput {
   file_name?: string;
   notes?: string;
   is_verified?: boolean;
+  verification_score?: number | null;
+  verification_level?: string | null;
+  verification_checks?: Array<{ name: string; passed: boolean; points: number; maxPoints: number; details?: string }> | null;
+  content_hash?: string | null;
+  content_simhash?: string | null;
 }
 
 export interface CreateShareLinkInput {
