@@ -21,11 +21,35 @@ export interface ParsedDocument {
     hasAccessionNumber: boolean;
     nameMatched: boolean;
   };
+  verificationResult?: VerificationResult;
+  contentHash?: string;
+  contentSimhash?: string;
 }
 
 export interface UserProfileForVerification {
   first_name: string | null;
   last_name: string | null;
+}
+
+export type VerificationLevel = 'high' | 'moderate' | 'low' | 'unverified' | 'self_reported';
+
+export interface VerificationCheck {
+  name: string;
+  passed: boolean;
+  points: number;
+  maxPoints: number;
+  details?: string;
+}
+
+export interface VerificationResult {
+  score: number;
+  level: VerificationLevel;
+  checks: VerificationCheck[];
+  isVerified: boolean;
+  /** True when the collection date is in the future (hard block — cannot save). */
+  hasFutureDate: boolean;
+  /** True when the collection date is suspiciously close to upload time (<2 hours). */
+  isSuspiciouslyFast: boolean;
 }
 
 export interface LLMResponse {

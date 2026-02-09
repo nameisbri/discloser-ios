@@ -3,6 +3,7 @@
 
 import type { STIResult, TestStatus } from '../types';
 import type { TestConflict } from './testDeduplicator';
+import type { VerificationResult } from './types';
 import { deduplicateTestResults } from './testDeduplicator';
 import { determineTestType } from './documentParser';
 
@@ -26,6 +27,9 @@ export interface ParsedDocumentForGrouping {
     hasAccessionNumber: boolean;
     nameMatched: boolean;
   };
+  verificationResult?: VerificationResult;
+  contentHash?: string;
+  contentSimhash?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +56,12 @@ export interface DateGroupedResult {
     hasAccessionNumber: boolean;
     nameMatched: boolean;
   }>;
+  /** Best verification result from documents in this group (highest score) */
+  verificationResult?: VerificationResult;
+  /** Content hashes from documents in this group */
+  contentHashes: string[];
+  /** Content simhashes from documents in this group */
+  contentSimhashes: string[];
   /** Combined notes from all documents in this group */
   notes: string;
   /** Test conflicts detected during deduplication within this group */
@@ -74,6 +84,9 @@ interface DateGroupAccumulator {
     hasAccessionNumber: boolean;
     nameMatched: boolean;
   }>;
+  bestVerificationResult: VerificationResult | undefined;
+  contentHashes: string[];
+  contentSimhashes: string[];
   notes: string[];
   detectedTestType: string | null;
   sourceDocIndices: number[];
@@ -112,6 +125,9 @@ function createAccumulator(): DateGroupAccumulator {
     tests: [],
     verified: false,
     verificationDetails: [],
+    bestVerificationResult: undefined,
+    contentHashes: [],
+    contentSimhashes: [],
     notes: [],
     detectedTestType: null,
     sourceDocIndices: [],
@@ -187,6 +203,21 @@ export function groupParsedDocumentsByDate(
       }
     }
 
+    // Track best verification result (highest score wins)
+    if (doc.verificationResult) {
+      if (!accumulator.bestVerificationResult || doc.verificationResult.score > accumulator.bestVerificationResult.score) {
+        accumulator.bestVerificationResult = doc.verificationResult;
+      }
+    }
+
+    // Collect content hashes
+    if (doc.contentHash) {
+      accumulator.contentHashes.push(doc.contentHash);
+    }
+    if (doc.contentSimhash) {
+      accumulator.contentSimhashes.push(doc.contentSimhash);
+    }
+
     // Collect all tests as STIResult objects
     if (doc.tests && doc.tests.length > 0) {
       const results: STIResult[] = doc.tests.map((t) => ({
@@ -220,6 +251,9 @@ export function groupParsedDocumentsByDate(
         overallStatus: computeOverallStatus(deduplicationResult.tests),
         isVerified: accumulator.verified,
         verificationDetails: accumulator.verificationDetails,
+        verificationResult: accumulator.bestVerificationResult,
+        contentHashes: accumulator.contentHashes,
+        contentSimhashes: accumulator.contentSimhashes,
         notes: accumulator.notes.join('\n\n'),
         conflicts: deduplicationResult.conflicts,
         sourceDocIndices: accumulator.sourceDocIndices,
@@ -234,6 +268,9 @@ export function groupParsedDocumentsByDate(
         overallStatus: 'pending',
         isVerified: accumulator.verified,
         verificationDetails: accumulator.verificationDetails,
+        verificationResult: accumulator.bestVerificationResult,
+        contentHashes: accumulator.contentHashes,
+        contentSimhashes: accumulator.contentSimhashes,
         notes: accumulator.notes.join('\n\n'),
         conflicts: [],
         sourceDocIndices: accumulator.sourceDocIndices,

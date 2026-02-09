@@ -17,7 +17,7 @@ import {
   determineTestType,
   groupParsedDocumentsByDate,
 } from "../../../lib/parsing";
-import type { DateGroupedResult, ParsedDocumentForGrouping } from "../../../lib/parsing";
+import type { DateGroupedResult, ParsedDocumentForGrouping, VerificationResult } from "../../../lib/parsing";
 import { isStatusSTI } from "../../../lib/parsing/testNormalizer";
 import { ROUTINE_TESTS } from "../../../lib/constants";
 import { parseDateOnly, toDateString } from "../../../lib/utils/date";
@@ -384,6 +384,9 @@ export default function Upload() {
           hasAccessionNumber: boolean;
           nameMatched: boolean;
         };
+        verificationResult?: VerificationResult;
+        contentHash?: string;
+        contentSimhash?: string;
         tests?: Array<{ name: string; result: string; status: TestStatus }>;
       };
 
@@ -417,6 +420,9 @@ export default function Upload() {
         notes: doc.notes,
         isVerified: doc.isVerified || false,
         verificationDetails: doc.verificationDetails,
+        verificationResult: doc.verificationResult,
+        contentHash: doc.contentHash,
+        contentSimhash: doc.contentSimhash,
       });
     });
 
@@ -596,7 +602,23 @@ export default function Upload() {
     }
   };
 
-  const submitAllResults = async () => {
+  const submitAllResults = () => {
+    // Find the worst (lowest-scoring) verification result across all groups
+    const worstResult = dateGroupedResults.reduce<VerificationResult | undefined>((worst, g) => {
+      const r = g.verificationResult;
+      if (!r) return worst;
+      if (!worst || r.score < worst.score) return r;
+      return worst;
+    }, undefined);
+
+    const proceed = confirmLowVerification(worstResult, () => {
+      performSubmitAll();
+    });
+    if (!proceed) return;
+    performSubmitAll();
+  };
+
+  const performSubmitAll = async () => {
     try {
       flowActiveRef.current = true;
       setUploading(true);
@@ -616,7 +638,12 @@ export default function Upload() {
             test_type: group.testType,
             sti_results: group.tests,
             notes: group.notes || undefined,
-            is_verified: group.isVerified,
+            is_verified: group.verificationResult?.isVerified ?? group.isVerified,
+            verification_score: group.verificationResult?.score ?? null,
+            verification_level: group.verificationResult?.level ?? null,
+            verification_checks: group.verificationResult?.checks ?? null,
+            content_hash: group.contentHashes[0] ?? null,
+            content_simhash: group.contentSimhashes[0] ?? null,
           });
 
           if (result) {
@@ -732,20 +759,114 @@ export default function Upload() {
     }
   };
 
-  const handleSubmit = async () => {
-    const existingResult = results.find((r) => r.test_date === testDate);
-    if (existingResult) {
+  /**
+   * Checks verification status and shows a confirmation dialog for unverified results.
+   * Returns true if the save should proceed immediately, false if a dialog was shown
+   * (the onProceed callback will be called if the user confirms).
+   */
+  const confirmLowVerification = (
+    verificationResult: VerificationResult | undefined,
+    onProceed: () => void,
+  ): boolean => {
+    // No scoring data (e.g. retry flow): proceed without friction
+    if (!verificationResult) return true;
+
+    // Hard block: future dates are impossible — do not allow saving
+    if (verificationResult.hasFutureDate) {
       Alert.alert(
-        "Duplicate Test Date",
-        `You already have results from ${testDate}. Do you want to add another result for this date?`,
+        "Invalid Date",
+        "The collection date on this document is in the future. This cannot be a valid test result.\n\nPlease check the document and try again.",
+        [{ text: "OK", onPress: () => resetUploadState() }]
+      );
+      return false;
+    }
+
+    const { score, isVerified } = verificationResult;
+
+    // Verified results proceed without friction
+    if (isVerified) return true;
+
+    if (score === 0) {
+      Alert.alert(
+        "No Lab Information Detected",
+        "We couldn't detect any lab information from this document. This may not be a valid test result.\n\nPlease upload a clear photo or PDF of your lab report.",
         [
-          { text: "Cancel", style: "cancel", onPress: () => router.replace("/dashboard") },
-          { text: "Add Anyway", onPress: submitResult },
+          { text: "Go Back", style: "cancel" },
+          { text: "Save Anyway", style: "destructive", onPress: onProceed },
         ]
       );
-      return;
+      return false;
     }
-    await submitResult();
+
+    if (score < 25) {
+      Alert.alert(
+        "Low Confidence Result",
+        "This document has very few verification signals. Make sure you're uploading an authentic lab report.",
+        [
+          { text: "Go Back", style: "cancel" },
+          { text: "Save Anyway", style: "destructive", onPress: onProceed },
+        ]
+      );
+      return false;
+    }
+
+    // Score 25+ but not verified — build specific reason from failed checks
+    const reasons: string[] = [];
+    const checks = verificationResult.checks;
+    const labFailed = checks.find((c) => c.name === "recognized_lab")?.passed === false;
+    const nameFailed = checks.find((c) => c.name === "name_match")?.passed === false;
+
+    if (labFailed) reasons.push("The lab was not recognized");
+    if (nameFailed) reasons.push("The patient name doesn't match your profile");
+    if (reasons.length === 0) reasons.push("Some verification checks did not pass");
+
+    Alert.alert(
+      "Unverified Result",
+      `${reasons.join(". ")}.\n\nThis result will be saved but won't be marked as verified.`,
+      [
+        { text: "Go Back", style: "cancel" },
+        { text: "Save Anyway", onPress: onProceed },
+      ]
+    );
+    return false;
+  };
+
+  /**
+   * Checks for duplicate documents (exact content hash match).
+   * Shows an alert and calls onSave if the user confirms, or proceeds directly if no duplicate.
+   */
+  const checkDuplicateAndSave = (contentHash: string | undefined, onSave: () => void) => {
+    if (contentHash) {
+      const duplicateResult = results.find((r) => r.content_hash === contentHash);
+      if (duplicateResult) {
+        const dupDate = duplicateResult.test_date;
+        Alert.alert(
+          "Duplicate Document",
+          `You've already uploaded this exact document${dupDate ? ` (saved on ${dupDate})` : ""}. Uploading it again will create a duplicate entry.`,
+          [
+            { text: "Go Back", style: "cancel" },
+            { text: "Save Anyway", style: "destructive", onPress: onSave },
+          ]
+        );
+        return;
+      }
+    }
+
+    onSave();
+  };
+
+  const handleSubmit = async () => {
+    const contentHash = dateGroupedResults[0]?.contentHashes[0];
+
+    // Check for unverified result first
+    const proceed = confirmLowVerification(dateGroupedResults[0]?.verificationResult, () => {
+      // User confirmed "Save Anyway" — check for duplicate document then save
+      checkDuplicateAndSave(contentHash, submitResult);
+    });
+    if (!proceed) return;
+
+    // Verified or no scoring data: check for duplicate document then save
+    checkDuplicateAndSave(contentHash, submitResult);
   };
 
   const submitResult = async () => {
@@ -753,13 +874,20 @@ export default function Upload() {
       flowActiveRef.current = true;
       setUploading(true);
 
+      // Use verification result from first group if available
+      const firstGroupResult = dateGroupedResults[0]?.verificationResult;
       const result = await createResult({
         test_date: testDate,
         status: overallStatus,
         test_type: testType,
         sti_results: extractedResults,
         notes: notes || undefined,
-        is_verified: isVerified,
+        is_verified: firstGroupResult?.isVerified ?? isVerified,
+        verification_score: firstGroupResult?.score ?? null,
+        verification_level: firstGroupResult?.level ?? null,
+        verification_checks: firstGroupResult?.checks ?? null,
+        content_hash: dateGroupedResults[0]?.contentHashes[0] ?? null,
+        content_simhash: dateGroupedResults[0]?.contentSimhashes[0] ?? null,
       });
 
       if (result) {

@@ -40,7 +40,7 @@ function getProgressDescription(step: "uploading" | "extracting" | "parsing"): s
 }
 import { isRetryableError } from "../../lib/http/errors";
 import type { STIResult, TestStatus } from "../../lib/types";
-import type { DocumentParsingError, TestConflict, DateGroupedResult } from "../../lib/parsing";
+import type { DocumentParsingError, TestConflict, DateGroupedResult, VerificationResult } from "../../lib/parsing";
 import type { SelectedFile } from "./PreviewStep";
 
 // Formats a YYYY-MM-DD string as a long-form date (e.g., "December 15, 2025")
@@ -226,6 +226,7 @@ export function DetailsStep({
               isDark={isDark}
               isVerified={isVerified}
               verificationDetails={verificationDetails}
+              verificationResult={dateGroupedResults?.[0]?.verificationResult}
               hasProfile={hasProfile}
             />
           )}
@@ -453,13 +454,28 @@ function VerificationStatus({
   isDark,
   isVerified,
   verificationDetails,
+  verificationResult,
   hasProfile,
 }: {
   isDark: boolean;
   isVerified: boolean;
   verificationDetails: VerificationDetails[];
+  verificationResult?: VerificationResult;
   hasProfile: boolean;
 }) {
+  // Use scoring checks when available for accurate pass/fail display
+  const checks = verificationResult?.checks;
+  const labCheck = checks?.find((c) => c.name === "recognized_lab");
+  const healthCardCheck = checks?.find((c) => c.name === "health_card");
+  const accessionCheck = checks?.find((c) => c.name === "accession_number");
+  const nameCheck = checks?.find((c) => c.name === "name_match");
+  const dateCheck = checks?.find((c) => c.name === "collection_date");
+
+  // Fall back to legacy details for lab name and patient name display
+  const firstDetails = verificationDetails[0];
+  const labName = firstDetails?.labName;
+  const patientName = firstDetails?.patientName;
+
   return (
     <View className={`p-4 rounded-2xl mb-3 ${isVerified ? (isDark ? "bg-dark-accent-muted" : "bg-primary-light/50") : (isDark ? "bg-dark-warning-bg" : "bg-warning-light/50")}`}>
       <View className="flex-row items-center mb-2">
@@ -477,62 +493,76 @@ function VerificationStatus({
         </Text>
       </View>
 
-      {verificationDetails.map((details, idx) => (
-        <View key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-white/10" : ""}>
-          {details.labName && (
-            <View className="flex-row items-center ml-7 mb-1">
-              <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-              <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                From: {details.labName}
-              </Text>
-            </View>
-          )}
+      {/* Lab recognition */}
+      {labName && (
+        labCheck?.passed ? (
+          <VerificationRow isDark={isDark} passed>From: {labName}</VerificationRow>
+        ) : (
+          <VerificationRow isDark={isDark} passed={false}>Lab not recognized ({labName})</VerificationRow>
+        )
+      )}
 
-          {(details.hasHealthCard || details.hasAccessionNumber) ? (
-            <View className="flex-row items-center ml-7 mb-1">
-              <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-              <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                {details.hasHealthCard && details.hasAccessionNumber
-                  ? "Health card & accession number present"
-                  : details.hasHealthCard
-                  ? "Health card present"
-                  : "Accession number present"}
-              </Text>
-            </View>
-          ) : (
-            <View className="flex-row items-center ml-7 mb-1">
-              <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-              <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                Missing health card or accession number
-              </Text>
-            </View>
-          )}
+      {/* Health card & accession — only meaningful when lab is recognized */}
+      {labCheck?.passed ? (
+        (healthCardCheck?.passed || accessionCheck?.passed) ? (
+          <VerificationRow isDark={isDark} passed>
+            {healthCardCheck?.passed && accessionCheck?.passed
+              ? "Health card & accession number present"
+              : healthCardCheck?.passed
+              ? "Health card present"
+              : "Accession number present"}
+          </VerificationRow>
+        ) : (
+          <VerificationRow isDark={isDark} passed={false}>
+            Missing health card or accession number
+          </VerificationRow>
+        )
+      ) : (
+        <VerificationRow isDark={isDark} passed={false}>
+          Cannot verify identifiers (unrecognized lab)
+        </VerificationRow>
+      )}
 
-          {details.patientName && hasProfile && (
-            details.nameMatched ? (
-              <View className="flex-row items-center ml-7 mb-1">
-                <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
-                <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-mint" : "text-success"}`}>
-                  Name matches your profile
-                </Text>
-              </View>
-            ) : (
-              <View className="flex-row items-center ml-7 mb-1">
-                <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
-                <Text className={`text-xs font-inter-regular ml-1 ${isDark ? "text-dark-danger" : "text-danger"}`}>
-                  Name doesn't match your profile ({details.patientName})
-                </Text>
-              </View>
-            )
-          )}
-        </View>
-      ))}
+      {/* Name match */}
+      {patientName && hasProfile && (
+        nameCheck?.passed ? (
+          <VerificationRow isDark={isDark} passed>Name matches your profile</VerificationRow>
+        ) : (
+          <VerificationRow isDark={isDark} passed={false}>
+            Name doesn't match your profile ({patientName})
+          </VerificationRow>
+        )
+      )}
+
+      {/* Date validity — only show when it fails */}
+      {dateCheck && !dateCheck.passed && (
+        <VerificationRow isDark={isDark} passed={false}>
+          {dateCheck.details}
+        </VerificationRow>
+      )}
 
       {!isVerified && (
         <Text className={`text-xs font-inter-regular ml-7 mt-2 ${isDark ? "text-dark-text-muted" : "text-text-light"}`}>
-          You can still save this result, but it won't be marked as verified.
+          {verificationResult?.hasFutureDate
+            ? "This document cannot be saved because the date is in the future."
+            : "You can still save this result, but it won't be marked as verified."}
         </Text>
       )}
+    </View>
+  );
+}
+
+function VerificationRow({ isDark, passed, children }: { isDark: boolean; passed: boolean; children: React.ReactNode }) {
+  return (
+    <View className="flex-row items-center ml-7 mb-1">
+      {passed ? (
+        <Check size={14} color={isDark ? "#00E5A0" : "#28A745"} />
+      ) : (
+        <X size={14} color={isDark ? "#FF6B6B" : "#DC3545"} />
+      )}
+      <Text className={`text-xs font-inter-regular ml-1 ${passed ? (isDark ? "text-dark-mint" : "text-success") : (isDark ? "text-dark-danger" : "text-danger")}`}>
+        {children}
+      </Text>
     </View>
   );
 }
