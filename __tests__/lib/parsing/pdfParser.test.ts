@@ -14,6 +14,17 @@ jest.mock('expo-pdf-text-extract', () => ({
   extractTextWithInfo: jest.fn(),
 }));
 
+// Mock react-native-pdf-thumbnail (native module)
+jest.mock('react-native-pdf-thumbnail', () => ({
+  __esModule: true,
+  default: { generate: jest.fn() },
+}));
+
+// Mock OCR extractor (depends on native modules)
+jest.mock('../../../lib/parsing/ocrExtractor', () => ({
+  extractTextFromImage: jest.fn(),
+}));
+
 // Mock the logger
 jest.mock('../../../lib/utils/logger', () => ({
   logger: {
@@ -176,7 +187,7 @@ describe('pdfParser', () => {
       const result = await extractTextFromPDF('/path/to/scanned.pdf');
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('scanned document');
+      expect(result.error).toContain('scanned PDF');
     });
 
     test('handles password-protected PDF', async () => {

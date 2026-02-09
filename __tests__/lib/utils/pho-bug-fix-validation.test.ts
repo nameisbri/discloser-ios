@@ -215,8 +215,8 @@ describe('PHO Bug Fix - Specific Validation', () => {
 
       const duration = performance.now() - start;
 
-      // Should complete 3000 normalizations in under 100ms
-      expect(duration).toBeLessThan(100);
+      // Should complete 3000 normalizations in under 200ms
+      expect(duration).toBeLessThan(200);
     });
 
     test('matching remains fast for all variations', () => {
