@@ -113,12 +113,12 @@ describe('calculateVerificationScore', () => {
       expect(result.isVerified).toBe(false);
     });
 
-    test('returns self_reported level for score 0', () => {
+    test('returns no_signals level for score 0', () => {
       const result = calculateVerificationScore({
         collection_date: null,
         tests: [],
       });
-      expect(result.level).toBe('self_reported');
+      expect(result.level).toBe('no_signals');
       expect(result.score).toBe(0);
       expect(result.isVerified).toBe(false);
     });

@@ -11,7 +11,7 @@ jest.mock('expo-crypto', () => ({
   CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
 }));
 
-import { normalizeTextForHashing, computeSimHash, generateContentHash } from '../../../lib/utils/contentHash';
+import { normalizeTextForHashing, computeSimHash, generateContentHash, hammingDistance } from '../../../lib/utils/contentHash';
 
 describe('normalizeTextForHashing', () => {
   test('converts to lowercase', () => {
@@ -91,6 +91,49 @@ describe('computeSimHash', () => {
 
     // Similar texts should have Hamming distance <= 10 (out of 64 bits)
     expect(hammingDistance).toBeLessThanOrEqual(10);
+  });
+});
+
+describe('hammingDistance', () => {
+  test('returns 0 for identical hashes', () => {
+    expect(hammingDistance('ffffffffffffffff', 'ffffffffffffffff')).toBe(0);
+    expect(hammingDistance('0000000000000000', '0000000000000000')).toBe(0);
+    expect(hammingDistance('a1b2c3d4e5f6a7b8', 'a1b2c3d4e5f6a7b8')).toBe(0);
+  });
+
+  test('returns 1 for single bit difference', () => {
+    // 'e' = 1110, 'f' = 1111 — differ by 1 bit
+    expect(hammingDistance('fffffffffffffffe', 'ffffffffffffffff')).toBe(1);
+  });
+
+  test('returns 64 for maximally different hashes', () => {
+    expect(hammingDistance('0000000000000000', 'ffffffffffffffff')).toBe(64);
+  });
+
+  test('returns 64 for invalid inputs', () => {
+    expect(hammingDistance('', 'ffffffffffffffff')).toBe(64);
+    expect(hammingDistance('ffffffffffffffff', '')).toBe(64);
+    expect(hammingDistance('short', 'ffffffffffffffff')).toBe(64);
+    expect(hammingDistance('ffffffffffffffff', 'short')).toBe(64);
+  });
+
+  test('similar SimHashes have low Hamming distance', () => {
+    const hash1 = computeSimHash('hiv negative syphilis negative chlamydia negative');
+    const hash2 = computeSimHash('hiv negative syphilis negative chlamydia negitive'); // typo
+    expect(hammingDistance(hash1, hash2)).toBeLessThanOrEqual(10);
+  });
+
+  test('different SimHashes have high Hamming distance', () => {
+    const hash1 = computeSimHash('hiv negative syphilis negative chlamydia negative');
+    const hash2 = computeSimHash('this is a completely different document about cooking recipes');
+    expect(hammingDistance(hash1, hash2)).toBeGreaterThan(10);
+  });
+
+  test('near-duplicate detection threshold of 5 bits works', () => {
+    // Same content with minor OCR variation
+    const hash1 = computeSimHash('lifelabs medical laboratory hiv 12 antigen nonreactive syphilis nonreactive');
+    const hash2 = computeSimHash('lifelabs medical laboratory hiv 12 antigen non reactive syphilis nonreactive');
+    expect(hammingDistance(hash1, hash2)).toBeLessThan(5);
   });
 });
 

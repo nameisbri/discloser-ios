@@ -6,7 +6,7 @@ import { standardizeResult } from './resultStandardizer';
 import { extractTextFromPDF, isPDFExtractionAvailable } from './pdfParser';
 import { DocumentParsingError, extractTextFromImage } from './ocrExtractor';
 import { ParsedDocument, ParsedTest, LLMResponse, UserProfileForVerification, VerificationResult, VerificationCheck, VerificationLevel } from './types';
-import { findLabByName } from '../utils/canadianLabDatabase';
+import { findLabByName } from '../utils/labDatabase';
 import { validateCollectionDate } from '../utils/dateValidator';
 import { generateContentHash } from '../utils/contentHash';
 import { logger } from '../utils/logger';
@@ -320,7 +320,7 @@ function normalizeName(name: string): string {
  * Checks if the extracted patient name matches the user's profile name
  * Uses fuzzy matching - names don't need to be in exact order
  */
-function matchNames(extractedName: string | undefined, userProfile?: UserProfileForVerification): boolean {
+export function matchNames(extractedName: string | undefined, userProfile?: UserProfileForVerification): boolean {
   if (!extractedName || !userProfile) return false;
   if (!userProfile.first_name && !userProfile.last_name) return false;
 
@@ -360,19 +360,19 @@ function matchNames(extractedName: string | undefined, userProfile?: UserProfile
 /**
  * Maps a numeric verification score to a level label.
  */
-function scoreToLevel(score: number): VerificationLevel {
+export function scoreToLevel(score: number): VerificationLevel {
   if (score >= 75) return 'high';
   if (score >= 50) return 'moderate';
   if (score >= 25) return 'low';
   if (score >= 1) return 'unverified';
-  return 'self_reported';
+  return 'no_signals';
 }
 
 /**
  * Calculates a multi-factor verification confidence score (0-100) for a parsed document.
  *
  * Scoring rubric (7 checks, 100 points total):
- *  1. recognized_lab          – 25 pts – Lab matches Canadian lab database
+ *  1. recognized_lab          – 25 pts – Lab matches recognized lab database
  *  2. health_card             – 20 pts – Health card number detected
  *  3. accession_number        – 15 pts – Lab accession/requisition number present
  *  4. name_match              – 15 pts – Patient name matches user profile
@@ -381,7 +381,7 @@ function scoreToLevel(score: number): VerificationLevel {
  *  7. multi_signal_agreement  –  5 pts – 3+ independent signals agree
  *
  * Level thresholds:
- *  75-100 = high  |  50-74 = moderate  |  25-49 = low  |  1-24 = unverified  |  0 = self_reported
+ *  75-100 = high  |  50-74 = moderate  |  25-49 = low  |  1-24 = unverified  |  0 = no_signals
  *
  * Backward compatibility: `isVerified = score >= 60`
  */
@@ -498,7 +498,8 @@ export function calculateVerificationScore(
   const nameCheckPassed = userProfile ? nameMatched : true;
   const hasFutureDate = !!dateValidation.isFuture;
   const isSuspiciouslyFast = !!dateValidation.isSuspiciouslyFast;
+  const isOlderThan2Years = !!dateValidation.isOlderThan2Years;
   const isVerified = score >= 60 && nameCheckPassed && !hasFutureDate;
 
-  return { score, level, checks, isVerified, hasFutureDate, isSuspiciouslyFast };
+  return { score, level, checks, isVerified, hasFutureDate, isSuspiciouslyFast, isOlderThan2Years };
 }

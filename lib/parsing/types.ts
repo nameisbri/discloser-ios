@@ -31,7 +31,7 @@ export interface UserProfileForVerification {
   last_name: string | null;
 }
 
-export type VerificationLevel = 'high' | 'moderate' | 'low' | 'unverified' | 'self_reported';
+export type VerificationLevel = 'high' | 'moderate' | 'low' | 'unverified' | 'no_signals';
 
 export interface VerificationCheck {
   name: string;
@@ -50,6 +50,8 @@ export interface VerificationResult {
   hasFutureDate: boolean;
   /** True when the collection date is suspiciously close to upload time (<2 hours). */
   isSuspiciouslyFast: boolean;
+  /** True when the collection date is more than 2 years old. */
+  isOlderThan2Years: boolean;
 }
 
 export interface LLMResponse {

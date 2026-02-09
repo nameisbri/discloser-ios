@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import { METHOD_LABELS } from "@/app/components/share/constants";
 import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayout";
 import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
+import { VerificationExplainer } from "@/app/components/share/VerificationExplainer";
 
 // Prevent indexing of private status pages
 export const metadata: Metadata = {
@@ -72,6 +73,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
                       <p className="font-medium text-white truncate">{sti.name}</p>
                       <div className="flex items-center gap-2 text-xs text-white/50 mt-1">
                         <span>{formatDate(sti.testDate)}</span>
+                        {/* Three-tier badge: high → "Verified ★", moderate → "Verified", below → no badge */}
                         {sti.isVerified && (
                           <span className="text-accent-mint flex items-center gap-1">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -80,6 +82,14 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
                             {sti.verificationLevel === "high" ? "Verified ★" : "Verified"}
                           </span>
                         )}
+                        {(() => {
+                          const d = new Date(sti.testDate);
+                          const twoYearsAgo = new Date();
+                          twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+                          return d < twoYearsAgo ? (
+                            <span className="text-yellow-400/60">Over 2 years old</span>
+                          ) : null;
+                        })()}
                       </div>
                       {sti.isKnownCondition && sti.managementMethods && sti.managementMethods.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -103,12 +113,8 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
             </div>
           </div>
 
-          {/* Footer Note */}
-          <div className="border-t border-surface-light px-6 py-4">
-            <p className="text-center text-white/40 text-xs">
-              <span className="text-accent-mint">&#10003; Verified</span> = the real deal from a Canadian lab
-            </p>
-          </div>
+          {/* Footer Note — expandable verification explainer */}
+          <VerificationExplainer isVerified={statuses.some((s) => s.isVerified)} />
         </div>
 
         {/* Branding Footer */}

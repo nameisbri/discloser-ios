@@ -13,6 +13,7 @@ import { Button } from "../../../components/Button";
 import { hapticNotification } from "../../../lib/utils/haptics";
 import { HeaderLogo } from "../../../components/HeaderLogo";
 import { formatDate } from "../../../lib/utils/date";
+import { reverifyNameMatches } from "../../../lib/utils/reverify";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
@@ -111,6 +112,22 @@ export default function Settings() {
       setSaving(false);
       return;
     }
+
+    // If the name changed, re-verify name matching on existing test results
+    const nameChanged =
+      firstName.trim() !== (profile?.first_name || "") ||
+      lastName.trim() !== (profile?.last_name || "");
+    if (nameChanged) {
+      try {
+        await reverifyNameMatches({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        });
+      } catch {
+        // Non-fatal: re-verification is best-effort
+      }
+    }
+
     await refetchProfile();
     setSaving(false);
     setShowProfileModal(false);

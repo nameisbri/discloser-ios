@@ -890,4 +890,155 @@ describe('groupParsedDocumentsByDate', () => {
       expect(groups[0].testType).toBe('Custom Panel A');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Multi-document verification signal merging
+  // -------------------------------------------------------------------------
+
+  describe('verification signal merging across documents', () => {
+    test('merges verification checks from multiple docs in the same group', () => {
+      const docA: ParsedDocumentForGrouping = makeDoc({
+        collectionDate: '2026-01-15',
+        tests: [{ name: 'HIV-1/2', result: 'Non-reactive', status: 'negative' }],
+        verificationResult: {
+          score: 45,
+          level: 'low',
+          checks: [
+            { name: 'recognized_lab', passed: true, points: 25, maxPoints: 25 },
+            { name: 'health_card', passed: false, points: 0, maxPoints: 20 },
+            { name: 'accession_number', passed: false, points: 0, maxPoints: 15 },
+            { name: 'name_match', passed: false, points: 0, maxPoints: 15 },
+            { name: 'collection_date', passed: true, points: 10, maxPoints: 10 },
+            { name: 'structural_completeness', passed: true, points: 10, maxPoints: 10 },
+            { name: 'multi_signal_agreement', passed: false, points: 0, maxPoints: 5 },
+          ],
+          isVerified: false,
+          hasFutureDate: false,
+          isSuspiciouslyFast: false,
+          isOlderThan2Years: false,
+        },
+      });
+
+      const docB: ParsedDocumentForGrouping = makeDoc({
+        collectionDate: '2026-01-15',
+        tests: [{ name: 'Syphilis', result: 'Non-reactive', status: 'negative' }],
+        verificationResult: {
+          score: 35,
+          level: 'low',
+          checks: [
+            { name: 'recognized_lab', passed: false, points: 0, maxPoints: 25 },
+            { name: 'health_card', passed: true, points: 20, maxPoints: 20 },
+            { name: 'accession_number', passed: false, points: 0, maxPoints: 15 },
+            { name: 'name_match', passed: true, points: 15, maxPoints: 15 },
+            { name: 'collection_date', passed: false, points: 0, maxPoints: 10 },
+            { name: 'structural_completeness', passed: false, points: 0, maxPoints: 10 },
+            { name: 'multi_signal_agreement', passed: false, points: 0, maxPoints: 5 },
+          ],
+          isVerified: false,
+          hasFutureDate: false,
+          isSuspiciouslyFast: false,
+          isOlderThan2Years: false,
+        },
+      });
+
+      const groups = groupParsedDocumentsByDate([docA, docB]);
+
+      expect(groups).toHaveLength(1);
+      const merged = groups[0].verificationResult!;
+
+      // Merged: lab(25) + card(20) + name(15) + date(10) + struct(10) = 80
+      expect(merged.score).toBe(80);
+      expect(merged.level).toBe('high');
+      expect(merged.isVerified).toBe(true);
+    });
+
+    test('individually unverified docs become verified when merged', () => {
+      const docA: ParsedDocumentForGrouping = makeDoc({
+        collectionDate: '2026-01-15',
+        tests: [{ name: 'HIV-1/2', result: 'Non-reactive', status: 'negative' }],
+        isVerified: false,
+        verificationResult: {
+          score: 45,
+          level: 'low',
+          checks: [
+            { name: 'recognized_lab', passed: true, points: 25, maxPoints: 25 },
+            { name: 'name_match', passed: false, points: 0, maxPoints: 15 },
+            { name: 'collection_date', passed: true, points: 10, maxPoints: 10 },
+            { name: 'structural_completeness', passed: true, points: 10, maxPoints: 10 },
+          ],
+          isVerified: false,
+          hasFutureDate: false,
+          isSuspiciouslyFast: false,
+          isOlderThan2Years: false,
+        },
+      });
+
+      const docB: ParsedDocumentForGrouping = makeDoc({
+        collectionDate: '2026-01-15',
+        tests: [{ name: 'Syphilis', result: 'Non-reactive', status: 'negative' }],
+        isVerified: false,
+        verificationResult: {
+          score: 35,
+          level: 'low',
+          checks: [
+            { name: 'recognized_lab', passed: false, points: 0, maxPoints: 25 },
+            { name: 'name_match', passed: true, points: 15, maxPoints: 15 },
+            { name: 'collection_date', passed: true, points: 10, maxPoints: 10 },
+            { name: 'structural_completeness', passed: true, points: 10, maxPoints: 10 },
+          ],
+          isVerified: false,
+          hasFutureDate: false,
+          isSuspiciouslyFast: false,
+          isOlderThan2Years: false,
+        },
+      });
+
+      const groups = groupParsedDocumentsByDate([docA, docB]);
+      // Merged: 25+15+10+10 = 60, name matched → verified
+      expect(groups[0].isVerified).toBe(true);
+      expect(groups[0].verificationResult!.score).toBe(60);
+    });
+
+    test('future date in any doc blocks group verification', () => {
+      const docA: ParsedDocumentForGrouping = makeDoc({
+        collectionDate: '2026-01-15',
+        tests: [{ name: 'HIV-1/2', result: 'Non-reactive', status: 'negative' }],
+        verificationResult: {
+          score: 75,
+          level: 'high',
+          checks: [
+            { name: 'recognized_lab', passed: true, points: 25, maxPoints: 25 },
+            { name: 'name_match', passed: true, points: 15, maxPoints: 15 },
+            { name: 'collection_date', passed: true, points: 10, maxPoints: 10 },
+          ],
+          isVerified: true,
+          hasFutureDate: false,
+          isSuspiciouslyFast: false,
+          isOlderThan2Years: false,
+        },
+      });
+
+      const docB: ParsedDocumentForGrouping = makeDoc({
+        collectionDate: '2026-01-15',
+        tests: [{ name: 'Syphilis', result: 'Non-reactive', status: 'negative' }],
+        verificationResult: {
+          score: 0,
+          level: 'no_signals',
+          checks: [
+            { name: 'recognized_lab', passed: false, points: 0, maxPoints: 25 },
+            { name: 'name_match', passed: false, points: 0, maxPoints: 15 },
+            { name: 'collection_date', passed: false, points: 0, maxPoints: 10 },
+          ],
+          isVerified: false,
+          hasFutureDate: true,
+          isSuspiciouslyFast: false,
+          isOlderThan2Years: false,
+        },
+      });
+
+      const groups = groupParsedDocumentsByDate([docA, docB]);
+      expect(groups[0].verificationResult!.hasFutureDate).toBe(true);
+      expect(groups[0].verificationResult!.isVerified).toBe(false);
+    });
+  });
 });

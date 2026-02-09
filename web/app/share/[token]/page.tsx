@@ -5,6 +5,7 @@ import { METHOD_LABELS } from "@/app/components/share/constants";
 import { KnownCondition, matchesKnownCondition } from "@/app/components/share/matching";
 import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayout";
 import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
+import { VerificationExplainer } from "@/app/components/share/VerificationExplainer";
 
 interface STIResult {
   name: string;
@@ -77,6 +78,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             {data.created_at && (
               <p className="text-white/40 text-sm mt-1">Shared on {formatDate(data.created_at)}</p>
             )}
+            {/* Three-tier verification badge: high → "Verified — High Confidence", moderate → "Verified", below → no badge */}
             {data.is_verified && (
               <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-accent-mint/10">
                 <svg className="w-3.5 h-3.5 text-accent-mint" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -87,6 +89,14 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                 </span>
               </div>
             )}
+            {(() => {
+              const d = new Date(data.test_date);
+              const twoYearsAgo = new Date();
+              twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+              return d < twoYearsAgo ? (
+                <p className="text-yellow-400/70 text-xs mt-2">This result is over 2 years old</p>
+              ) : null;
+            })()}
           </div>
 
           {/* Results List */}
@@ -132,15 +142,8 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             )}
           </div>
 
-          {/* Footer Note */}
-          <div className="border-t border-surface-light px-6 py-4">
-            <p className="text-center text-white/40 text-xs">
-              {data.is_verified
-                ? <><span className="text-accent-mint">&#10003; Verified</span> — confirmed from a recognized Canadian lab</>
-                : "This result has not been verified"
-              }
-            </p>
-          </div>
+          {/* Footer Note — expandable verification explainer */}
+          <VerificationExplainer isVerified={data.is_verified} />
         </div>
 
         {/* Branding Footer */}

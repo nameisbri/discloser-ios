@@ -30,7 +30,7 @@ begin
   returning * into link_record;
 
   -- If the atomic update succeeded, the link is valid
-  if link_record is not null then
+  if FOUND then
     return query select
       tr.test_date,
       tr.status,
@@ -58,7 +58,7 @@ begin
   from public.share_links sl
   where sl.token = share_token;
 
-  if link_record is null then
+  if not FOUND then
     return;
   end if;
 
