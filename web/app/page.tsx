@@ -14,6 +14,8 @@ import {
   Camera,
   ShieldCheck,
   Shield,
+  Fingerprint,
+  Star,
 } from "lucide-react";
 
 import ParallaxBlobs from "./components/ParallaxBlobs";
@@ -31,7 +33,7 @@ import { scaleIn } from "./components/animations";
 
 export const metadata: Metadata = {
   title:
-    "Discloser — Share Your STI Status Anonymously | Privacy-First Sexual Health App",
+    "Discloser: Share Your STI Status Anonymously | Privacy-First Sexual Health App",
   description:
     "Share STI test results through secure, anonymous links without exposing your name or personal information. Free privacy-first iOS app with time-limited sharing, end-to-end encryption, and CDC-based testing reminders. Join the waitlist.",
   alternates: {
@@ -43,17 +45,17 @@ const faqItems = [
   {
     question: "How does Discloser protect my identity?",
     answer:
-      "When you share your test results through Discloser, recipients only see your testing status and date — never your name, date of birth, health card number, or any other personally identifiable information. Your full lab documents stay private on your device.",
+      "When you share your test results through Discloser, recipients only see your testing status and date. Never your name, date of birth, health card number, or any other personally identifiable information. Your full lab documents stay private on your device.",
   },
   {
     question: "Is Discloser free?",
     answer:
-      "Yes. Discloser's core features — uploading results, sharing secure links, and setting testing reminders — are completely free. We believe privacy shouldn't have a price tag.",
+      "Yes. Discloser is completely free at launch. Core features like uploading results, sharing secure links, and setting testing reminders will always be free. Optional premium features are planned for the future, but privacy will never have a price tag.",
   },
   {
     question: "How does document verification work?",
     answer:
-      "Discloser uses AI-powered document parsing to extract and verify your test results from lab documents and photos. The system identifies the testing provider, test types, dates, and results — then presents them in a clean, standardized format for sharing.",
+      "Discloser runs each document through 7 verification checks: recognized lab, health card number, accession ID, name match, date validity, document structure, and cross-signal agreement. The results are scored from 0 to 100 and assigned a confidence level (Verified with high confidence, Verified, or Unverified). You and recipients can see exactly which checks passed and why.",
   },
   {
     question: "How do expiring links work?",
@@ -63,7 +65,7 @@ const faqItems = [
   {
     question: "Is my health data sold to third parties?",
     answer:
-      "Absolutely not. Discloser will never sell, share, or monetize your health data. Your test results are encrypted and stored securely. We don't run ads, and we don't have data-sharing partnerships. Your data is yours — period.",
+      "Absolutely not. Discloser will never sell, share, or monetize your health data. Your test results are encrypted and stored securely. We don't run ads, and we don't have data-sharing partnerships. Your data is yours. Period.",
   },
   {
     question: "What STIs does Discloser support?",
@@ -78,7 +80,7 @@ const faqItems = [
   {
     question: "What happens when I delete my account?",
     answer:
-      "When you delete your account, all of your data — test results, share links, profile information — is permanently removed from our servers. Active share links are immediately deactivated. This action is irreversible.",
+      "When you delete your account, all of your data (test results, share links, profile information) is permanently removed from our servers. Active share links are immediately deactivated. This action is irreversible.",
   },
 ];
 
@@ -112,6 +114,7 @@ export default function Home() {
               "Photo upload or file import for test results",
               "Revocable access to shared results",
               "No personal information exposed to recipients",
+              "Automated document verification with confidence scoring",
             ],
             screenshot: "https://discloser.app/og-image.png",
             author: {
@@ -184,7 +187,7 @@ export default function Home() {
               Discloser is a privacy-first iOS app that lets you share verified
               STI test results anonymously. Upload your lab documents, set expiry
               and view limits, and share a secure link or QR code. Recipients see
-              your status — not your name, date of birth, or any personally
+              your status, not your name, date of birth, or any personally
               identifiable information.
             </p>
           </HeroContent>
@@ -352,7 +355,7 @@ export default function Home() {
             <p className="text-sm text-white/60 text-center mt-8 max-w-2xl mx-auto leading-relaxed">
               Unlike partner notification services that alert contacts about
               potential exposure, Discloser lets you proactively share verified
-              proof of your testing status — putting you in control of the
+              proof of your testing status, putting you in control of the
               conversation.
             </p>
           </AnimatedCard>
@@ -480,10 +483,83 @@ export default function Home() {
           </div>
 
           <p className="text-sm text-white/60 text-center mt-10 max-w-2xl mx-auto leading-relaxed">
-            Discloser uses AI-powered document verification to extract and
-            validate your test results from lab documents. Your verified status is
-            shared through time-limited, view-limited links that automatically
-            expire — giving you full control over who sees what, and for how long.
+            Discloser uses multi-signal document verification to extract and
+            validate your test results from lab documents. Each result receives a
+            confidence score based on 7 checks, then is shared through
+            time-limited, view-limited links that automatically expire, giving
+            you full control over who sees what, and for how long.
+          </p>
+        </AnimatedSection>
+
+        {/* Verification */}
+        <AnimatedSection
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          aria-labelledby="verification-heading"
+        >
+          <div className="text-center mb-12">
+            <h2
+              id="verification-heading"
+              className="text-2xl sm:text-3xl font-bold mb-3"
+            >
+              Verified Results. Real Trust.
+            </h2>
+            <p className="text-white/70">
+              Recipients see proof, not promises.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-6">
+            {[
+              {
+                icon: (
+                  <ShieldCheck
+                    className="w-6 h-6 text-accent"
+                    aria-hidden="true"
+                  />
+                ),
+                title: "Multi-Signal Verification",
+                desc: "Each result is checked against 7 signals: recognized lab, health card number, accession ID, name match, date validity, document structure, and cross-signal agreement.",
+              },
+              {
+                icon: (
+                  <Star
+                    className="w-6 h-6 text-accent"
+                    aria-hidden="true"
+                  />
+                ),
+                title: "Confidence Levels",
+                desc: "Recipients see a clear confidence badge (Verified with high confidence, Verified, or Unverified) so they know exactly how much trust to place in a result.",
+              },
+              {
+                icon: (
+                  <Fingerprint
+                    className="w-6 h-6 text-accent"
+                    aria-hidden="true"
+                  />
+                ),
+                title: "No Manual Review",
+                desc: "Verification is instant and automated. No human ever reviews your sensitive health documents. Your data stays between you and the person you choose to share with.",
+              },
+            ].map((item) => (
+              <AnimatedCard
+                key={item.title}
+                variants={scaleIn}
+                className="bg-surface/50 border border-surface-light rounded-2xl p-6 backdrop-blur-sm text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mx-auto mb-4">
+                  {item.icon}
+                </div>
+                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                <p className="text-sm text-white/70 leading-relaxed">
+                  {item.desc}
+                </p>
+              </AnimatedCard>
+            ))}
+          </div>
+
+          <p className="text-sm text-white/60 text-center mt-10 max-w-2xl mx-auto leading-relaxed">
+            Verification checks are transparent. You see exactly which signals
+            passed or didn&apos;t, and why.
           </p>
         </AnimatedSection>
 
