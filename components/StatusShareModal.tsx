@@ -227,7 +227,13 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const formatExpiry = useCallback((dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
-    const hours = Math.round((date.getTime() - now.getTime()) / (1000 * 60 * 60));
+    const diff = date.getTime() - now.getTime();
+    if (diff <= 0) return "Expired";
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) {
+      const minutes = Math.max(1, Math.ceil(diff / (1000 * 60)));
+      return `${minutes}m left`;
+    }
     if (hours < 24) return `${hours}h left`;
     const days = Math.round(hours / 24);
     return `${days}d left`;

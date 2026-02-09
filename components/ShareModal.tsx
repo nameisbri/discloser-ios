@@ -176,6 +176,10 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
     const diff = new Date(expiresAt).getTime() - Date.now();
     if (diff <= 0) return "Expired";
     const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) {
+      const minutes = Math.max(1, Math.ceil(diff / (1000 * 60)));
+      return `${minutes}m left`;
+    }
     if (hours < 24) return `${hours}h left`;
     const days = Math.floor(hours / 24);
     return `${days}d left`;

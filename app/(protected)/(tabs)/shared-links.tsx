@@ -391,6 +391,10 @@ export default function SharedLinksScreen() {
                       const diff = new Date(qrLink.expires_at).getTime() - Date.now();
                       if (diff <= 0) return "Expired";
                       const hours = Math.floor(diff / (1000 * 60 * 60));
+                      if (hours < 1) {
+                        const minutes = Math.max(1, Math.ceil(diff / (1000 * 60)));
+                        return `${minutes}m left`;
+                      }
                       if (hours < 24) return `${hours}h left`;
                       return `${Math.floor(hours / 24)}d left`;
                     })()}

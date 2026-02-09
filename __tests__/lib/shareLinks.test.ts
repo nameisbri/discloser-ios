@@ -68,6 +68,10 @@ function formatExpiry(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (diff <= 0) return 'Expired';
   const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 1) {
+    const minutes = Math.max(1, Math.ceil(diff / (1000 * 60)));
+    return `${minutes}m left`;
+  }
   if (hours < 24) return `${hours}h left`;
   const days = Math.floor(hours / 24);
   return `${days}d left`;
@@ -355,10 +359,16 @@ describe('Format Expiry Display', () => {
     expect(result).toMatch(/^\d+d left$/);
   });
 
-  test('shows 0h for about to expire', () => {
+  test('shows minutes for less than 1 hour', () => {
     const in30Mins = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const result = formatExpiry(in30Mins);
-    expect(result).toBe('0h left');
+    expect(result).toBe('30m left');
+  });
+
+  test('shows 1m left for nearly expired', () => {
+    const in30Secs = new Date(Date.now() + 30 * 1000).toISOString();
+    const result = formatExpiry(in30Secs);
+    expect(result).toBe('1m left');
   });
 });
 
