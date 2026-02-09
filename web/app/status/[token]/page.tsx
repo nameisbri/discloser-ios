@@ -19,6 +19,7 @@ interface STIStatus {
   result: string;
   testDate: string;
   isVerified: boolean;
+  verificationLevel?: string | null;
   isKnownCondition?: boolean;
   managementMethods?: string[];
 }
@@ -76,7 +77,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            Verified
+                            {sti.verificationLevel === "high" ? "Verified ★" : "Verified"}
                           </span>
                         )}
                       </div>

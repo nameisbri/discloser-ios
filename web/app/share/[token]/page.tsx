@@ -16,6 +16,7 @@ interface SharedResult extends STIResult {
   test_type: string;
   test_date: string;
   is_verified: boolean;
+  verification_level: string | null;
   show_name: boolean;
   display_name: string;
   is_valid: boolean;
@@ -76,6 +77,16 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             {data.created_at && (
               <p className="text-white/40 text-sm mt-1">Shared on {formatDate(data.created_at)}</p>
             )}
+            {data.is_verified && (
+              <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-accent-mint/10">
+                <svg className="w-3.5 h-3.5 text-accent-mint" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-accent-mint text-xs font-semibold">
+                  {data.verification_level === "high" ? "Verified — High Confidence" : "Verified"}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Results List */}
@@ -124,7 +135,10 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           {/* Footer Note */}
           <div className="border-t border-surface-light px-6 py-4">
             <p className="text-center text-white/40 text-xs">
-              <span className="text-accent-mint">&#10003; Verified</span> = the real deal from a Canadian lab
+              {data.is_verified
+                ? <><span className="text-accent-mint">&#10003; Verified</span> — confirmed from a recognized Canadian lab</>
+                : "This result has not been verified"
+              }
             </p>
           </div>
         </div>

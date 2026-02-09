@@ -12,6 +12,7 @@ export interface AggregatedSTI {
   result: string;
   testDate: string;
   isVerified: boolean;
+  verificationLevel?: string | null;
   isKnownCondition: boolean;
   isStatusSTI: boolean;
   /**
@@ -70,6 +71,7 @@ export function computeSTIStatus(
           result: sti.result || sti.status.charAt(0).toUpperCase() + sti.status.slice(1),
           testDate: testDate,
           isVerified: result.is_verified || false,
+          verificationLevel: result.verification_level,
           isKnownCondition: !!matchedKc,
           isStatusSTI: isStatusSTI(sti.name),
           hasTestData: true,
@@ -97,6 +99,7 @@ export function computeSTIStatus(
     if (!foundMatch) {
       let bestTestDate: string | null = null;
       let bestTestVerified = false;
+      let bestTestVerificationLevel: string | null = null;
 
       for (const result of results) {
         if (!result.sti_results || !Array.isArray(result.sti_results)) continue;
@@ -106,6 +109,7 @@ export function computeSTIStatus(
             if (!bestTestDate || result.test_date > bestTestDate) {
               bestTestDate = result.test_date;
               bestTestVerified = result.is_verified || false;
+              bestTestVerificationLevel = result.verification_level ?? null;
             }
           }
         }
@@ -119,6 +123,7 @@ export function computeSTIStatus(
           result: "Not recently tested",
           testDate: bestTestDate,
           isVerified: bestTestVerified,
+          verificationLevel: bestTestVerificationLevel,
           isKnownCondition: true,
           isStatusSTI: isStatusSTI(kc.condition),
           hasTestData: true,
@@ -133,6 +138,7 @@ export function computeSTIStatus(
           result: "Not recently tested",
           testDate: dateOnly,
           isVerified: false,
+          verificationLevel: null,
           isKnownCondition: true,
           isStatusSTI: isStatusSTI(kc.condition),
           hasTestData: false,
