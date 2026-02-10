@@ -38,6 +38,7 @@ import { HeaderLogo } from "./HeaderLogo";
 import { ManagementMethodPills } from "./ManagementMethodPills";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/utils/logger";
+import { trackShareLinkCreated } from "../lib/analytics";
 import { formatDate } from "../lib/utils/date";
 import { getLinkExpirationStatus, isLinkExpired, getExpirationLabel, formatViewCount } from "../lib/utils/shareLinkStatus";
 import type { StatusShareLink, Database } from "../lib/types";
@@ -204,6 +205,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
       Alert.alert("Couldn't Create Link", "Something went wrong while creating your share link. Please check your connection and try again.");
       return;
     }
+
+    trackShareLinkCreated({
+      expiry_hours: selectedExpiry.hours,
+      max_views: selectedViewLimit.value ?? 0,
+      has_qr_code: false,
+    });
 
     await fetchLinks();
     setView("links");

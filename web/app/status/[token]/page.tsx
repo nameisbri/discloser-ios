@@ -5,6 +5,7 @@ import { METHOD_LABELS } from "@/app/components/share/constants";
 import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayout";
 import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
 import { VerificationExplainer } from "@/app/components/share/VerificationExplainer";
+import { SharePageTracker } from "@/app/components/share/SharePageTracker";
 
 // Prevent indexing of private status pages
 export const metadata: Metadata = {
@@ -40,13 +41,31 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   }
 
   if (!data.is_valid) {
-    return <ExpiredPage isOverLimit={data.is_over_limit} />;
+    return (
+      <>
+        <SharePageTracker
+          event="share_link_expired"
+          properties={{
+            expiry_reason: data.is_over_limit ? "views" : "time",
+            total_views: 0,
+          }}
+        />
+        <ExpiredPage isOverLimit={data.is_over_limit} />
+      </>
+    );
   }
 
   const statuses = data.status_snapshot as STIStatus[];
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8">
+      <SharePageTracker
+        event="share_link_opened"
+        properties={{
+          link_age_hours: 0,
+          view_number: 0,
+        }}
+      />
       <div className="w-full max-w-md">
         {/* Main Card */}
         <div className="bg-surface rounded-3xl border border-surface-light overflow-hidden">

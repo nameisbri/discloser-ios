@@ -24,6 +24,7 @@ import { Button } from "../../../../components/Button";
 import { ShareModal } from "../../../../components/ShareModal";
 import { SkeletonLoader, SkeletonText } from "../../../../components/SkeletonLoader";
 import { hapticImpact, hapticNotification } from "../../../../lib/utils/haptics";
+import { trackResultDeleted } from "../../../../lib/analytics";
 import { findMatchingKnownCondition } from "../../../../lib/utils/stiMatching";
 import { ManagementMethodPills } from "../../../../components/ManagementMethodPills";
 import type { STIResult } from "../../../../lib/types";
@@ -51,6 +52,13 @@ export default function ResultDetail() {
           style: "destructive",
           onPress: async () => {
             if (id) {
+              if (result?.created_at) {
+                trackResultDeleted({
+                  result_age_days: Math.round(
+                    (Date.now() - new Date(result.created_at).getTime()) / (1000 * 60 * 60 * 24)
+                  ),
+                });
+              }
               await hapticImpact("heavy");
               const success = await deleteResult(id);
               if (success) {
