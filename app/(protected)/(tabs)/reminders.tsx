@@ -29,6 +29,7 @@ import { Button } from "../../../components/Button";
 import type { Reminder, ReminderFrequency } from "../../../lib/types";
 import { formatDate, parseDateOnly, toDateString } from "../../../lib/utils/date";
 import { addToCalendar } from "../../../lib/calendar";
+import { trackReminderSet } from "../../../lib/analytics";
 
 const FREQUENCY_OPTIONS: { value: ReminderFrequency; label: string }[] = [
   { value: "monthly", label: "Monthly" },
@@ -136,6 +137,11 @@ export default function Reminders() {
       frequency: editFrequency,
       next_date: newNextDate,
     });
+
+    const frequencyDays: Record<ReminderFrequency, number> = {
+      monthly: 30, quarterly: 90, biannual: 180, annual: 365,
+    };
+    trackReminderSet({ interval_days: frequencyDays[editFrequency] });
 
     setEditingReminder(null);
   };

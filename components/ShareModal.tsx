@@ -36,6 +36,7 @@ import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
 import { TabBar } from "./TabBar";
 import { hapticImpact, hapticNotification, hapticSelection } from "../lib/utils/haptics";
+import { trackShareLinkCreated } from "../lib/analytics";
 
 type DisplayNameOption = "anonymous" | "alias" | "firstName";
 import type { ShareLink } from "../lib/types";
@@ -134,6 +135,11 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
 
     setCreating(false);
     if (link) {
+      trackShareLinkCreated({
+        expiry_hours: selectedExpiry.hours,
+        max_views: selectedViewLimit.value ?? 0,
+        has_qr_code: false,
+      });
       setView("list");
       setSelectedExpiry(EXPIRY_OPTIONS[1]);
       setSelectedViewLimit(VIEW_LIMIT_OPTIONS[0]);

@@ -14,6 +14,7 @@ import { hapticNotification } from "../../../lib/utils/haptics";
 import { HeaderLogo } from "../../../components/HeaderLogo";
 import { formatDate } from "../../../lib/utils/date";
 import { reverifyNameMatches } from "../../../lib/utils/reverify";
+import { trackSettingsChanged } from "../../../lib/analytics";
 
 const RISK_LABELS = { low: "Chill", moderate: "Moderate", high: "Active" };
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
@@ -128,6 +129,7 @@ export default function Settings() {
       }
     }
 
+    trackSettingsChanged({ setting_name: "profile", new_value: "updated" });
     await refetchProfile();
     setSaving(false);
     setShowProfileModal(false);
@@ -376,7 +378,10 @@ export default function Settings() {
                 return (
                   <Pressable
                     key={option.value}
-                    onPress={() => setTheme(option.value)}
+                    onPress={() => {
+                      setTheme(option.value);
+                      trackSettingsChanged({ setting_name: "theme", new_value: option.value });
+                    }}
                     className={`flex-row items-center p-4 rounded-2xl border-2 ${
                       isSelected
                         ? isDark

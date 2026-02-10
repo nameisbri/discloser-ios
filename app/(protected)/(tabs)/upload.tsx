@@ -23,6 +23,11 @@ import { ROUTINE_TESTS } from "../../../lib/constants";
 import { parseDateOnly, toDateString } from "../../../lib/utils/date";
 import { hammingDistance } from "../../../lib/utils/contentHash";
 import { getMostRecentRoutineTestDate, TESTING_INTERVALS, RISK_FREQUENCY } from "../../../lib/utils/testingRecommendations";
+import {
+  trackDocumentUploadStarted,
+  trackDocumentUploadCompleted,
+  trackDocumentVerificationResult,
+} from "../../../lib/analytics";
 
 // Maximum number of files that can be uploaded at once
 const MAX_FILES_LIMIT = 4;
@@ -128,6 +133,8 @@ export default function Upload() {
         return;
       }
 
+      trackDocumentUploadStarted({ upload_method: useCamera ? "camera" : "gallery" });
+
       const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
 
       const result = useCamera
@@ -179,6 +186,8 @@ export default function Upload() {
         );
         return;
       }
+
+      trackDocumentUploadStarted({ upload_method: "file" });
 
       const slotsAvailable = MAX_FILES_LIMIT - selectedFiles.length;
       if (slotsAvailable <= 0) {
@@ -255,6 +264,7 @@ export default function Upload() {
 
   const parseDocuments = async () => {
     if (selectedFiles.length === 0) return;
+    const parseStartTime = Date.now();
 
     // Reset cancellation flag
     cancelledRef.current = false;
@@ -349,6 +359,14 @@ export default function Upload() {
       }
 
       processParseResults(parsedDocuments);
+
+      // Track upload completion analytics
+      const hasErrors = parsedDocuments.some((d: any) => d.error);
+      trackDocumentUploadCompleted({
+        success: !hasErrors,
+        processing_time_ms: Date.now() - parseStartTime,
+        confidence_score: 0, // Updated in processParseResults if verification data available
+      });
     } catch (error) {
       if (!cancelledRef.current) {
         Alert.alert(
@@ -449,6 +467,18 @@ export default function Upload() {
 
       // Count unique tests across ALL groups for the alert message
       uniqueTestCount = groups.reduce((sum, g) => sum + g.tests.length, 0);
+    }
+
+    // Track verification results for each successful document
+    for (const doc of successfulDocs) {
+      if (doc.verificationResult) {
+        const vr = doc.verificationResult;
+        trackDocumentVerificationResult({
+          checks_passed: vr.checks.filter(c => c.passed).length,
+          total_checks: vr.checks.length,
+          overall_status: vr.level,
+        });
+      }
     }
 
     // Show result alert

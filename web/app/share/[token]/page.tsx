@@ -6,6 +6,7 @@ import { KnownCondition, matchesKnownCondition } from "@/app/components/share/ma
 import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayout";
 import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
 import { VerificationExplainer } from "@/app/components/share/VerificationExplainer";
+import { SharePageTracker } from "@/app/components/share/SharePageTracker";
 
 interface STIResult {
   name: string;
@@ -52,7 +53,18 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   }
 
   if (!data.is_valid) {
-    return <ExpiredPage isOverLimit={data.is_over_limit} />;
+    return (
+      <>
+        <SharePageTracker
+          event="share_link_expired"
+          properties={{
+            expiry_reason: data.is_over_limit ? "views" : "time",
+            total_views: 0,
+          }}
+        />
+        <ExpiredPage isOverLimit={data.is_over_limit} />
+      </>
+    );
   }
 
   const results = (data.sti_results || []) as STIResult[];
@@ -60,6 +72,15 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8">
+      <SharePageTracker
+        event="share_link_opened"
+        properties={{
+          link_age_hours: Math.round(
+            (Date.now() - new Date(data.created_at).getTime()) / (1000 * 60 * 60)
+          ),
+          view_number: 0,
+        }}
+      />
       <div className="w-full max-w-md">
         {/* Main Card */}
         <div className="bg-surface rounded-3xl border border-surface-light overflow-hidden">

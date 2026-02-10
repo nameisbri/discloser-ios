@@ -25,7 +25,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCalendarsUsageDescription": "Discloser needs calendar access to add testing reminders to your calendar.",
-        "NSCalendarsFullAccessUsageDescription": "Discloser needs full calendar access to add and manage testing reminders in your calendar."
+        "NSCalendarsFullAccessUsageDescription": "Discloser needs full calendar access to add and manage testing reminders in your calendar.",
+        "NSUserTrackingUsageDescription": "Discloser uses anonymous analytics to improve the app experience. No health data is ever collected."
       }
     },
     "android": {
@@ -71,7 +72,14 @@
       "expo-calendar",
       "@react-native-community/datetimepicker",
       "expo-document-picker",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Discloser uses anonymous analytics to improve the app experience. No health data is ever collected."
+        }
+      ]
     ],
     "extra": {
       "router": {},

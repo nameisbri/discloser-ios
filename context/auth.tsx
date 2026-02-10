@@ -7,6 +7,7 @@ import { Platform, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import { getGoogleIdToken, signOutGoogle } from "../lib/google-auth";
 import { logger } from "../lib/utils/logger";
+import { identifyUser, resetUser, trackAppOpened } from "../lib/analytics";
 import type { Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Handle deep links for magic link authentication
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
+      trackAppOpened({ source: "deeplink" });
       const url = event.url;
       if (url.includes("access_token") || url.includes("refresh_token")) {
         try {
@@ -88,6 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "USER_UPDATED") {
         setSession(session);
+      }
+      if (event === "SIGNED_IN" && session?.user?.id) {
+        identifyUser(session.user.id);
       }
       // Don't reset onboardingChecked here - it causes multiple route changes
     });
@@ -307,6 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    resetUser();
     await supabase.auth.signOut();
     await signOutGoogle();
     // Reset state when signing out to ensure clean state for next sign in

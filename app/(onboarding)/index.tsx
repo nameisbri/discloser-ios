@@ -25,6 +25,7 @@ import { STATUS_STIS } from "../../lib/types";
 import type { KnownCondition, RiskLevel } from "../../lib/types";
 import { getMethodsForCondition, type ManagementMethod } from "../../lib/managementMethods";
 import { toDateString } from "../../lib/utils/date";
+import { trackOnboardingCompleted } from "../../lib/analytics";
 
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
 
@@ -90,6 +91,7 @@ export default function Onboarding() {
   // Input refs for auto-focus
   const lastNameRef = useRef<TextInput>(null);
   const aliasRef = useRef<TextInput>(null);
+  const onboardingStartTime = useRef(Date.now());
 
   // Step 1: Basic info
   const [firstName, setFirstName] = useState("");
@@ -257,6 +259,15 @@ export default function Onboarding() {
       });
 
       await refetch();
+
+      // Derive auth method from Supabase provider (user already fetched above)
+      const provider = user?.app_metadata?.provider;
+      const authMethod = provider === "apple" ? "apple" : provider === "google" ? "google" : "magic_link";
+      trackOnboardingCompleted({
+        duration_seconds: Math.round((Date.now() - onboardingStartTime.current) / 1000),
+        auth_method: authMethod,
+      });
+
       router.replace("/dashboard");
     } catch (error) {
       Alert.alert(
