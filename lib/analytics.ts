@@ -125,9 +125,7 @@ export function resetUser(): void {
 
 // ── Private capture helper ─────────────────────────────────────
 
-type EventProps = { [key: string]: string | number | boolean | null };
-
-function track(event: string, properties?: EventProps): void {
+function track(event: string, properties?: Record<string, string | number | boolean | null>): void {
   if (!enabled || !posthogClient) return;
   try {
     posthogClient.capture(event, properties);
@@ -138,14 +136,14 @@ function track(event: string, properties?: EventProps): void {
 
 // ── Typed Track Functions (one per event) ──────────────────────
 
-export const trackAppOpened = (p: AppOpenedProps): void => track("app_opened", p);
-export const trackOnboardingCompleted = (p: OnboardingCompletedProps): void => track("onboarding_completed", p);
-export const trackDocumentUploadStarted = (p: DocumentUploadStartedProps): void => track("document_upload_started", p);
-export const trackDocumentUploadCompleted = (p: DocumentUploadCompletedProps): void => track("document_upload_completed", p);
-export const trackDocumentVerificationResult = (p: DocumentVerificationResultProps): void => track("document_verification_result", p);
-export const trackResultDeleted = (p: ResultDeletedProps): void => track("result_deleted", p);
-export const trackShareLinkCreated = (p: ShareLinkCreatedProps): void => track("share_link_created", p);
-export const trackShareLinkOpened = (p: ShareLinkOpenedProps): void => track("share_link_opened", p);
-export const trackShareLinkExpired = (p: ShareLinkExpiredProps): void => track("share_link_expired", p);
-export const trackReminderSet = (p: ReminderSetProps): void => track("reminder_set", p);
-export const trackSettingsChanged = (p: SettingsChangedProps): void => track("settings_changed", p);
+export const trackAppOpened = (p: AppOpenedProps): void => track("app_opened", { ...p });
+export const trackOnboardingCompleted = (p: OnboardingCompletedProps): void => track("onboarding_completed", { ...p });
+export const trackDocumentUploadStarted = (p: DocumentUploadStartedProps): void => track("document_upload_started", { ...p });
+export const trackDocumentUploadCompleted = (p: DocumentUploadCompletedProps): void => track("document_upload_completed", { ...p });
+export const trackDocumentVerificationResult = (p: DocumentVerificationResultProps): void => track("document_verification_result", { ...p });
+export const trackResultDeleted = (p: ResultDeletedProps): void => track("result_deleted", { ...p });
+export const trackShareLinkCreated = (p: ShareLinkCreatedProps): void => track("share_link_created", { ...p });
+export const trackShareLinkOpened = (p: ShareLinkOpenedProps): void => track("share_link_opened", { ...p });
+export const trackShareLinkExpired = (p: ShareLinkExpiredProps): void => track("share_link_expired", { ...p });
+export const trackReminderSet = (p: ReminderSetProps): void => track("reminder_set", { ...p });
+export const trackSettingsChanged = (p: SettingsChangedProps): void => track("settings_changed", { ...p });

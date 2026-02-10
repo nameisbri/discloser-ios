@@ -15,7 +15,6 @@ import { AppState, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { PostHogProvider } from "posthog-react-native";
 import type PostHog from "posthog-react-native";
-import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import {
   initAnalytics,
   enableCapture,
@@ -53,11 +52,19 @@ export default function RootLayout() {
       if (!client) return;
       setPosthogClient(client);
 
-      const { status } = await requestTrackingPermissionsAsync();
-      if (status === "granted") {
+      try {
+        const { requestTrackingPermissionsAsync } = await import(
+          "expo-tracking-transparency"
+        );
+        const { status } = await requestTrackingPermissionsAsync();
+        if (status === "granted") {
+          enableCapture();
+        } else {
+          disableCapture();
+        }
+      } catch {
+        // Native module not available (e.g. Expo Go) — enable capture in dev
         enableCapture();
-      } else {
-        disableCapture();
       }
     };
     setup();
