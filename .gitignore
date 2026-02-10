@@ -54,6 +54,7 @@ yarn-error.*
 # IDE
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
 *.sublime-*
