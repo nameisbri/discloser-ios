@@ -73,13 +73,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        logger.error("Session restoration error", { error });
+        // Stale session — clear it so the user can sign in fresh
+        supabase.auth.signOut();
+        setSession(null);
+      } else {
+        setSession(session);
+      }
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "USER_UPDATED") {
+        setSession(session);
+      }
       // Don't reset onboardingChecked here - it causes multiple route changes
     });
 
@@ -106,6 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // User is logged in
         if (inAuthGroup) {
+          // Already processed sign-in, waiting for route transition
+          if (onboardingChecked) return;
+
           // Just signed in - check if onboarding is complete
           const { data } = await supabase
             .from("profiles")
