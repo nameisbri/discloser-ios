@@ -28,6 +28,7 @@ import AnimatedCard from "./components/AnimatedCard";
 import AnimatedFooter from "./components/AnimatedFooter";
 import SurveyButton from "./components/SurveyButton";
 import FAQSection from "./components/FAQSection";
+import { ScrollDepthTracker } from "./components/ScrollDepthTracker";
 import { SURVEY_URL } from "./components/constants";
 import { scaleIn } from "./components/animations";
 
@@ -167,6 +168,8 @@ export default function Home() {
       />
 
       <SmoothScrollProvider>
+        <ScrollDepthTracker />
+        {/* TODO: track cta_clicked when App Store links are added */}
         <ParallaxBlobs />
         <AnimatedHeader />
 

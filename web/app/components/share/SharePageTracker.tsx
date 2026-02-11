@@ -2,14 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-declare global {
-  interface Window {
-    posthog?: {
-      capture: (event: string, properties?: Record<string, unknown>) => void;
-    };
-  }
-}
-
 interface SharePageTrackerProps {
   event: "share_link_opened" | "share_link_expired";
   properties: Record<string, unknown>;
