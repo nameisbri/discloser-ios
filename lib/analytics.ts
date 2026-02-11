@@ -58,6 +58,43 @@ interface SettingsChangedProps {
   new_value: string;
 }
 
+interface ScreenViewedProps {
+  screen_name: string;
+  previous_screen: string | null;
+}
+
+interface DocumentUploadFailedProps {
+  upload_method: "camera" | "gallery" | "file";
+  error_type: "network" | "file_too_large" | "unsupported_format" | "ocr_failed" | "timeout" | "unknown";
+  retry_count: number;
+}
+
+interface ShareLinkCopiedProps {
+  link_age_minutes: number;
+  copy_method: "button" | "long_press" | "share_sheet";
+}
+
+interface ShareQrDisplayedProps {
+  link_age_minutes: number;
+}
+
+interface AppReviewPromptedProps {
+  trigger: "post_share" | "post_verification" | "session_count" | "manual";
+  session_number: number;
+  days_since_install: number;
+}
+
+interface AppReviewSubmittedProps {
+  trigger: "post_share" | "post_verification" | "session_count" | "manual";
+}
+
+interface ErrorEncounteredProps {
+  error_domain: "auth" | "network" | "storage" | "share" | "verification" | "general";
+  error_code: string;
+  screen_name: string;
+  is_recoverable: boolean;
+}
+
 // ── State ──────────────────────────────────────────────────────
 let posthogClient: PostHog | null = null;
 let enabled = false;
@@ -147,3 +184,10 @@ export const trackShareLinkOpened = (p: ShareLinkOpenedProps): void => track("sh
 export const trackShareLinkExpired = (p: ShareLinkExpiredProps): void => track("share_link_expired", { ...p });
 export const trackReminderSet = (p: ReminderSetProps): void => track("reminder_set", { ...p });
 export const trackSettingsChanged = (p: SettingsChangedProps): void => track("settings_changed", { ...p });
+export const trackScreenViewed = (p: ScreenViewedProps): void => track("screen_viewed", { ...p });
+export const trackDocumentUploadFailed = (p: DocumentUploadFailedProps): void => track("document_upload_failed", { ...p });
+export const trackShareLinkCopied = (p: ShareLinkCopiedProps): void => track("share_link_copied", { ...p });
+export const trackShareQrDisplayed = (p: ShareQrDisplayedProps): void => track("share_qr_displayed", { ...p });
+export const trackAppReviewPrompted = (p: AppReviewPromptedProps): void => track("app_review_prompted", { ...p });
+export const trackAppReviewSubmitted = (p: AppReviewSubmittedProps): void => track("app_review_submitted", { ...p });
+export const trackErrorEncountered = (p: ErrorEncounteredProps): void => track("error_encountered", { ...p });

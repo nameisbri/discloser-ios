@@ -33,6 +33,15 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
       if (res.ok) {
         setStatus("success");
         setEmail("");
+        try {
+          window.posthog?.capture("waitlist_signup", {
+            referral_source: new URLSearchParams(window.location.search).get("utm_source") || document.referrer || null,
+            page_time_seconds: Math.round((Date.now() - loadTime) / 1000),
+            variant: variant,
+          });
+        } catch {
+          // Analytics failure must never affect form behavior
+        }
       } else {
         setStatus("error");
       }
