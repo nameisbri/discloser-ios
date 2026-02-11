@@ -12,4 +12,5 @@ export type { AggregatedSTI } from "./useSTIStatus";
 export type { TestingRecommendation } from "./useTestingRecommendations";
 export type { DashboardData } from "./useDashboardData";
 export type { ThemeColors } from "./useThemeColors";
+export { useScreenTracking } from "./useScreenTracking";
 

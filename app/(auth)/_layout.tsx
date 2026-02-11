@@ -1,8 +1,10 @@
 import { Stack } from "expo-router";
 import { useTheme } from "../../context/theme";
+import { useScreenTracking } from "../../lib/hooks/useScreenTracking";
 
 export default function AuthLayout() {
   const { isDark } = useTheme();
+  useScreenTracking();
 
   return (
     <Stack

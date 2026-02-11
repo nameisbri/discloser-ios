@@ -38,7 +38,7 @@ import { HeaderLogo } from "./HeaderLogo";
 import { ManagementMethodPills } from "./ManagementMethodPills";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/utils/logger";
-import { trackShareLinkCreated } from "../lib/analytics";
+import { trackShareLinkCreated, trackShareLinkCopied, trackShareQrDisplayed, trackErrorEncountered } from "../lib/analytics";
 import { formatDate } from "../lib/utils/date";
 import { getLinkExpirationStatus, isLinkExpired, getExpirationLabel, formatViewCount } from "../lib/utils/shareLinkStatus";
 import type { StatusShareLink, Database } from "../lib/types";
@@ -202,6 +202,12 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
     setCreating(false);
 
     if (error) {
+      trackErrorEncountered({
+        error_domain: "share",
+        error_code: "share_link_creation_failed",
+        screen_name: "share_modal",
+        is_recoverable: true,
+      });
       Alert.alert("Couldn't Create Link", "Something went wrong while creating your share link. Please check your connection and try again.");
       return;
     }
@@ -228,6 +234,10 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
   const handleCopy = useCallback(async (link: StatusShareLink) => {
     await Clipboard.setStringAsync(getShareUrl(link.token));
     setCopiedId(link.id);
+    trackShareLinkCopied({
+      link_age_minutes: Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000),
+      copy_method: "button",
+    });
     setTimeout(() => setCopiedId(null), 2000);
   }, [getShareUrl]);
 
@@ -635,7 +645,13 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                           </Pressable>
 
                           <Pressable
-                            onPress={() => { setQrLink(link); setView("qr"); }}
+                            onPress={() => {
+                              setQrLink(link);
+                              setView("qr");
+                              trackShareQrDisplayed({
+                                link_age_minutes: Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000),
+                              });
+                            }}
                             style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surfaceLight }}
                             accessibilityLabel="Show QR Code"
                             accessibilityRole="button"
@@ -831,7 +847,13 @@ export function StatusShareModal({ visible, onClose }: StatusShareModalProps) {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => { setQrLink(previewLink); setView("qr"); }}
+                onPress={() => {
+                  setQrLink(previewLink);
+                  setView("qr");
+                  trackShareQrDisplayed({
+                    link_age_minutes: Math.round((Date.now() - new Date(previewLink.created_at).getTime()) / 60000),
+                  });
+                }}
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 14, backgroundColor: colors.primaryLight, borderRadius: 12 }}
                 accessibilityLabel="Show QR Code"
                 accessibilityRole="button"

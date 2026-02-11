@@ -26,11 +26,23 @@ import { getMostRecentRoutineTestDate, TESTING_INTERVALS, RISK_FREQUENCY } from 
 import {
   trackDocumentUploadStarted,
   trackDocumentUploadCompleted,
+  trackDocumentUploadFailed,
   trackDocumentVerificationResult,
+  trackErrorEncountered,
 } from "../../../lib/analytics";
 
 // Maximum number of files that can be uploaded at once
 const MAX_FILES_LIMIT = 4;
+
+function mapToAnalyticsErrorType(errorType: string): "network" | "file_too_large" | "unsupported_format" | "ocr_failed" | "timeout" | "unknown" {
+  switch (errorType) {
+    case "network": return "network";
+    case "ocr":
+    case "llm_parsing": return "ocr_failed";
+    case "timeout": return "timeout";
+    default: return "unknown";
+  }
+}
 
 type Step = "select" | "preview" | "details";
 
@@ -173,6 +185,11 @@ export default function Upload() {
         setStep("preview");
       }
     } catch {
+      trackDocumentUploadFailed({
+        upload_method: useCamera ? "camera" : "gallery",
+        error_type: "unknown",
+        retry_count: 0,
+      });
       Alert.alert("Couldn't Open Photos", "We couldn't access your photos. Please try again or check your permissions in Settings.");
     }
   };
@@ -243,6 +260,11 @@ export default function Upload() {
         }
       }
     } catch {
+      trackDocumentUploadFailed({
+        upload_method: "file",
+        error_type: "unknown",
+        retry_count: 0,
+      });
       Alert.alert("Couldn't Open Files", "We couldn't access your files. Please try again.");
     }
   };
@@ -410,16 +432,22 @@ export default function Upload() {
       };
 
       if (doc.error) {
+        const file = selectedFiles[index];
         if (doc.error instanceof DocumentParsingError) {
-          errors.push({ fileIndex: index, fileName: selectedFiles[index].name, error: doc.error });
+          errors.push({ fileIndex: index, fileName: file.name, error: doc.error });
           if (doc.error.step === "network") errorTypes.network++;
           else if (doc.error.step === "ocr") errorTypes.ocr++;
           else if (doc.error.step === "llm_parsing") errorTypes.llm_parsing++;
           else errorTypes.other++;
+          trackDocumentUploadFailed({
+            upload_method: file.type === "pdf" ? "file" : "camera",
+            error_type: mapToAnalyticsErrorType(doc.error.step),
+            retry_count: 0,
+          });
         } else {
           errors.push({
             fileIndex: index,
-            fileName: selectedFiles[index].name,
+            fileName: file.name,
             error: new DocumentParsingError(
               "unknown",
               doc.error instanceof Error ? doc.error.message : "Unknown error",
@@ -427,6 +455,11 @@ export default function Upload() {
             ),
           });
           errorTypes.other++;
+          trackDocumentUploadFailed({
+            upload_method: file.type === "pdf" ? "file" : "camera",
+            error_type: "unknown",
+            retry_count: 0,
+          });
         }
         return;
       }
@@ -578,6 +611,11 @@ export default function Upload() {
         if (doc.error) {
           if (doc.error instanceof DocumentParsingError) {
             remainingErrors.push({ fileIndex: originalIndex, fileName: selectedFiles[originalIndex].name, error: doc.error });
+            trackDocumentUploadFailed({
+              upload_method: selectedFiles[originalIndex].type === "pdf" ? "file" : "camera",
+              error_type: mapToAnalyticsErrorType(doc.error.step),
+              retry_count: 1,
+            });
           }
           return;
         }
@@ -782,6 +820,12 @@ export default function Upload() {
         );
       }
     } catch (error) {
+      trackErrorEncountered({
+        error_domain: "storage",
+        error_code: error instanceof Error ? error.name : "upload_save_failed",
+        screen_name: "upload",
+        is_recoverable: true,
+      });
       Alert.alert(
         "Upload Failed",
         error instanceof Error
@@ -1014,6 +1058,12 @@ export default function Upload() {
         Alert.alert("Couldn't Save", "We couldn't save your test result. This might be a connection issue. Please check your internet and try again.");
       }
     } catch (error) {
+      trackErrorEncountered({
+        error_domain: "storage",
+        error_code: error instanceof Error ? error.name : "upload_save_failed",
+        screen_name: "upload",
+        is_recoverable: true,
+      });
       Alert.alert(
         "Upload Failed",
         error instanceof Error
