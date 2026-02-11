@@ -28,6 +28,7 @@ import { HeaderLogo } from "../../../components/HeaderLogo";
 import { SharedLinkCard } from "../../../components/SharedLinkCard";
 import { StatusShareModal } from "../../../components/StatusShareModal";
 import { isLinkExpired, getLinkExpirationStatus } from "../../../lib/utils/shareLinkStatus";
+import { trackShareLinkCopied, trackShareQrDisplayed } from "../../../lib/analytics";
 import type { UnifiedShareLink } from "../../../lib/types";
 
 type FilterTab = "all" | "status" | "results";
@@ -74,6 +75,10 @@ export default function SharedLinksScreen() {
   const handleCopy = useCallback(async (link: UnifiedShareLink) => {
     await Clipboard.setStringAsync(getUnifiedShareUrl(link));
     setCopiedId(link.id);
+    trackShareLinkCopied({
+      link_age_minutes: Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000),
+      copy_method: "button",
+    });
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
 
@@ -275,7 +280,12 @@ export default function SharedLinksScreen() {
                     key={link.id}
                     link={link}
                     onCopy={() => handleCopy(link)}
-                    onShowQR={() => setQrLink(link)}
+                    onShowQR={() => {
+                      setQrLink(link);
+                      trackShareQrDisplayed({
+                        link_age_minutes: Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000),
+                      });
+                    }}
                     onDelete={() => handleDelete(link)}
                     copied={copiedId === link.id}
                     isExpired={false}

@@ -36,7 +36,7 @@ import { Button } from "./Button";
 import { SharedResultPreview } from "./SharedResultPreview";
 import { TabBar } from "./TabBar";
 import { hapticImpact, hapticNotification, hapticSelection } from "../lib/utils/haptics";
-import { trackShareLinkCreated } from "../lib/analytics";
+import { trackShareLinkCreated, trackShareLinkCopied, trackShareQrDisplayed, trackErrorEncountered } from "../lib/analytics";
 
 type DisplayNameOption = "anonymous" | "alias" | "firstName";
 import type { ShareLink } from "../lib/types";
@@ -147,6 +147,12 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
       setLinkLabel("");
       setLinkNote("");
     } else {
+      trackErrorEncountered({
+        error_domain: "share",
+        error_code: "share_link_creation_failed",
+        screen_name: "share_modal",
+        is_recoverable: true,
+      });
       Alert.alert("Couldn't Create Link", error || "Something went wrong while creating your share link. Please check your connection and try again.");
     }
   };
@@ -155,6 +161,10 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
     const url = getShareUrl(link.token);
     await Clipboard.setStringAsync(url);
     setCopiedId(link.id);
+    trackShareLinkCopied({
+      link_age_minutes: Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000),
+      copy_method: "button",
+    });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -176,6 +186,9 @@ export function ShareModal({ visible, onClose, testResultId }: ShareModalProps) 
   const handleShowQR = (link: ShareLink) => {
     setQrLink(link);
     setView("qr");
+    trackShareQrDisplayed({
+      link_age_minutes: Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000),
+    });
   };
 
   const formatExpiry = (expiresAt: string) => {

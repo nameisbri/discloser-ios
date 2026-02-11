@@ -7,7 +7,7 @@ import { Platform, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import { getGoogleIdToken, signOutGoogle } from "../lib/google-auth";
 import { logger } from "../lib/utils/logger";
-import { identifyUser, resetUser, trackAppOpened } from "../lib/analytics";
+import { identifyUser, resetUser, trackAppOpened, trackErrorEncountered } from "../lib/analytics";
 import type { Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -189,6 +189,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         logger.error("Apple Sign In error", { error });
+        trackErrorEncountered({
+          error_domain: "auth",
+          error_code: "apple_sign_in_failed",
+          screen_name: "auth",
+          is_recoverable: true,
+        });
         Alert.alert(
           "Sign In Failed",
           error.message || "We couldn't sign you in with Apple. Please check your internet connection and try again."
@@ -202,6 +208,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      trackErrorEncountered({
+        error_domain: "auth",
+        error_code: "apple_sign_in_failed",
+        screen_name: "auth",
+        is_recoverable: true,
+      });
       const message = error instanceof Error ? error.message : "We couldn't sign you in. Please check your internet connection and try again.";
       Alert.alert("Sign In Failed", message);
     }
@@ -224,6 +236,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           logger.error("Google Sign In error", { error });
+          trackErrorEncountered({
+            error_domain: "auth",
+            error_code: "google_sign_in_failed",
+            screen_name: "auth",
+            is_recoverable: true,
+          });
           Alert.alert(
             "Sign In Failed",
             error.message || "We couldn't sign you in with Google. Please check your internet connection and try again."
@@ -249,6 +267,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               if (sessionError) {
                 logger.error("Session error", { error: sessionError });
+                trackErrorEncountered({
+                  error_domain: "auth",
+                  error_code: "google_session_failed",
+                  screen_name: "auth",
+                  is_recoverable: true,
+                });
                 Alert.alert(
                   "Sign In Failed",
                   "We couldn't complete your sign in. Please close the app and try again. If the problem continues, check your internet connection."
@@ -274,6 +298,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           logger.error("Google Sign In error", { error });
+          trackErrorEncountered({
+            error_domain: "auth",
+            error_code: "google_sign_in_failed",
+            screen_name: "auth",
+            is_recoverable: true,
+          });
           Alert.alert(
             "Sign In Failed",
             error.message || "We couldn't sign you in with Google. Please check your internet connection and try again."
@@ -282,6 +312,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       logger.error("Google Sign In error", { error });
+      trackErrorEncountered({
+        error_domain: "auth",
+        error_code: "google_sign_in_failed",
+        screen_name: "auth",
+        is_recoverable: true,
+      });
       const message = error instanceof Error ? error.message : "We couldn't sign you in. Please check your internet connection and try again.";
       Alert.alert("Sign In Failed", message);
     }
