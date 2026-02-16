@@ -420,7 +420,7 @@ export default function Home() {
         </AnimatedSection>
 
 
-        {/* FAQ */}
+        {/* FAQ & CTA */}
         <AnimatedSection
           className="relative z-10 px-6 py-20 max-w-3xl mx-auto text-text-primary"
           aria-labelledby="faq-heading"
@@ -429,29 +429,19 @@ export default function Home() {
             id="faq-heading"
             className="text-2xl sm:text-3xl font-bold font-display mb-8 text-center"
           >
-            Frequently Asked Questions About Discloser
+            Frequently Asked Questions
           </h2>
           <FAQSection items={faqItems} />
-        </AnimatedSection>
 
-        {/* Final CTA */}
-        <AnimatedSection
-          className="relative z-10 px-6 py-24 max-w-3xl mx-auto text-center text-text-primary"
-          aria-labelledby="cta-heading"
-        >
-          <h2
-            id="cta-heading"
-            className="text-3xl sm:text-4xl font-bold font-display mb-6"
-          >
-            Get Early Access to Discloser
-          </h2>
-          <p className="text-text-secondary mb-6">Be first in line.</p>
-
-          <div className="max-w-md mx-auto mb-6">
-            <WaitlistForm variant="cta" />
-          </div>
-
-          <div className="border-t border-text-tertiary/20 pt-8 mt-8">
+          {/* CTA */}
+          <div className="mt-20 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold font-display mb-4">
+              Get Early Access
+            </h2>
+            <p className="text-text-secondary mb-6">Be first in line.</p>
+            <div className="max-w-md mx-auto mb-6">
+              <WaitlistForm variant="cta" />
+            </div>
             <p className="text-text-secondary mb-4">Want to shape what we build?</p>
             <SurveyButton href={SURVEY_URL}>
               Take the 2-min survey →
