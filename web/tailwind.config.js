@@ -25,6 +25,13 @@ module.exports = {
         // Surface (for dark sections — cards, inputs)
         surface: "#241C20",
         "surface-light": "#352A30",
+        // Legacy (used by share/status/admin/privacy/terms pages — not landing page)
+        background: "#0D0B0E",
+        accent: "#FF2D7A",
+        "accent-coral": "#FF6B8A",
+        "accent-lavender": "#C9A0DC",
+        "accent-mint": "#00E5A0",
+        "accent-purple": "#A855F7",
       },
       fontFamily: {
         display: ["'Satoshi'", "sans-serif"],
