@@ -2,19 +2,14 @@ import type { Metadata } from "next";
 import {
   FileText,
   Smartphone,
-  Upload,
   Clock,
-  Link2,
   Lock,
   Eye,
   Trash2,
-  Bell,
   CheckCircle,
   Camera,
   ShieldCheck,
   Shield,
-  Fingerprint,
-  Star,
 } from "lucide-react";
 
 import ShareCardMockup from "./components/ShareCardMockup";
@@ -340,7 +335,7 @@ export default function Home() {
 
         {/* How it works */}
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary"
+          className="relative z-10 px-6 py-20 max-w-5xl mx-auto text-text-primary"
           aria-labelledby="how-it-works-heading"
         >
           <h2
@@ -349,164 +344,68 @@ export default function Home() {
           >
             How Anonymous STI Sharing Works
           </h2>
-          <p className="text-text-secondary text-center mb-12">
+          <p className="text-text-secondary text-center mb-16">
             Three taps. Total control.
           </p>
 
-          <div className="grid sm:grid-cols-3 gap-8">
+          {/* Numbered steps */}
+          <div className="grid sm:grid-cols-3 gap-8 sm:gap-4 relative">
+            {/* Connecting line (desktop only) */}
+            <div className="hidden sm:block absolute top-8 left-[16.67%] right-[16.67%] h-px bg-text-tertiary/30" aria-hidden="true" />
+
             {[
               {
-                icon: (
-                  <Upload
-                    className="w-6 h-6 text-burgundy"
-                    aria-hidden="true"
-                  />
-                ),
+                num: "01",
                 title: "Upload",
                 desc: "Take a photo of your results or import from files",
               },
               {
-                icon: (
-                  <Clock
-                    className="w-6 h-6 text-burgundy"
-                    aria-hidden="true"
-                  />
-                ),
+                num: "02",
                 title: "Set limits",
-                desc: "Choose expiry time (1 hour to 30 days) and view limits",
+                desc: "Choose expiry time and maximum views",
               },
               {
-                icon: (
-                  <Link2
-                    className="w-6 h-6 text-burgundy"
-                    aria-hidden="true"
-                  />
-                ),
+                num: "03",
                 title: "Share",
-                desc: "Send a link or QR code. They see status, not your data",
+                desc: "Send a link or QR code — they see status, not your data",
               },
             ].map((step) => (
-              <AnimatedCard
-                key={step.title}
-                variants={scaleIn}
-                hoverY={-8}
-                className="text-center"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-burgundy/10 border border-burgundy/20 flex items-center justify-center mx-auto mb-4">
-                  {step.icon}
-                </div>
-                <h3 className="font-semibold font-display mb-2">{step.title}</h3>
-                <p className="text-sm text-text-secondary">{step.desc}</p>
-              </AnimatedCard>
+              <div key={step.num} className="text-center relative">
+                <span className="font-display font-bold text-3xl text-burgundy mb-3 block">
+                  {step.num}
+                </span>
+                <h3 className="font-display font-semibold text-lg mb-2">{step.title}</h3>
+                <p className="text-sm text-text-secondary max-w-xs mx-auto">{step.desc}</p>
+              </div>
             ))}
           </div>
 
-          <p className="text-sm text-text-tertiary text-center mt-10 max-w-2xl mx-auto leading-relaxed">
-            Discloser uses multi-signal document verification to extract and
-            validate your test results from lab documents. Each result receives a
-            confidence score based on 7 checks, then is shared through
-            time-limited, view-limited links that automatically expire, giving
-            you full control over who sees what, and for how long.
-          </p>
-        </AnimatedSection>
-
-        {/* Verification */}
-        <div className="bg-bg-dark">
-        <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
-          aria-labelledby="verification-heading"
-        >
-          <div className="text-center mb-12">
-            <h2
-              id="verification-heading"
-              className="text-2xl sm:text-3xl font-bold font-display mb-3"
-            >
-              Verified Results. Real Trust.
-            </h2>
-            <p className="text-text-secondary-dark">
-              Recipients see proof, not promises.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-6">
-            {[
-              {
-                icon: (
-                  <ShieldCheck
-                    className="w-6 h-6 text-burgundy-light"
-                    aria-hidden="true"
-                  />
-                ),
-                title: "Multi-Signal Verification",
-                desc: "Each result is checked against 7 signals: recognized lab, health card number, accession ID, name match, date validity, document structure, and cross-signal agreement.",
-              },
-              {
-                icon: (
-                  <Star
-                    className="w-6 h-6 text-burgundy-light"
-                    aria-hidden="true"
-                  />
-                ),
-                title: "Confidence Levels",
-                desc: "Recipients see a clear confidence badge (Verified with high confidence, Verified, or Unverified) so they know exactly how much trust to place in a result.",
-              },
-              {
-                icon: (
-                  <Fingerprint
-                    className="w-6 h-6 text-burgundy-light"
-                    aria-hidden="true"
-                  />
-                ),
-                title: "No Manual Review",
-                desc: "Verification is instant and automated. No human ever reviews your sensitive health documents. Your data stays between you and the person you choose to share with.",
-              },
-            ].map((item) => (
-              <AnimatedCard
-                key={item.title}
-                variants={scaleIn}
-                className="bg-surface border border-surface-light rounded-2xl p-6 text-center"
-              >
-                <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mx-auto mb-4">
-                  {item.icon}
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-text-secondary-dark leading-relaxed">
-                  {item.desc}
+          {/* Verification band */}
+          <div className="mt-16 bg-bg-dark rounded-2xl p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+              <div className="shrink-0">
+                <p className="font-display font-bold text-text-primary-dark text-lg">
+                  7 verification checks
                 </p>
-              </AnimatedCard>
-            ))}
+                <p className="text-text-secondary-dark text-sm">
+                  Each result scored 0–100 with a confidence badge
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {["Lab", "HC#", "Accession", "Name", "Date", "Structure", "Agreement"].map((check) => (
+                  <span
+                    key={check}
+                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-surface text-text-secondary-dark border border-surface-light"
+                  >
+                    <CheckCircle className="w-3 h-3 text-success" aria-hidden="true" />
+                    {check}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-
-          <p className="text-sm text-text-secondary-dark text-center mt-10 max-w-2xl mx-auto leading-relaxed">
-            Verification checks are transparent. You see exactly which signals
-            passed or didn&apos;t, and why.
-          </p>
         </AnimatedSection>
-        </div>
 
-        {/* Reminders */}
-        <div className="bg-bg-dark">
-        <AnimatedSection className="relative z-10 px-6 py-16 max-w-4xl mx-auto text-text-primary-dark">
-          <AnimatedCard
-            variants={scaleIn}
-            hoverY={0}
-            className="bg-surface border border-surface-light rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-6"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-surface-light flex items-center justify-center shrink-0">
-              <Bell className="w-7 h-7 text-burgundy-light" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg mb-1">
-                STI Testing Reminders Based on CDC Guidelines
-              </h3>
-              <p className="text-text-secondary-dark text-sm leading-relaxed">
-                Quick 4-question assessment → personalised reminders based on CDC
-                guidelines. No judgement, just nudges to keep you on schedule.
-              </p>
-            </div>
-          </AnimatedCard>
-        </AnimatedSection>
-        </div>
 
         {/* Trust & Security */}
         <div className="bg-bg-dark">
