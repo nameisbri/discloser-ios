@@ -18,7 +18,6 @@ import {
   Star,
 } from "lucide-react";
 
-import ParallaxBlobs from "./components/ParallaxBlobs";
 import SmoothScrollProvider from "./components/SmoothScrollProvider";
 import AnimatedHeader from "./components/AnimatedHeader";
 import HeroContent from "./components/HeroContent";
@@ -170,7 +169,6 @@ export default function Home() {
       <SmoothScrollProvider>
         <ScrollDepthTracker />
         {/* TODO: track cta_clicked when App Store links are added */}
-        <ParallaxBlobs />
         <AnimatedHeader />
 
         {/* Hero */}

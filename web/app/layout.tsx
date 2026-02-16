@@ -86,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Preconnect to external domains for faster loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://us.i.posthog.com" />
         <link rel="dns-prefetch" href="https://www.clarity.ms" />
@@ -93,7 +94,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Preload critical fonts */}
         <link
           rel="preload"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@500,600,700&display=swap"
+          as="style"
+        />
+        <link
+          rel="preload"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap"
           as="style"
         />
         
@@ -138,7 +144,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Script>
         )}
       </head>
-      <body className="relative">{children}</body>
+      <body className="relative bg-bg-light text-text-primary font-body">{children}</body>
     </html>
   );
 }
