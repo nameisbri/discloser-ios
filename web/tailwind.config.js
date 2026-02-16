@@ -5,7 +5,7 @@ module.exports = {
     extend: {
       colors: {
         // Light section
-        "bg-light": "#FBF7F5",
+        "bg-light": "#F3F1F4",
         "text-primary": "#2A1A21",
         "text-secondary": "#6B5A62",
         "text-tertiary": "#9A8B92",
@@ -17,8 +17,8 @@ module.exports = {
         burgundy: "#923D5C",
         "burgundy-light": "#EAC4CE",
         "burgundy-dark": "#6B2D45",
-        coral: "#E8625C",
-        "coral-hover": "#D4534D",
+        coral: "#C4365A",
+        "coral-hover": "#A82D4D",
         // Semantic
         success: "#5A9A7A",
         danger: "#C4453A",
