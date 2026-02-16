@@ -174,17 +174,17 @@ export default function Home() {
         {/* Hero */}
         <main className="relative z-10 px-6 pt-16 pb-24 max-w-4xl mx-auto text-center">
           <HeroContent>
-            <h1 className="text-4xl sm:text-6xl font-bold mb-6 leading-tight animate-fade-up">
+            <h1 className="text-4xl sm:text-6xl font-bold font-display tracking-tight mb-6 leading-tight animate-fade-up">
               Share Your STI Status Anonymously
               <br />
-              <span className="bg-gradient-to-r from-accent via-accent-coral to-accent-purple bg-clip-text text-transparent inline-block animate-gradient">
+              <span className="text-burgundy inline-block">
                 Keep your name.
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-white/75 max-w-xl mx-auto mb-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            <p className="text-lg sm:text-xl text-text-secondary max-w-xl mx-auto mb-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
               Being responsible shouldn&apos;t cost you your privacy.
             </p>
-            <p className="text-sm sm:text-base text-white/60 max-w-2xl mx-auto mb-10 animate-fade-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
+            <p className="text-sm sm:text-base text-text-secondary max-w-2xl mx-auto mb-10 animate-fade-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
               Discloser is a privacy-first iOS app that lets you share verified
               STI test results anonymously. Upload your lab documents, set expiry
               and view limits, and share a secure link or QR code. Recipients see
@@ -200,18 +200,19 @@ export default function Home() {
         </main>
 
         {/* Problem section */}
+        <div className="bg-bg-dark">
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
           aria-labelledby="problem-heading"
         >
           <div className="text-center mb-12">
             <h2
               id="problem-heading"
-              className="text-2xl sm:text-4xl font-bold mb-3 leading-tight"
+              className="text-2xl sm:text-4xl font-bold font-display mb-3 leading-tight"
             >
               The Problem With Sharing STI Test Results
             </h2>
-            <p className="text-white/70">
+            <p className="text-text-secondary-dark">
               Right now, proving you&apos;re negative means...
             </p>
           </div>
@@ -219,15 +220,15 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 gap-6">
             <AnimatedCard
               variants={scaleIn}
-              className="bg-surface/50 border border-surface-light rounded-2xl p-6 backdrop-blur-sm"
+              className="bg-surface border border-surface-light rounded-2xl p-6"
             >
               <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mb-4">
-                <FileText className="w-6 h-6 text-accent" aria-hidden="true" />
+                <FileText className="w-6 h-6 text-burgundy-light" aria-hidden="true" />
               </div>
               <h3 className="font-semibold text-lg mb-2">
                 Showing your whole life
               </h3>
-              <p className="text-white/70 text-sm leading-relaxed">
+              <p className="text-text-secondary-dark text-sm leading-relaxed">
                 Full name, date of birth, health card number, address... all
                 visible to someone who might not even remember your name tomorrow.
               </p>
@@ -242,24 +243,24 @@ export default function Home() {
 
             <AnimatedCard
               variants={scaleIn}
-              className="bg-surface/50 border border-surface-light rounded-2xl p-6 backdrop-blur-sm"
+              className="bg-surface border border-surface-light rounded-2xl p-6"
             >
               <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mb-4">
                 <Smartphone
-                  className="w-6 h-6 text-accent"
+                  className="w-6 h-6 text-burgundy-light"
                   aria-hidden="true"
                 />
               </div>
               <h3 className="font-semibold text-lg mb-2">
                 Screenshots that live forever
               </h3>
-              <p className="text-white/70 text-sm leading-relaxed">
+              <p className="text-text-secondary-dark text-sm leading-relaxed">
                 That photo of your test results? It&apos;s sitting in their camera
                 roll. Backed up to iCloud. Forever.
               </p>
-              <div className="mt-4 p-3 bg-surface-light rounded-lg text-xs text-white/65 flex items-center gap-2">
+              <div className="mt-4 p-3 bg-surface-light rounded-lg text-xs text-text-secondary-dark flex items-center gap-2">
                 <Camera
-                  className="w-4 h-4 text-white/65 shrink-0"
+                  className="w-4 h-4 text-text-secondary-dark shrink-0"
                   aria-hidden="true"
                 />{" "}
                 Saved to Photos · Synced to iCloud · Shared to...?
@@ -267,38 +268,40 @@ export default function Home() {
             </AnimatedCard>
           </div>
 
-          <p className="text-center text-white/75 mt-10">
+          <p className="text-center text-text-secondary-dark mt-10">
             Being responsible shouldn&apos;t cost you your privacy.
           </p>
         </AnimatedSection>
+        </div>
 
         {/* Solution / Before-After */}
+        <div className="bg-bg-dark">
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
           aria-labelledby="solution-heading"
         >
           <AnimatedCard
             variants={scaleIn}
             hoverY={0}
-            className="bg-gradient-to-br from-surface to-surface-light border border-surface-light rounded-3xl p-8 sm:p-12 backdrop-blur-sm"
+            className="bg-surface border border-surface-light rounded-3xl p-8 sm:p-12"
           >
             <h2
               id="solution-heading"
-              className="text-2xl sm:text-4xl font-bold mb-4 text-center leading-tight"
+              className="text-2xl sm:text-4xl font-bold font-display mb-4 text-center leading-tight"
             >
               How Discloser Protects Your Identity
             </h2>
-            <p className="text-white/70 text-center mb-8">
+            <p className="text-text-secondary-dark text-center mb-8">
               Share proof, not your life story.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-8 items-center">
               {/* Before */}
               <div className="space-y-4 opacity-50">
-                <p className="text-sm text-white/65 uppercase tracking-wide">
+                <p className="text-sm text-text-secondary-dark uppercase tracking-wide">
                   Without Discloser
                 </p>
-                <div className="space-y-2 text-white/75">
+                <div className="space-y-2 text-text-secondary-dark">
                   {[
                     "Full lab document visible",
                     "Name, DOB, HC# exposed",
@@ -318,25 +321,25 @@ export default function Home() {
 
               {/* After */}
               <div className="space-y-4">
-                <p className="text-sm text-accent uppercase tracking-wide">
+                <p className="text-sm text-burgundy-light uppercase tracking-wide">
                   With Discloser
                 </p>
-                <div className="bg-background/50 rounded-2xl p-6 border border-accent/20 shadow-lg shadow-accent/10">
+                <div className="bg-bg-dark rounded-2xl p-6 border border-burgundy/20 shadow-lg shadow-burgundy/10">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-accent-mint/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
                       <CheckCircle
-                        className="w-5 h-5 text-accent-mint"
+                        className="w-5 h-5 text-success"
                         aria-hidden="true"
                       />
                     </div>
                     <div>
                       <p className="font-semibold">All Clear</p>
-                      <p className="text-xs text-white/65">
+                      <p className="text-xs text-text-secondary-dark">
                         Tested Jan 3, 2026
                       </p>
                     </div>
                   </div>
-                  <div className="text-xs text-white/65 flex items-center gap-4">
+                  <div className="text-xs text-text-secondary-dark flex items-center gap-4">
                     <span className="flex items-center gap-1">
                       <Link2 className="w-3 h-3" aria-hidden="true" /> Link
                       expires in 24h
@@ -347,13 +350,13 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-text-secondary-dark">
                   They see your status. Not your life story.
                 </p>
               </div>
             </div>
 
-            <p className="text-sm text-white/60 text-center mt-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-sm text-text-secondary-dark text-center mt-8 max-w-2xl mx-auto leading-relaxed">
               Unlike partner notification services that alert contacts about
               potential exposure, Discloser lets you proactively share verified
               proof of your testing status, putting you in control of the
@@ -361,20 +364,21 @@ export default function Home() {
             </p>
           </AnimatedCard>
         </AnimatedSection>
+        </div>
 
         {/* Privacy */}
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary"
           aria-labelledby="privacy-heading"
         >
           <div className="text-center mb-10">
             <h2
               id="privacy-heading"
-              className="text-xl sm:text-2xl font-bold mb-3"
+              className="text-xl sm:text-2xl font-bold font-display mb-3"
             >
               Built-In Privacy Controls
             </h2>
-            <p className="text-white/70">
+            <p className="text-text-secondary">
               Privacy that&apos;s not just theatre. No data selling. No social
               features. No traces.
             </p>
@@ -384,25 +388,25 @@ export default function Home() {
             {[
               {
                 icon: (
-                  <Lock className="w-5 h-5 text-accent" aria-hidden="true" />
+                  <Lock className="w-5 h-5 text-burgundy" aria-hidden="true" />
                 ),
                 label: "Your data stays yours",
               },
               {
                 icon: (
-                  <Clock className="w-5 h-5 text-accent" aria-hidden="true" />
+                  <Clock className="w-5 h-5 text-burgundy" aria-hidden="true" />
                 ),
                 label: "Links auto-expire",
               },
               {
                 icon: (
-                  <Eye className="w-5 h-5 text-accent" aria-hidden="true" />
+                  <Eye className="w-5 h-5 text-burgundy" aria-hidden="true" />
                 ),
                 label: "Set view limits",
               },
               {
                 icon: (
-                  <Trash2 className="w-5 h-5 text-accent" aria-hidden="true" />
+                  <Trash2 className="w-5 h-5 text-burgundy" aria-hidden="true" />
                 ),
                 label: "Delete anytime",
               },
@@ -411,10 +415,10 @@ export default function Home() {
                 key={item.label}
                 variants={scaleIn}
                 hoverY={-3}
-                className="bg-surface/50 border border-surface-light rounded-xl p-4 text-center backdrop-blur-sm cursor-default"
+                className="bg-white border border-text-tertiary/20 rounded-xl p-4 text-center cursor-default"
               >
                 <div className="mb-2 flex justify-center">{item.icon}</div>
-                <p className="text-sm text-white/70">{item.label}</p>
+                <p className="text-sm text-text-secondary">{item.label}</p>
               </AnimatedCard>
             ))}
           </div>
@@ -422,16 +426,16 @@ export default function Home() {
 
         {/* How it works */}
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary"
           aria-labelledby="how-it-works-heading"
         >
           <h2
             id="how-it-works-heading"
-            className="text-2xl sm:text-3xl font-bold mb-3 text-center"
+            className="text-2xl sm:text-3xl font-bold font-display mb-3 text-center"
           >
             How Anonymous STI Sharing Works
           </h2>
-          <p className="text-white/70 text-center mb-12">
+          <p className="text-text-secondary text-center mb-12">
             Three taps. Total control.
           </p>
 
@@ -440,7 +444,7 @@ export default function Home() {
               {
                 icon: (
                   <Upload
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy"
                     aria-hidden="true"
                   />
                 ),
@@ -450,7 +454,7 @@ export default function Home() {
               {
                 icon: (
                   <Clock
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy"
                     aria-hidden="true"
                   />
                 ),
@@ -460,7 +464,7 @@ export default function Home() {
               {
                 icon: (
                   <Link2
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy"
                     aria-hidden="true"
                   />
                 ),
@@ -474,16 +478,16 @@ export default function Home() {
                 hoverY={-8}
                 className="text-center"
               >
-                <div className="w-16 h-16 rounded-2xl bg-surface border border-surface-light flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-burgundy/10 border border-burgundy/20 flex items-center justify-center mx-auto mb-4">
                   {step.icon}
                 </div>
-                <h3 className="font-semibold mb-2">{step.title}</h3>
-                <p className="text-sm text-white/70">{step.desc}</p>
+                <h3 className="font-semibold font-display mb-2">{step.title}</h3>
+                <p className="text-sm text-text-secondary">{step.desc}</p>
               </AnimatedCard>
             ))}
           </div>
 
-          <p className="text-sm text-white/60 text-center mt-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm text-text-tertiary text-center mt-10 max-w-2xl mx-auto leading-relaxed">
             Discloser uses multi-signal document verification to extract and
             validate your test results from lab documents. Each result receives a
             confidence score based on 7 checks, then is shared through
@@ -493,18 +497,19 @@ export default function Home() {
         </AnimatedSection>
 
         {/* Verification */}
+        <div className="bg-bg-dark">
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
           aria-labelledby="verification-heading"
         >
           <div className="text-center mb-12">
             <h2
               id="verification-heading"
-              className="text-2xl sm:text-3xl font-bold mb-3"
+              className="text-2xl sm:text-3xl font-bold font-display mb-3"
             >
               Verified Results. Real Trust.
             </h2>
-            <p className="text-white/70">
+            <p className="text-text-secondary-dark">
               Recipients see proof, not promises.
             </p>
           </div>
@@ -514,7 +519,7 @@ export default function Home() {
               {
                 icon: (
                   <ShieldCheck
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy-light"
                     aria-hidden="true"
                   />
                 ),
@@ -524,7 +529,7 @@ export default function Home() {
               {
                 icon: (
                   <Star
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy-light"
                     aria-hidden="true"
                   />
                 ),
@@ -534,7 +539,7 @@ export default function Home() {
               {
                 icon: (
                   <Fingerprint
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy-light"
                     aria-hidden="true"
                   />
                 ),
@@ -545,60 +550,64 @@ export default function Home() {
               <AnimatedCard
                 key={item.title}
                 variants={scaleIn}
-                className="bg-surface/50 border border-surface-light rounded-2xl p-6 backdrop-blur-sm text-center"
+                className="bg-surface border border-surface-light rounded-2xl p-6 text-center"
               >
                 <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mx-auto mb-4">
                   {item.icon}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-white/70 leading-relaxed">
+                <p className="text-sm text-text-secondary-dark leading-relaxed">
                   {item.desc}
                 </p>
               </AnimatedCard>
             ))}
           </div>
 
-          <p className="text-sm text-white/60 text-center mt-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm text-text-secondary-dark text-center mt-10 max-w-2xl mx-auto leading-relaxed">
             Verification checks are transparent. You see exactly which signals
             passed or didn&apos;t, and why.
           </p>
         </AnimatedSection>
+        </div>
 
         {/* Reminders */}
-        <AnimatedSection className="relative z-10 px-6 py-16 max-w-4xl mx-auto">
+        <div className="bg-bg-dark">
+        <AnimatedSection className="relative z-10 px-6 py-16 max-w-4xl mx-auto text-text-primary-dark">
           <AnimatedCard
             variants={scaleIn}
             hoverY={0}
-            className="bg-surface/30 border border-surface-light rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-6 backdrop-blur-sm"
+            className="bg-surface border border-surface-light rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-6"
           >
             <div className="w-14 h-14 rounded-2xl bg-surface-light flex items-center justify-center shrink-0">
-              <Bell className="w-7 h-7 text-accent" aria-hidden="true" />
+              <Bell className="w-7 h-7 text-burgundy-light" aria-hidden="true" />
             </div>
             <div>
               <h3 className="font-semibold text-lg mb-1">
                 STI Testing Reminders Based on CDC Guidelines
               </h3>
-              <p className="text-white/70 text-sm leading-relaxed">
+              <p className="text-text-secondary-dark text-sm leading-relaxed">
                 Quick 4-question assessment → personalised reminders based on CDC
                 guidelines. No judgement, just nudges to keep you on schedule.
               </p>
             </div>
           </AnimatedCard>
         </AnimatedSection>
+        </div>
 
         {/* Trust & Security */}
+        <div className="bg-bg-dark">
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
           aria-labelledby="trust-heading"
         >
           <div className="text-center mb-10">
             <h2
               id="trust-heading"
-              className="text-xl sm:text-2xl font-bold mb-3"
+              className="text-xl sm:text-2xl font-bold font-display mb-3"
             >
               Security You Can Trust
             </h2>
-            <p className="text-white/70">
+            <p className="text-text-secondary-dark">
               Built on trust, not promises. Security and compliance aren&apos;t
               features we bolt on later.
             </p>
@@ -608,7 +617,7 @@ export default function Home() {
             {[
               {
                 icon: (
-                  <Lock className="w-6 h-6 text-accent" aria-hidden="true" />
+                  <Lock className="w-6 h-6 text-burgundy-light" aria-hidden="true" />
                 ),
                 title: "End-to-end encryption",
                 desc: "Your test results are encrypted before they leave your device and stay encrypted in transit and at rest. Not even Discloser's team can access your health data.",
@@ -616,7 +625,7 @@ export default function Home() {
               {
                 icon: (
                   <ShieldCheck
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy-light"
                     aria-hidden="true"
                   />
                 ),
@@ -626,7 +635,7 @@ export default function Home() {
               {
                 icon: (
                   <Shield
-                    className="w-6 h-6 text-accent"
+                    className="w-6 h-6 text-burgundy-light"
                     aria-hidden="true"
                   />
                 ),
@@ -637,28 +646,29 @@ export default function Home() {
               <AnimatedCard
                 key={item.title}
                 variants={scaleIn}
-                className="bg-surface/50 border border-surface-light rounded-2xl p-6 backdrop-blur-sm text-center"
+                className="bg-surface border border-surface-light rounded-2xl p-6 text-center"
               >
                 <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mx-auto mb-4">
                   {item.icon}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-white/70 leading-relaxed">
+                <p className="text-sm text-text-secondary-dark leading-relaxed">
                   {item.desc}
                 </p>
               </AnimatedCard>
             ))}
           </div>
         </AnimatedSection>
+        </div>
 
         {/* FAQ */}
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-3xl mx-auto"
+          className="relative z-10 px-6 py-20 max-w-3xl mx-auto text-text-primary"
           aria-labelledby="faq-heading"
         >
           <h2
             id="faq-heading"
-            className="text-2xl sm:text-3xl font-bold mb-8 text-center"
+            className="text-2xl sm:text-3xl font-bold font-display mb-8 text-center"
           >
             Frequently Asked Questions About Discloser
           </h2>
@@ -667,27 +677,27 @@ export default function Home() {
 
         {/* Final CTA */}
         <AnimatedSection
-          className="relative z-10 px-6 py-24 max-w-3xl mx-auto text-center"
+          className="relative z-10 px-6 py-24 max-w-3xl mx-auto text-center text-text-primary"
           aria-labelledby="cta-heading"
         >
           <h2
             id="cta-heading"
-            className="text-3xl sm:text-4xl font-bold mb-6"
+            className="text-3xl sm:text-4xl font-bold font-display mb-6"
           >
             Get Early Access to Discloser
           </h2>
-          <p className="text-white/70 mb-6">Be first in line.</p>
+          <p className="text-text-secondary mb-6">Be first in line.</p>
 
           <div className="max-w-md mx-auto mb-6">
             <WaitlistForm variant="cta" />
           </div>
 
-          <div className="border-t border-surface-light pt-8 mt-8">
-            <p className="text-white/75 mb-4">Want to shape what we build?</p>
+          <div className="border-t border-text-tertiary/20 pt-8 mt-8">
+            <p className="text-text-secondary mb-4">Want to shape what we build?</p>
             <SurveyButton href={SURVEY_URL}>
               Take the 2-min survey →
             </SurveyButton>
-            <p className="text-xs text-white/55 mt-3">
+            <p className="text-xs text-text-tertiary mt-3">
               Your answers = your influence on v1
             </p>
           </div>
