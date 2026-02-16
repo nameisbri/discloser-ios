@@ -18,6 +18,7 @@ import {
   Star,
 } from "lucide-react";
 
+import ShareCardMockup from "./components/ShareCardMockup";
 import SmoothScrollProvider from "./components/SmoothScrollProvider";
 import AnimatedHeader from "./components/AnimatedHeader";
 import HeroContent from "./components/HeroContent";
@@ -172,30 +173,39 @@ export default function Home() {
         <AnimatedHeader />
 
         {/* Hero */}
-        <main className="relative z-10 px-6 pt-16 pb-24 max-w-4xl mx-auto text-center">
-          <HeroContent>
-            <h1 className="text-4xl sm:text-6xl font-bold font-display tracking-tight mb-6 leading-tight animate-fade-up">
-              Share Your STI Status Anonymously
-              <br />
-              <span className="text-burgundy inline-block">
-                Keep your name.
-              </span>
-            </h1>
-            <p className="text-lg sm:text-xl text-text-secondary max-w-xl mx-auto mb-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              Being responsible shouldn&apos;t cost you your privacy.
-            </p>
-            <p className="text-sm sm:text-base text-text-secondary max-w-2xl mx-auto mb-10 animate-fade-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
-              Discloser is a privacy-first iOS app that lets you share verified
-              STI test results anonymously. Upload your lab documents, set expiry
-              and view limits, and share a secure link or QR code. Recipients see
-              your status, not your name, date of birth, or any personally
-              identifiable information.
-            </p>
-          </HeroContent>
+        <main className="relative z-10 px-6 pt-16 pb-24 max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-2 gap-12 items-center">
+            {/* Left — text */}
+            <HeroContent>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight mb-6 leading-tight animate-fade-up">
+                Share Your STI Status Anonymously
+                <br />
+                <span className="text-burgundy inline-block">
+                  Keep your name.
+                </span>
+              </h1>
+              <p className="text-lg text-text-secondary mb-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+                Being responsible shouldn&apos;t cost you your privacy.
+              </p>
+              <p className="text-sm text-text-secondary max-w-lg mb-8 animate-fade-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
+                Upload your lab documents, set expiry and view limits, and
+                share a secure link. Recipients see your status, not your
+                name or any personally identifiable information.
+              </p>
+              <div className="max-w-md animate-fade-up" style={{ animationDelay: "0.3s" }}>
+                <WaitlistForm variant="hero" />
+              </div>
+            </HeroContent>
 
-          {/* Email signup */}
-          <div className="max-w-md mx-auto">
-            <WaitlistForm variant="hero" />
+            {/* Right — share card mockup */}
+            <div className="hidden sm:block">
+              <ShareCardMockup />
+            </div>
+          </div>
+
+          {/* Mobile share card — shown below form on small screens */}
+          <div className="sm:hidden mt-12">
+            <ShareCardMockup />
           </div>
         </main>
 
