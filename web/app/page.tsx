@@ -10,6 +10,7 @@ import {
   Camera,
   ShieldCheck,
   Shield,
+  Bell,
 } from "lucide-react";
 
 import ShareCardMockup from "./components/ShareCardMockup";
@@ -275,63 +276,75 @@ export default function Home() {
         </AnimatedSection>
         </div>
 
-        {/* Privacy */}
+        {/* Privacy & Security */}
+        <div className="bg-bg-dark">
         <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary"
+          className="relative z-10 px-6 py-20 max-w-5xl mx-auto text-text-primary-dark"
           aria-labelledby="privacy-heading"
         >
-          <div className="text-center mb-10">
-            <h2
-              id="privacy-heading"
-              className="text-xl sm:text-2xl font-bold font-display mb-3"
-            >
-              Built-In Privacy Controls
-            </h2>
-            <p className="text-text-secondary">
-              Privacy that&apos;s not just theatre. No data selling. No social
-              features. No traces.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              {
-                icon: (
-                  <Lock className="w-5 h-5 text-burgundy" aria-hidden="true" />
-                ),
-                label: "Your data stays yours",
-              },
-              {
-                icon: (
-                  <Clock className="w-5 h-5 text-burgundy" aria-hidden="true" />
-                ),
-                label: "Links auto-expire",
-              },
-              {
-                icon: (
-                  <Eye className="w-5 h-5 text-burgundy" aria-hidden="true" />
-                ),
-                label: "Set view limits",
-              },
-              {
-                icon: (
-                  <Trash2 className="w-5 h-5 text-burgundy" aria-hidden="true" />
-                ),
-                label: "Delete anytime",
-              },
-            ].map((item) => (
-              <AnimatedCard
-                key={item.label}
-                variants={scaleIn}
-                hoverY={-3}
-                className="bg-white border border-text-tertiary/20 rounded-xl p-4 text-center cursor-default"
+          <div className="grid sm:grid-cols-5 gap-12 sm:gap-16">
+            {/* Left — privacy features */}
+            <div className="sm:col-span-3">
+              <h2
+                id="privacy-heading"
+                className="text-2xl sm:text-3xl font-bold font-display mb-4"
               >
-                <div className="mb-2 flex justify-center">{item.icon}</div>
-                <p className="text-sm text-text-secondary">{item.label}</p>
-              </AnimatedCard>
-            ))}
+                Your Privacy. Non-Negotiable.
+              </h2>
+              <p className="text-text-secondary-dark mb-8 leading-relaxed">
+                No data selling. No social features. No traces. Your health
+                data is yours — period.
+              </p>
+
+              <div className="space-y-5">
+                {[
+                  { icon: <Lock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Your data stays yours — encrypted at rest, in transit, and on-device" },
+                  { icon: <Clock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Links auto-expire on your schedule (1 hour to 30 days)" },
+                  { icon: <Eye className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Set view limits — revoke access anytime" },
+                  { icon: <Trash2 className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Delete your data permanently, whenever you want" },
+                  { icon: <Bell className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "CDC-based testing reminders — personalised, no judgement" },
+                ].map((item) => (
+                  <div key={item.text} className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-surface-light flex items-center justify-center shrink-0 mt-0.5">
+                      {item.icon}
+                    </div>
+                    <p className="text-text-secondary-dark text-sm leading-relaxed pt-1.5">{item.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — security credentials */}
+            <div className="sm:col-span-2 space-y-8">
+              {[
+                {
+                  icon: <Lock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />,
+                  title: "End-to-end encryption",
+                  desc: "Results encrypted before they leave your device. Not even our team can read them.",
+                },
+                {
+                  icon: <ShieldCheck className="w-5 h-5 text-burgundy-light" aria-hidden="true" />,
+                  title: "PIPEDA-aligned",
+                  desc: "Canadian privacy law standards for health data — data minimization and purpose limitation.",
+                },
+                {
+                  icon: <Shield className="w-5 h-5 text-burgundy-light" aria-hidden="true" />,
+                  title: "CDC guidelines",
+                  desc: "Testing reminders based on CDC screening recommendations, personalised to you.",
+                },
+              ].map((item) => (
+                <div key={item.title}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    {item.icon}
+                    <h3 className="font-semibold">{item.title}</h3>
+                  </div>
+                  <p className="text-text-secondary-dark text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </AnimatedSection>
+        </div>
 
         {/* How it works */}
         <AnimatedSection
@@ -406,73 +419,6 @@ export default function Home() {
           </div>
         </AnimatedSection>
 
-
-        {/* Trust & Security */}
-        <div className="bg-bg-dark">
-        <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
-          aria-labelledby="trust-heading"
-        >
-          <div className="text-center mb-10">
-            <h2
-              id="trust-heading"
-              className="text-xl sm:text-2xl font-bold font-display mb-3"
-            >
-              Security You Can Trust
-            </h2>
-            <p className="text-text-secondary-dark">
-              Built on trust, not promises. Security and compliance aren&apos;t
-              features we bolt on later.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-6">
-            {[
-              {
-                icon: (
-                  <Lock className="w-6 h-6 text-burgundy-light" aria-hidden="true" />
-                ),
-                title: "End-to-end encryption",
-                desc: "Your test results are encrypted before they leave your device and stay encrypted in transit and at rest. Not even Discloser's team can access your health data.",
-              },
-              {
-                icon: (
-                  <ShieldCheck
-                    className="w-6 h-6 text-burgundy-light"
-                    aria-hidden="true"
-                  />
-                ),
-                title: "PIPEDA-aligned practices",
-                desc: "Discloser follows Canadian privacy law (PIPEDA) standards for handling sensitive personal health information, including data minimization and purpose limitation.",
-              },
-              {
-                icon: (
-                  <Shield
-                    className="w-6 h-6 text-burgundy-light"
-                    aria-hidden="true"
-                  />
-                ),
-                title: "CDC-aligned guidelines",
-                desc: "Testing reminder schedules are based on the CDC's STI screening recommendations, personalized to your situation through a brief confidential assessment.",
-              },
-            ].map((item) => (
-              <AnimatedCard
-                key={item.title}
-                variants={scaleIn}
-                className="bg-surface border border-surface-light rounded-2xl p-6 text-center"
-              >
-                <div className="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center mx-auto mb-4">
-                  {item.icon}
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-text-secondary-dark leading-relaxed">
-                  {item.desc}
-                </p>
-              </AnimatedCard>
-            ))}
-          </div>
-        </AnimatedSection>
-        </div>
 
         {/* FAQ */}
         <AnimatedSection
