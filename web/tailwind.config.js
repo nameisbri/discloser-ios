@@ -32,6 +32,7 @@ module.exports = {
         "accent-lavender": "#C9A0DC",
         "accent-mint": "#00E5A0",
         "accent-purple": "#A855F7",
+        warning: "#F59E0B",
       },
       fontFamily: {
         display: ["'Satoshi'", "sans-serif"],

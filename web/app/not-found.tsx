@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-8">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 bg-background text-white">
       <div className="w-full max-w-md">
         <div className="bg-surface rounded-3xl border border-surface-light p-8 text-center">
           <div className="w-16 h-16 bg-warning/20 rounded-2xl flex items-center justify-center mx-auto mb-5">

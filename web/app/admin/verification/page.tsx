@@ -97,7 +97,7 @@ function LevelBar({ level, count, max }: { level: string; count: number; max: nu
 
 function UnauthorizedPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-8">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 bg-background text-white">
       <div className="w-full max-w-md text-center">
         <div className="bg-surface rounded-3xl border border-surface-light p-8">
           <div className="w-16 h-16 bg-danger/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
@@ -168,7 +168,7 @@ export default async function VerificationAnalyticsPage({
     .forEach(([l, c]) => orderedLevels.push({ level: l, count: c }));
 
   return (
-    <main className="min-h-screen px-4 py-10">
+    <main className="min-h-screen px-4 py-10 bg-background text-white">
       <div className="w-full max-w-2xl mx-auto">
         {/* Page header */}
         <div className="mb-8">

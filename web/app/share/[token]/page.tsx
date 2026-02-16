@@ -71,7 +71,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   const knownConditions = (data.known_conditions || []) as KnownCondition[];
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-8">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 bg-background text-white">
       <SharePageTracker
         event="share_link_opened"
         properties={{
