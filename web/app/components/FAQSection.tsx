@@ -20,16 +20,16 @@ export default function FAQSection({ items }: FAQSectionProps) {
       {items.map((item, index) => (
         <div
           key={index}
-          className="bg-surface/50 border border-surface-light rounded-xl overflow-hidden"
+          className="bg-white border border-text-tertiary/20 rounded-xl overflow-hidden"
         >
           <button
             onClick={() => setOpenIndex(openIndex === index ? null : index)}
             className="w-full text-left px-6 py-4 flex justify-between items-center gap-4"
             aria-expanded={openIndex === index}
           >
-            <span className="font-medium text-white/90">{item.question}</span>
+            <span className="font-medium text-text-primary">{item.question}</span>
             <span
-              className="text-white/50 text-xl shrink-0 transition-transform duration-200"
+              className="text-text-tertiary text-xl shrink-0 transition-transform duration-200"
               style={{
                 transform: openIndex === index ? "rotate(45deg)" : "rotate(0deg)",
               }}
@@ -47,7 +47,7 @@ export default function FAQSection({ items }: FAQSectionProps) {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <p className="px-6 pb-4 text-sm text-white/70 leading-relaxed">
+                <p className="px-6 pb-4 text-sm text-text-secondary leading-relaxed">
                   {item.answer}
                 </p>
               </motion.div>

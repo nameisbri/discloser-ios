@@ -20,13 +20,13 @@ export default function AnimatedHeader() {
           height={36}
           priority
         />
-        <span className="font-semibold text-white/90">Discloser</span>
+        <span className="font-semibold text-text-primary">Discloser</span>
       </div>
       <a
         href={SURVEY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-white/75 hover:text-accent transition-colors"
+        className="text-sm text-text-secondary hover:text-burgundy transition-colors"
       >
         Take our survey
       </a>
