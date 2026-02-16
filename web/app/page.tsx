@@ -10,7 +10,6 @@ import {
   Trash2,
   Bell,
   CheckCircle,
-  XCircle,
   Camera,
   ShieldCheck,
   Shield,
@@ -278,101 +277,6 @@ export default function Home() {
             </AnimatedCard>
           </div>
 
-          <p className="text-center text-text-secondary-dark mt-10">
-            Being responsible shouldn&apos;t cost you your privacy.
-          </p>
-        </AnimatedSection>
-        </div>
-
-        {/* Solution / Before-After */}
-        <div className="bg-bg-dark">
-        <AnimatedSection
-          className="relative z-10 px-6 py-20 max-w-4xl mx-auto text-text-primary-dark"
-          aria-labelledby="solution-heading"
-        >
-          <AnimatedCard
-            variants={scaleIn}
-            hoverY={0}
-            className="bg-surface border border-surface-light rounded-3xl p-8 sm:p-12"
-          >
-            <h2
-              id="solution-heading"
-              className="text-2xl sm:text-4xl font-bold font-display mb-4 text-center leading-tight"
-            >
-              How Discloser Protects Your Identity
-            </h2>
-            <p className="text-text-secondary-dark text-center mb-8">
-              Share proof, not your life story.
-            </p>
-
-            <div className="grid sm:grid-cols-2 gap-8 items-center">
-              {/* Before */}
-              <div className="space-y-4 opacity-50">
-                <p className="text-sm text-text-secondary-dark uppercase tracking-wide">
-                  Without Discloser
-                </p>
-                <div className="space-y-2 text-text-secondary-dark">
-                  {[
-                    "Full lab document visible",
-                    "Name, DOB, HC# exposed",
-                    "Screenshot stays forever",
-                    "Awkward photo swap",
-                  ].map((item) => (
-                    <div key={item} className="flex items-center gap-2">
-                      <XCircle
-                        className="w-4 h-4 text-danger shrink-0"
-                        aria-hidden="true"
-                      />{" "}
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* After */}
-              <div className="space-y-4">
-                <p className="text-sm text-burgundy-light uppercase tracking-wide">
-                  With Discloser
-                </p>
-                <div className="bg-bg-dark rounded-2xl p-6 border border-burgundy/20 shadow-lg shadow-burgundy/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                      <CheckCircle
-                        className="w-5 h-5 text-success"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-semibold">All Clear</p>
-                      <p className="text-xs text-text-secondary-dark">
-                        Tested Jan 3, 2026
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-xs text-text-secondary-dark flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <Link2 className="w-3 h-3" aria-hidden="true" /> Link
-                      expires in 24h
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3" aria-hidden="true" /> 3 views
-                      left
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-text-secondary-dark">
-                  They see your status. Not your life story.
-                </p>
-              </div>
-            </div>
-
-            <p className="text-sm text-text-secondary-dark text-center mt-8 max-w-2xl mx-auto leading-relaxed">
-              Unlike partner notification services that alert contacts about
-              potential exposure, Discloser lets you proactively share verified
-              proof of your testing status, putting you in control of the
-              conversation.
-            </p>
-          </AnimatedCard>
         </AnimatedSection>
         </div>
 
