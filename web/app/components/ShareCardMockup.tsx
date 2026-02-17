@@ -3,11 +3,11 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Link2, Eye, ShieldCheck } from "lucide-react";
 
-export default function ShareCardMockup() {
+export default function ShareCardMockup({ mobile = false }: { mobile?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, rotate: 0 }}
-      animate={{ opacity: 1, y: 0, rotate: 2 }}
+      animate={{ opacity: 1, y: 0, rotate: mobile ? 0 : 2 }}
       transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.4, 0.25, 1] }}
       className="bg-bg-dark rounded-2xl border border-surface-light shadow-2xl shadow-burgundy/10 p-6 sm:p-8 max-w-sm mx-auto sm:mx-0"
     >

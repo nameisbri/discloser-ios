@@ -91,16 +91,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://us.i.posthog.com" />
         <link rel="dns-prefetch" href="https://www.clarity.ms" />
         
-        {/* Preload critical fonts */}
+        {/* Font stylesheets (non-blocking with preload + swap) */}
         <link
           rel="preload"
           href="https://api.fontshare.com/v2/css?f[]=satoshi@500,600,700&display=swap"
           as="style"
         />
         <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@500,600,700&display=swap"
+        />
+        <link
           rel="preload"
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap"
           as="style"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap"
         />
         
         {/* Google Analytics - Load after page is interactive */}

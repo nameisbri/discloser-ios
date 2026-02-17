@@ -64,13 +64,13 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] as const }}
+        transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] as const }}
         className="bg-success/10 border border-success/30 rounded-2xl p-6 text-center"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] as const }}
+          transition={{ delay: 0.2, duration: 0.4, ease: [0.25, 0.4, 0.25, 1] as const }}
           className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4"
         >
           <motion.div
@@ -180,12 +180,9 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
                 Free at launch
               </span>
             </div>
-            <div className="inline-flex items-center gap-2 bg-white/60 border border-text-tertiary/20 rounded-full px-4 py-1.5">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
-              <p className="text-sm text-text-tertiary font-medium">
-                Be among the first to try it
-              </p>
-            </div>
+            <p className="text-sm text-text-tertiary font-medium">
+              Be among the first to try it
+            </p>
           </div>
         </>
       )}

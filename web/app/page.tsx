@@ -173,8 +173,7 @@ export default function Home() {
             {/* Left — text */}
             <HeroContent>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight mb-6 leading-tight animate-fade-up">
-                Share Your STI Status Anonymously
-                <br />
+                Share Your STI Status Anonymously{" "}
                 <span className="text-burgundy inline-block">
                   Keep your name.
                 </span>
@@ -200,7 +199,7 @@ export default function Home() {
 
           {/* Mobile share card — shown below form on small screens */}
           <div className="sm:hidden mt-12">
-            <ShareCardMockup />
+            <ShareCardMockup mobile />
           </div>
         </main>
 
@@ -237,10 +236,12 @@ export default function Home() {
                 Full name, date of birth, health card number, address... all
                 visible to someone who might not even remember your name tomorrow.
               </p>
-              <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg overflow-hidden">
-                <div className="text-xs text-danger/80 font-mono">
-                  <span className="bg-danger/30 px-1">Jane Smith</span> ·{" "}
-                  <span className="bg-danger/30 px-1">1990-03-15</span> ·{" "}
+              <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
+                <div className="text-xs text-danger/80 font-mono flex flex-wrap gap-1">
+                  <span className="bg-danger/30 px-1">Jane Smith</span>
+                  <span className="text-danger/50">·</span>
+                  <span className="bg-danger/30 px-1">1990-03-15</span>
+                  <span className="text-danger/50">·</span>
                   <span className="bg-danger/30 px-1">HC# 1234-567-890</span>
                 </div>
               </div>
@@ -410,7 +411,7 @@ export default function Home() {
                     key={check}
                     className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-surface text-text-secondary-dark border border-surface-light"
                   >
-                    <CheckCircle className="w-3 h-3 text-success" aria-hidden="true" />
+                    <CheckCircle className="w-3 h-3 text-success shrink-0" aria-hidden="true" />
                     {check}
                   </span>
                 ))}

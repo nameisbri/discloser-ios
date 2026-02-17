@@ -22,6 +22,6 @@ export const scaleIn: Variants = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.6, ease: [0.34, 1.56, 0.64, 1] },
+    transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] },
   },
 };
