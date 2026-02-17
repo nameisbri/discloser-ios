@@ -64,6 +64,13 @@
       "expo-router",
       "expo-apple-authentication",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Discloser to access your photos to upload test results.",
+          "cameraPermission": "Allow Discloser to use your camera to photograph test results."
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.816706813459-i26rbr56927bv08elu287apn9ughp2d6"
