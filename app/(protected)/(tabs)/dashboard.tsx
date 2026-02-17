@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "../../../context/theme";
-import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage, useReminderSync } from "../../../lib/hooks";
+import { useTestResults, useSTIStatus, useProfile, useTestingRecommendations, formatDueMessage, useReminderSync, useFirstVisit } from "../../../lib/hooks";
 import { useReminders } from "../../../lib/hooks";
 import {
   Bell,
@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Sparkles,
   AlertTriangle,
+  Rocket,
 } from "lucide-react-native";
 import { StatusShareModal } from "../../../components/StatusShareModal";
 import { RiskAssessment } from "../../../components/RiskAssessment";
@@ -25,6 +26,8 @@ import { Card } from "../../../components/Card";
 import { ResultCard } from "../../../components/ResultCard";
 import { SkeletonResultsList } from "../../../components/SkeletonLoader";
 import { CurrentStatusCard, ManagedConditionCard, EmptyDashboardState } from "../../../components/dashboard";
+import { FirstVisitBanner } from "../../../components/FirstVisitBanner";
+import { trackFirstVisitBannerDismissed } from "../../../lib/analytics";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatDate } from "../../../lib/utils/date";
 import { hapticSelection } from "../../../lib/utils/haptics";
@@ -47,6 +50,8 @@ export default function Dashboard() {
     createReminder,
     deleteReminder,
   });
+
+  const { isFirstVisit: showWelcomeBanner, markVisited: dismissWelcomeBanner } = useFirstVisit("dashboard");
 
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
@@ -200,6 +205,20 @@ export default function Dashboard() {
         </LinearGradient>
 
         <View className="px-6 mt-6">
+          {/* Welcome banner for first visit */}
+          {showWelcomeBanner && (
+            <FirstVisitBanner
+              icon={<Rocket size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />}
+              title={`Welcome${profile?.alias ? `, ${profile.alias}` : ""}!`}
+              message="Upload your test results, set reminders, and share your status."
+              isDark={isDark}
+              onDismiss={() => {
+                dismissWelcomeBanner();
+                trackFirstVisitBannerDismissed({ screen: "dashboard" });
+              }}
+            />
+          )}
+
           {/* Testing Overdue - Small inline warning */}
           {(recommendation.isOverdue || recommendation.isDueSoon) && (
             <View className="flex-row items-center justify-center mb-4">
@@ -253,6 +272,41 @@ export default function Dashboard() {
                 />
               ) : null}
             </View>
+          )}
+
+          {/* Upload CTA when user has conditions but no test results yet */}
+          {!loading && results.length === 0 && knownConditionsStatus.length > 0 && (
+            <Pressable
+              onPress={() => router.push("/upload")}
+              className={`mb-4 p-5 rounded-2xl border-2 border-dashed ${
+                isDark
+                  ? "border-dark-accent/40 bg-dark-accent-muted active:bg-dark-accent/20"
+                  : "border-primary/30 bg-primary-light/30 active:bg-primary-light/50"
+              }`}
+              accessibilityLabel="Upload your first test result"
+              accessibilityRole="button"
+            >
+              <View className="flex-row items-center">
+                <View
+                  className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
+                    isDark ? "bg-dark-accent/20" : "bg-primary-light"
+                  }`}
+                >
+                  <FileText size={24} color={isDark ? "#FF2D7A" : "#923D5C"} />
+                </View>
+                <View className="flex-1">
+                  <Text className={`font-inter-bold text-base ${isDark ? "text-dark-text" : "text-text"}`}>
+                    Upload your first result
+                  </Text>
+                  <Text className={`text-sm mt-0.5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                    Snap a photo or upload a PDF
+                  </Text>
+                </View>
+                <View className={`px-3 py-1.5 rounded-full ${isDark ? "bg-dark-accent" : "bg-primary"}`}>
+                  <Text className="text-white font-inter-semibold text-xs">Add</Text>
+                </View>
+              </View>
+            </Pressable>
           )}
 
           {/* Share My Current Status — below status section for context */}

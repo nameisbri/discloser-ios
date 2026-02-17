@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         if (!session) {
-          if (!inAuthGroup) router.replace("/login");
+          if (!inAuthGroup) router.replace("/showcase");
           return;
         }
 

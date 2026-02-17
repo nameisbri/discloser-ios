@@ -22,8 +22,10 @@ import {
   Clock,
   X,
 } from "lucide-react-native";
-import { useAllShareLinks, getUnifiedShareUrl, useThemeColors } from "../../../lib/hooks";
+import { useAllShareLinks, getUnifiedShareUrl, useThemeColors, useFirstVisit } from "../../../lib/hooks";
 import { useTheme } from "../../../context/theme";
+import { FirstVisitBanner } from "../../../components/FirstVisitBanner";
+import { trackFirstVisitBannerDismissed } from "../../../lib/analytics";
 import { HeaderLogo } from "../../../components/HeaderLogo";
 import { SharedLinkCard } from "../../../components/SharedLinkCard";
 import { StatusShareModal } from "../../../components/StatusShareModal";
@@ -50,6 +52,7 @@ export default function SharedLinksScreen() {
   const [qrLink, setQrLink] = useState<UnifiedShareLink | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showStatusShare, setShowStatusShare] = useState(false);
+  const { isFirstVisit, markVisited: dismissBanner } = useFirstVisit("shared-links");
 
   useFocusEffect(
     useCallback(() => {
@@ -181,6 +184,20 @@ export default function SharedLinksScreen() {
           />
         }
       >
+        {/* First visit banner */}
+        {isFirstVisit && (
+          <FirstVisitBanner
+            icon={<Link2 size={20} color={isDark ? "#FF2D7A" : "#923D5C"} />}
+            title="Your sharing hub"
+            message="All your shared links in one place. Links expire automatically."
+            isDark={isDark}
+            onDismiss={() => {
+              dismissBanner();
+              trackFirstVisitBannerDismissed({ screen: "shared-links" });
+            }}
+          />
+        )}
+
         {loading && links.length === 0 ? (
           <ActivityIndicator
             size="large"
@@ -239,7 +256,7 @@ export default function SharedLinksScreen() {
                 marginBottom: 24,
               }}
             >
-              When you share a test result or your status, your links will appear here.
+              When you share a test result or your status, your links will appear here. Links expire automatically. You control who sees what.
             </Text>
             <Pressable
               onPress={() => setShowStatusShare(true)}

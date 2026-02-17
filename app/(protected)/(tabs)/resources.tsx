@@ -9,8 +9,12 @@ import {
   HeartHandshake,
   Globe,
   ChevronLeft,
+  Library,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useFirstVisit } from "../../../lib/hooks";
+import { FirstVisitBanner } from "../../../components/FirstVisitBanner";
+import { trackFirstVisitBannerDismissed } from "../../../lib/analytics";
 import {
   RESOURCE_CATEGORIES,
   RESOURCE_REGIONS,
@@ -49,6 +53,8 @@ export default function Resources() {
   const router = useRouter();
   const { isDark } = useTheme();
 
+  const { isFirstVisit, markVisited: dismissBanner } = useFirstVisit("resources");
+
   const handleResourcePress = async (resource: Resource) => {
     await hapticImpact("light");
     trackResourceTap(resource.id, resource.category, resource.region);
@@ -79,6 +85,20 @@ export default function Resources() {
       </View>
 
       <ScrollView className="flex-1 px-6">
+        {/* First visit banner */}
+        {isFirstVisit && (
+          <FirstVisitBanner
+            icon={<Library size={20} color={isDark ? "#C9A0DC" : "#7C3AED"} />}
+            title="Your sexual health library"
+            message="Evidence-based guides on STIs, testing, and prevention."
+            isDark={isDark}
+            onDismiss={() => {
+              dismissBanner();
+              trackFirstVisitBannerDismissed({ screen: "resources" });
+            }}
+          />
+        )}
+
         {/* Intro */}
         <Text
           className={`font-inter-regular text-sm leading-5 mb-6 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}

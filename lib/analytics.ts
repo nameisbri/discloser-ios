@@ -95,6 +95,14 @@ interface ErrorEncounteredProps {
   is_recoverable: boolean;
 }
 
+interface ShowcaseCtaTappedProps {
+  cta: "get_started" | "sign_in";
+}
+
+interface FirstVisitBannerDismissedProps {
+  screen: string;
+}
+
 // ── State ──────────────────────────────────────────────────────
 let posthogClient: PostHog | null = null;
 let enabled = false;
@@ -191,3 +199,6 @@ export const trackShareQrDisplayed = (p: ShareQrDisplayedProps): void => track("
 export const trackAppReviewPrompted = (p: AppReviewPromptedProps): void => track("app_review_prompted", { ...p });
 export const trackAppReviewSubmitted = (p: AppReviewSubmittedProps): void => track("app_review_submitted", { ...p });
 export const trackErrorEncountered = (p: ErrorEncounteredProps): void => track("error_encountered", { ...p });
+export const trackShowcaseViewed = (): void => track("showcase_viewed");
+export const trackShowcaseCtaTapped = (p: ShowcaseCtaTappedProps): void => track("showcase_cta_tapped", { ...p });
+export const trackFirstVisitBannerDismissed = (p: FirstVisitBannerDismissedProps): void => track("first_visit_banner_dismissed", { ...p });

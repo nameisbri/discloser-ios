@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronRight, ChevronLeft, User, Calendar, Heart, Activity } from "lucide-react-native";
-import { WelcomeScreens } from "../../components/onboarding";
+import { ChevronRight, ChevronLeft, User, Calendar, Heart, Activity, FileText, Bell, Share2, CheckCircle2 } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTheme } from "../../context/theme";
 import { useProfile } from "../../lib/hooks";
@@ -23,9 +23,10 @@ import { supabase } from "../../lib/supabase";
 import { SHARE_BASE_URL } from "../../lib/constants";
 import { STATUS_STIS } from "../../lib/types";
 import type { KnownCondition, RiskLevel } from "../../lib/types";
-import { getMethodsForCondition, type ManagementMethod } from "../../lib/managementMethods";
+import { getMethodsForCondition } from "../../lib/managementMethods";
 import { toDateString } from "../../lib/utils/date";
 import { trackOnboardingCompleted } from "../../lib/analytics";
+import { useReducedMotion } from "../../lib/utils/animations";
 
 const PRONOUNS_OPTIONS = ["he/him", "she/her", "they/them", "other"];
 
@@ -84,9 +85,11 @@ export default function Onboarding() {
   const { isDark } = useTheme();
   const { profile, refetch } = useProfile();
 
-  const [showWelcome, setShowWelcome] = useState(true);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const celebrationScale = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
 
   // Input refs for auto-focus
   const lastNameRef = useRef<TextInput>(null);
@@ -133,9 +136,30 @@ export default function Onboarding() {
     return true;
   };
 
+  const playCelebration = (nextStep: number) => {
+    if (reduceMotion) {
+      setStep(nextStep);
+      return;
+    }
+    setShowCelebration(true);
+    celebrationScale.setValue(0);
+    Animated.sequence([
+      Animated.spring(celebrationScale, {
+        toValue: 1,
+        tension: 200,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+      Animated.delay(200),
+    ]).start(() => {
+      setShowCelebration(false);
+      setStep(nextStep);
+    });
+  };
+
   const handleNext = () => {
     if (step === 1 && !validateStep1()) return;
-    if (step < totalSteps) setStep(step + 1);
+    if (step < totalSteps) playCelebration(step + 1);
   };
 
   const handleBack = () => {
@@ -284,14 +308,7 @@ export default function Onboarding() {
   const inputBg = isDark ? "bg-dark-surface" : "bg-white";
   const inputBorder = isDark ? "border-dark-border" : "border-gray-200";
 
-  if (showWelcome) {
-    return (
-      <WelcomeScreens
-        isDark={isDark}
-        onComplete={() => setShowWelcome(false)}
-      />
-    );
-  }
+  const STEP_LABELS = ["Info", "Check-in", "Conditions", "Done"];
 
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-base" : "bg-background"}`}>
@@ -299,24 +316,58 @@ export default function Onboarding() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        {/* Progress */}
+        {/* Labeled Progress Bar */}
         <View className="px-6 pt-4 pb-2">
           <View className="flex-row gap-2">
-            {[1, 2, 3, 4].map((s) => (
-              <View
-                key={s}
-                className={`flex-1 h-1 rounded-full ${
-                  s <= step
-                    ? isDark ? "bg-dark-accent" : "bg-primary"
-                    : isDark ? "bg-dark-surface-light" : "bg-gray-200"
-                }`}
-              />
-            ))}
+            {STEP_LABELS.map((label, i) => {
+              const s = i + 1;
+              const isActive = s <= step;
+              return (
+                <View key={label} className="flex-1">
+                  <View
+                    className={`h-1.5 rounded-full mb-1.5 ${
+                      isActive
+                        ? isDark ? "bg-dark-accent" : "bg-primary"
+                        : isDark ? "bg-dark-surface-light" : "bg-gray-200"
+                    }`}
+                  />
+                  <Text
+                    className={`text-xs text-center font-inter-medium ${
+                      s === step
+                        ? isDark ? "text-dark-accent" : "text-primary"
+                        : isActive
+                        ? isDark ? "text-dark-text-secondary" : "text-text-light"
+                        : isDark ? "text-dark-text-muted" : "text-text-muted"
+                    }`}
+                  >
+                    {label}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
-          <Text className={`text-sm mt-2 ${textSecondary}`}>
-            Step {step} of {totalSteps}
-          </Text>
+          {step === 1 && (
+            <Text className={`text-xs text-center mt-2 ${isDark ? "text-dark-text-muted" : "text-text-muted"}`}>
+              Takes about 2 minutes
+            </Text>
+          )}
         </View>
+
+        {/* Micro-celebration overlay */}
+        {showCelebration && (
+          <View className="absolute inset-0 z-50 items-center justify-center" pointerEvents="none">
+            <Animated.View
+              style={{
+                transform: [{ scale: celebrationScale }],
+                opacity: celebrationScale,
+              }}
+            >
+              <View className={`w-16 h-16 rounded-full items-center justify-center ${isDark ? "bg-dark-success-bg" : "bg-green-100"}`}>
+                <CheckCircle2 size={32} color={isDark ? "#00E5A0" : "#10B981"} />
+              </View>
+            </Animated.View>
+          </View>
+        )}
 
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {/* Step 1: Basic Info */}
@@ -327,16 +378,11 @@ export default function Onboarding() {
                   <User size={32} color={isDark ? "#FF2D7A" : "#923D5C"} />
                 </View>
                 <Text className={`text-2xl font-inter-bold text-center ${textColor}`}>
-                  Let's get to know you
+                  First, the basics
                 </Text>
                 <Text className={`text-center mt-2 px-4 ${textSecondary}`}>
-                  Use your legal name as it appears on your health card or ID. This helps us verify that lab results belong to you.
+                  Use your legal name as it appears on your health card or ID. This helps us verify lab results belong to you. Your real name is never shared without your permission.
                 </Text>
-                <View className={`mt-3 px-4 py-3 rounded-xl ${isDark ? "bg-dark-surface" : "bg-gray-50"}`}>
-                  <Text className={`text-xs text-center ${isDark ? "text-dark-text-muted" : "text-gray-600"}`}>
-                    🔒 Your real name is never shared without your permission
-                  </Text>
-                </View>
               </View>
 
               <View className="gap-4">
@@ -612,7 +658,7 @@ export default function Onboarding() {
                   Any conditions we should know?
                 </Text>
                 <Text className={`text-center mt-2 px-4 ${textSecondary}`}>
-                  Some STIs stay with you for life. Knowing this helps us show your status accurately and avoid false alerts.
+                  This helps us show your status accurately and personalize your testing reminders.
                 </Text>
               </View>
 
@@ -720,22 +766,59 @@ export default function Onboarding() {
             </View>
           )}
 
-          {/* Step 4: Summary */}
+          {/* Step 4: Completion */}
           {step === 4 && (
             <View className="py-4">
-              <View className="items-center mb-6">
-                <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light"}`}>
-                  <Calendar size={32} color={isDark ? "#FF2D7A" : "#923D5C"} />
+              <View className="items-center mb-8">
+                <View className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${isDark ? "bg-dark-success-bg" : "bg-green-100"}`}>
+                  <CheckCircle2 size={40} color={isDark ? "#00E5A0" : "#10B981"} />
                 </View>
                 <Text className={`text-2xl font-inter-bold text-center ${textColor}`}>
                   You're all set!
                 </Text>
                 <Text className={`text-center mt-2 px-4 ${textSecondary}`}>
-                  Regular testing is key to staying on top of your sexual health.
+                  Here's what you can do next.
                 </Text>
               </View>
 
-              <Card className="mt-4">
+              {/* Next actions preview */}
+              <View className="gap-3">
+                {[
+                  { icon: FileText, title: "Upload results", desc: "Snap a photo or upload a PDF", color: isDark ? "#FF2D7A" : "#923D5C" },
+                  { icon: Bell, title: "Set reminders", desc: "Never miss a checkup", color: isDark ? "#F59E0B" : "#F59E0B" },
+                  { icon: Share2, title: "Share status", desc: "Secure, anonymous, expiring links", color: isDark ? "#C9A0DC" : "#7C3AED" },
+                ].map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <View
+                      key={action.title}
+                      className={`flex-row items-center p-4 rounded-2xl ${isDark ? "bg-dark-surface" : "bg-white"}`}
+                      style={{ borderWidth: 1, borderColor: isDark ? "#2D2438" : "#E5E7EB" }}
+                    >
+                      <View
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                          backgroundColor: action.color + "20",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginRight: 14,
+                        }}
+                      >
+                        <Icon size={20} color={action.color} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className={`font-inter-semibold ${textColor}`}>{action.title}</Text>
+                        <Text className={`text-sm ${textSecondary}`}>{action.desc}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Quick summary */}
+              <Card className="mt-6">
                 <Text className={`font-inter-semibold mb-2 ${textColor}`}>
                   Quick summary
                 </Text>

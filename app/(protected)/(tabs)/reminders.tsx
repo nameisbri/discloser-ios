@@ -21,8 +21,10 @@ import {
   Pencil,
   AlertTriangle,
 } from "lucide-react-native";
-import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage } from "../../../lib/hooks";
+import { useReminders, useTestResults, useTestingRecommendations, formatDueMessage, useFirstVisit } from "../../../lib/hooks";
 import { useTheme } from "../../../context/theme";
+import { FirstVisitBanner } from "../../../components/FirstVisitBanner";
+import { trackFirstVisitBannerDismissed } from "../../../lib/analytics";
 import { Card } from "../../../components/Card";
 import { HeaderLogo } from "../../../components/HeaderLogo";
 import { Button } from "../../../components/Button";
@@ -100,6 +102,7 @@ export default function Reminders() {
   } = useReminders();
   const { results } = useTestResults();
   const recommendation = useTestingRecommendations(results);
+  const { isFirstVisit, markVisited: dismissBanner } = useFirstVisit("reminders");
 
   // Refetch when tab gains focus so data is fresh after uploads or dashboard sync
   useFocusEffect(
@@ -185,6 +188,22 @@ export default function Reminders() {
           </Text>
         </View>
 
+        {/* First visit banner */}
+        {isFirstVisit && (
+          <View className="mb-4">
+            <FirstVisitBanner
+              icon={<Bell size={20} color="#FFC107" />}
+              title="Never miss a checkup"
+              message="Set your testing schedule. We'll send push notifications."
+              isDark={isDark}
+              onDismiss={() => {
+                dismissBanner();
+                trackFirstVisitBannerDismissed({ screen: "reminders" });
+              }}
+            />
+          </View>
+        )}
+
         {/* Testing Overdue Alert */}
         {(recommendation.isOverdue || recommendation.isDueSoon) && (
           <Card className={`mb-6 border-2 border-warning ${isDark ? "bg-dark-warning-bg" : ""}`} style={!isDark ? { backgroundColor: "#FEF3C7" } : undefined}>
@@ -224,17 +243,34 @@ export default function Reminders() {
             />
           </Card>
         ) : (
-          <Card className="mb-8">
-            <Text className={`text-xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-              Your Testing Schedule
-            </Text>
-            <View className="items-center py-6">
-              <Calendar size={32} color={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"} />
-              <Text className={`font-inter-regular text-center mt-3 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
-                Your reminder will appear here once{"\n"}you complete your risk assessment.
+          <>
+            <Card className="mb-4">
+              <Text className={`text-xl font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
+                Your Testing Schedule
               </Text>
-            </View>
-          </Card>
+              <View className="items-center py-6">
+                <Calendar size={32} color={isDark ? "rgba(255,255,255,0.3)" : "#9CA3AF"} />
+                <Text className={`font-inter-regular text-center mt-3 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                  Your reminder will appear here once{"\n"}you complete your risk assessment.
+                </Text>
+              </View>
+            </Card>
+            <Card className={`mb-8 ${isDark ? "bg-dark-surface" : ""}`} style={!isDark ? { backgroundColor: "#F0F9FF" } : undefined}>
+              <View className="flex-row items-start">
+                <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${isDark ? "bg-dark-lavender/20" : ""}`} style={!isDark ? { backgroundColor: "#DBEAFE" } : undefined}>
+                  <Bell size={16} color={isDark ? "#C9A0DC" : "#3B82F6"} />
+                </View>
+                <View className="flex-1">
+                  <Text className={`font-inter-semibold text-sm ${isDark ? "text-dark-text" : "text-text"}`}>
+                    CDC recommends
+                  </Text>
+                  <Text className={`font-inter-regular text-sm mt-1 leading-5 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
+                    Most sexually active people should test at least once a year.
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          </>
         )}
       </ScrollView>
 
