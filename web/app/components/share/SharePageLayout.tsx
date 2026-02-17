@@ -1,11 +1,13 @@
 import Image from "next/image";
+import { SharePageCTA } from "./SharePageCTA";
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-8 bg-background text-white">
       <div className="w-full max-w-md">
         {children}
-        <div className="flex items-center justify-center gap-2 mt-8 text-white/40 text-sm">
+        <SharePageCTA />
+        <div className="flex items-center justify-center gap-2 mt-6 text-white/40 text-sm">
           <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
           <span>Discloser</span>
         </div>

@@ -7,6 +7,7 @@ import { ExpiredPage, NotFoundPage } from "@/app/components/share/SharePageLayou
 import { formatDate, statusColor, statusBg } from "@/app/components/share/helpers";
 import { VerificationExplainer } from "@/app/components/share/VerificationExplainer";
 import { SharePageTracker } from "@/app/components/share/SharePageTracker";
+import { SharePageCTA } from "@/app/components/share/SharePageCTA";
 
 interface STIResult {
   name: string;
@@ -167,13 +168,14 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           <VerificationExplainer isVerified={data.is_verified} />
         </div>
 
+        <SharePageCTA />
+
         {/* Branding Footer */}
-        <div className="flex flex-col items-center justify-center gap-1 mt-8">
+        <div className="flex flex-col items-center justify-center gap-1 mt-6">
           <div className="flex items-center gap-2 text-white/40 text-sm">
             <Image src="/logomark.png" alt="Discloser" width={20} height={20} />
             <span>Shared via Discloser</span>
           </div>
-          <span className="text-white/25 text-xs">Share your status. Keep your name.</span>
         </div>
       </div>
     </main>
