@@ -120,7 +120,7 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
     <>
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col sm:flex-row gap-3 mb-4"
+        className="flex flex-col gap-3 mb-4"
       >
         <input
           type="text"
@@ -147,9 +147,7 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
           disabled={status === "loading"}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`w-full sm:w-auto px-6 py-3 rounded-full font-semibold bg-coral hover:bg-coral-hover text-white transition-colors disabled:opacity-50 shadow-lg shadow-coral/20 ${
-            variant === "cta" ? "px-8 whitespace-nowrap" : ""
-          }`}
+          className="w-full px-6 py-3 rounded-full font-semibold bg-coral hover:bg-coral-hover text-white transition-colors disabled:opacity-50 shadow-lg shadow-coral/20"
           aria-label={buttonAriaLabel}
         >
           {status === "loading" ? (
@@ -164,28 +162,30 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
       </form>
       {variant === "hero" && (
         <>
-          <p className="text-xs text-text-secondary max-w-sm mx-auto mb-3">
-            No spam, ever. Just launch updates you can unsubscribe from anytime.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-3">
-            <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
-              <Lock className="w-3.5 h-3.5 text-success" aria-hidden="true" />
-              Encrypted
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
-              <ShieldCheck className="w-3.5 h-3.5 text-success" aria-hidden="true" />
-              Privacy-first
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
-              <CheckCircle className="w-3.5 h-3.5 text-success" aria-hidden="true" />
-              Free at launch
-            </span>
-          </div>
-          <div className="inline-flex items-center gap-2 bg-white/60 border border-text-tertiary/20 rounded-full px-4 py-1.5">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
-            <p className="text-sm text-text-tertiary font-medium">
-              Be among the first to try it
+          <div className="text-center">
+            <p className="text-xs text-text-secondary mb-3">
+              No spam, ever. Just launch updates you can unsubscribe from anytime.
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-3">
+              <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+                <Lock className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+                Encrypted
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+                <ShieldCheck className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+                Privacy-first
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+                <CheckCircle className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+                Free at launch
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-white/60 border border-text-tertiary/20 rounded-full px-4 py-1.5">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
+              <p className="text-sm text-text-tertiary font-medium">
+                Be among the first to try it
+              </p>
+            </div>
           </div>
         </>
       )}
