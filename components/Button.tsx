@@ -148,7 +148,7 @@ export function Button({
   const buttonVariants = isDark ? buttonVariantsDark : buttonVariantsLight;
   const textVariants = isDark ? buttonTextVariantsDark : buttonTextVariantsLight;
 
-  const handlePress = async (event: any) => {
+  const handlePress = async (event: Parameters<NonNullable<typeof onPress>>[0]) => {
     if (disabled || loading) return;
 
     // Trigger haptic feedback - heavy for danger variant

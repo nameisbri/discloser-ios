@@ -190,18 +190,16 @@ export default function Reminders() {
 
         {/* First visit banner */}
         {isFirstVisit && (
-          <View className="mb-4">
-            <FirstVisitBanner
-              icon={<Bell size={20} color="#FFC107" />}
-              title="Never miss a checkup"
-              message="Set your testing schedule. We'll send push notifications."
-              isDark={isDark}
-              onDismiss={() => {
-                dismissBanner();
-                trackFirstVisitBannerDismissed({ screen: "reminders" });
-              }}
-            />
-          </View>
+          <FirstVisitBanner
+            icon={<Bell size={20} color="#FFC107" />}
+            title="Never miss a checkup"
+            message="Set your testing schedule. We'll send push notifications."
+            isDark={isDark}
+            onDismiss={() => {
+              dismissBanner();
+              trackFirstVisitBannerDismissed({ screen: "reminders" });
+            }}
+          />
         )}
 
         {/* Testing Overdue Alert */}

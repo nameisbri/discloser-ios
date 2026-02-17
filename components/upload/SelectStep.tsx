@@ -37,7 +37,7 @@ export function SelectStep({ isDark, onPickImage, onPickPDF }: SelectStepProps) 
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-8 py-6" contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView className="flex-1 px-6 py-6" contentContainerStyle={{ paddingBottom: 40 }}>
         <View className="items-center mb-10">
           <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? "bg-dark-accent-muted" : "bg-primary-light/30"}`}>
             <UploadIcon size={40} color={isDark ? "#FF2D7A" : "#923D5C"} />

@@ -266,7 +266,7 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Account
+          Your account
         </Text>
         
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
@@ -329,7 +329,7 @@ export default function Settings() {
         </View>
 
         <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
-          Danger zone
+          Danger Zone
         </Text>
 
         <View className={`rounded-3xl border shadow-sm overflow-hidden mb-8 ${isDark ? "bg-dark-surface border-dark-border" : "bg-white border-border"}`}>
@@ -601,8 +601,8 @@ function SettingsItem({
         </Text>
       </View>
       {rightElement}
-      {showChevron && !rightElement && (
-        <ChevronRight size={18} color={isDark ? "#3D3548" : "#E0E0E0"} />
+      {showChevron && (
+        <ChevronRight size={18} color={isDark ? "#52495D" : "#D1D5DB"} />
       )}
     </Pressable>
   );
