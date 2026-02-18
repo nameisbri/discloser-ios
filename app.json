@@ -18,7 +18,7 @@
         "dark": "./assets/icon-dark.png",
         "tinted": "./assets/icon-tinted.png"
       },
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.discloser-ios.app",
       "buildNumber": "39",
       "usesAppleSignIn": true,
