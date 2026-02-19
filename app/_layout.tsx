@@ -18,7 +18,6 @@ import type PostHog from "posthog-react-native";
 import {
   initAnalytics,
   enableCapture,
-  disableCapture,
   trackAppOpened,
 } from "../lib/analytics";
 
@@ -45,29 +44,12 @@ export default function RootLayout() {
   const [posthogClient, setPosthogClient] = useState<PostHog | null>(null);
   const appStateRef = useRef(AppState.currentState);
 
-  // Initialize PostHog + ATT
+  // Initialize PostHog
   useEffect(() => {
-    const setup = async () => {
-      const client = initAnalytics();
-      if (!client) return;
-      setPosthogClient(client);
-
-      try {
-        const { requestTrackingPermissionsAsync } = await import(
-          "expo-tracking-transparency"
-        );
-        const { status } = await requestTrackingPermissionsAsync();
-        if (status === "granted") {
-          enableCapture();
-        } else {
-          disableCapture();
-        }
-      } catch {
-        // Native module not available (e.g. Expo Go) — enable capture in dev
-        enableCapture();
-      }
-    };
-    setup();
+    const client = initAnalytics();
+    if (!client) return;
+    setPosthogClient(client);
+    enableCapture();
   }, []);
 
   // Track app_opened on launch and foreground
