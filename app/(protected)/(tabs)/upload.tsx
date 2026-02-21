@@ -5,7 +5,8 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { useTestResults, useReminders, useProfile } from "../../../lib/hooks";
 import { useTheme } from "../../../context/theme";
-import { SelectStep, PreviewStep, DetailsStep, type SelectedFile } from "../../../components/upload";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SelectStep, PreviewStep, DetailsStep, type SelectedFile, AIProcessingConsentModal } from "../../../components/upload";
 import type { TestStatus, STIResult, RiskLevel } from "../../../lib/types";
 import {
   parseDocument,
@@ -84,6 +85,8 @@ export default function Upload() {
   }>>([]);
   const [resultConflicts, setResultConflicts] = useState<TestConflict[]>([]);
   const [dateGroupedResults, setDateGroupedResults] = useState<DateGroupedResult[]>([]);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // Ref to track if parsing was cancelled
   const cancelledRef = useRef(false);
@@ -112,6 +115,40 @@ export default function Upload() {
     cancelledRef.current = false;
     flowActiveRef.current = false;
   }, []);
+
+  const AI_CONSENT_KEY = "@discloser_ai_processing_consent";
+
+  const requireConsent = async (action: () => void) => {
+    try {
+      const consent = await AsyncStorage.getItem(AI_CONSENT_KEY);
+      if (consent === "true") {
+        action();
+      } else {
+        setPendingAction(() => action);
+        setShowConsentModal(true);
+      }
+    } catch {
+      // If AsyncStorage fails, show consent to be safe
+      setPendingAction(() => action);
+      setShowConsentModal(true);
+    }
+  };
+
+  const handleConsent = async () => {
+    try {
+      await AsyncStorage.setItem(AI_CONSENT_KEY, "true");
+    } catch {
+      // Non-blocking — consent still works for this session
+    }
+    setShowConsentModal(false);
+    pendingAction?.();
+    setPendingAction(null);
+  };
+
+  const handleConsentCancel = () => {
+    setShowConsentModal(false);
+    setPendingAction(null);
+  };
 
   // When the upload tab gains focus, reset to a fresh state unless the user
   // is actively in the middle of parsing or uploading (flowActiveRef guards this).
@@ -1079,11 +1116,19 @@ export default function Upload() {
   // Render the appropriate step
   if (step === "select") {
     return (
-      <SelectStep
-        isDark={isDark}
-        onPickImage={pickImage}
-        onPickPDF={pickPDF}
-      />
+      <>
+        <SelectStep
+          isDark={isDark}
+          onPickImage={(useCamera) => requireConsent(() => pickImage(useCamera))}
+          onPickPDF={() => requireConsent(pickPDF)}
+        />
+        <AIProcessingConsentModal
+          visible={showConsentModal}
+          isDark={isDark}
+          onConsent={handleConsent}
+          onCancel={handleConsentCancel}
+        />
+      </>
     );
   }
 

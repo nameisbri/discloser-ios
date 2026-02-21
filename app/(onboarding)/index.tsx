@@ -369,7 +369,7 @@ export default function Onboarding() {
           </View>
         )}
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
           {/* Step 1: Basic Info */}
           {step === 1 && (
             <View className="py-4">

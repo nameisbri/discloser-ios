@@ -124,6 +124,7 @@ export default function Dashboard() {
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

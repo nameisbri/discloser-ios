@@ -55,7 +55,7 @@ export function PreviewStep({
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-6 py-4">
+      <ScrollView className="flex-1 px-6 py-4" contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Text className={`font-inter-medium mb-4 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
           {selectedFiles.length} of {maxFiles} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
           selected
