@@ -209,7 +209,7 @@ export function DetailsStep({
           </View>
         </View>
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
           {/* Show attached files summary */}
           {selectedFiles.length > 0 && (
             <View className={`p-4 rounded-2xl flex-row items-center mb-3 ${isDark ? "bg-dark-success-bg" : "bg-success-light/50"}`}>

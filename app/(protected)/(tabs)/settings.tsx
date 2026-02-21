@@ -186,7 +186,7 @@ export default function Settings() {
         </Text>
         <HeaderLogo />
       </View>
-      <ScrollView className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6" contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         {/* Stats Header */}
         <View className={`rounded-3xl p-4 mb-6 mt-2 ${isDark ? "bg-dark-surface" : "bg-white"} border ${isDark ? "border-dark-border" : "border-border"}`}>
           <View className="flex-row items-center mb-4">
