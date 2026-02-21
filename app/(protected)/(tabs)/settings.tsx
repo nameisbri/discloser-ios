@@ -177,7 +177,7 @@ export default function Settings() {
 
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
-      <View className="flex-row items-center px-6 py-4">
+      <View className="flex-row items-center px-6 py-4" style={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
@@ -360,8 +360,8 @@ export default function Settings() {
 
       {/* Theme Selection Modal */}
       <Modal visible={showThemeModal} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className={`rounded-t-3xl p-6 ${isDark ? "bg-dark-surface" : "bg-white"}`}>
+        <View className="flex-1 bg-black/50 justify-end items-center">
+          <View className={`rounded-t-3xl p-6 ${isDark ? "bg-dark-surface" : "bg-white"}`} style={{ maxWidth: 500, width: "100%" }}>
             <View className="flex-row justify-between items-center mb-6">
               <View className="w-12" />
               <Text className={`text-xl font-inter-bold ${isDark ? "text-dark-text" : "text-secondary-dark"}`}>
@@ -423,8 +423,8 @@ export default function Settings() {
       {/* Profile Modal */}
       <Modal visible={showProfileModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-          <View className="flex-1 bg-black/50 justify-end">
-            <ScrollView className={`rounded-t-3xl max-h-[85%] ${isDark ? "bg-dark-surface" : "bg-white"}`}>
+          <View className="flex-1 bg-black/50 justify-end items-center">
+            <ScrollView className={`rounded-t-3xl max-h-[85%] ${isDark ? "bg-dark-surface" : "bg-white"}`} style={{ maxWidth: 500, width: "100%" }}>
               <View className="p-6">
                 <View className="flex-row justify-between items-center mb-6">
                   <Pressable onPress={() => setShowProfileModal(false)}>

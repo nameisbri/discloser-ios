@@ -72,7 +72,7 @@ export default function Resources() {
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       {/* Header */}
-      <View className="flex-row items-center px-6 py-4">
+      <View className="flex-row items-center px-6 py-4" style={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Pressable onPress={() => router.back()} className="p-2 -ml-2" accessibilityLabel="Go back">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
@@ -84,7 +84,7 @@ export default function Resources() {
         <HeaderLogo />
       </View>
 
-      <ScrollView className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6" contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         {/* First visit banner */}
         {isFirstVisit && (
           <FirstVisitBanner

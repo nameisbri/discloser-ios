@@ -163,7 +163,7 @@ export default function ResultDetail() {
 
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`} edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between px-6 py-4">
+      <View className="flex-row items-center justify-between px-6 py-4" style={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
@@ -176,7 +176,7 @@ export default function ResultDetail() {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6" contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Card className="mb-6 mt-4">
           <View className="flex-row justify-between items-start mb-6">
             <View className="flex-1 mr-4">

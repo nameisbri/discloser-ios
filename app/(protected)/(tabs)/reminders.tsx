@@ -156,7 +156,7 @@ export default function Reminders() {
 
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`} edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between px-6 py-4">
+      <View className="flex-row items-center justify-between px-6 py-4" style={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
@@ -168,6 +168,7 @@ export default function Reminders() {
 
       <ScrollView
         className="flex-1 px-6"
+        contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

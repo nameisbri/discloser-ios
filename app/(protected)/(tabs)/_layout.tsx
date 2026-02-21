@@ -55,6 +55,9 @@ export default function TabsLayout() {
           paddingTop: 8,
           height: 60 + Math.max(insets.bottom, 8),
         },
+        tabBarItemStyle: {
+          maxWidth: 120,
+        },
         tabBarActiveTintColor: activeColor,
         tabBarInactiveTintColor: inactiveColor,
         tabBarLabelStyle: {

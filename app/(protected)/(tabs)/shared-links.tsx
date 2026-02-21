@@ -111,7 +111,7 @@ export default function SharedLinksScreen() {
   return (
     <SafeAreaView className={`flex-1 ${isDark ? "bg-dark-bg" : "bg-background"}`}>
       {/* Header */}
-      <View className="flex-row items-center px-6 py-4">
+      <View className="flex-row items-center px-6 py-4" style={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ChevronLeft size={24} color={isDark ? "#FFFFFF" : "#374151"} />
         </Pressable>
@@ -125,7 +125,7 @@ export default function SharedLinksScreen() {
 
       {/* Filter Tabs + Create Button */}
       {links.length > 0 && (
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 24, gap: 8, marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 24, gap: 8, marginBottom: 16, maxWidth: 500, width: "100%", alignSelf: "center" }}>
           {FILTER_TABS.map((tab) => (
             <Pressable
               key={tab.key}
@@ -176,6 +176,7 @@ export default function SharedLinksScreen() {
 
       <ScrollView
         className="flex-1 px-6"
+        contentContainerStyle={{ maxWidth: 500, width: "100%", alignSelf: "center" }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -367,6 +368,7 @@ export default function SharedLinksScreen() {
               padding: 24,
               margin: 24,
               width: "85%",
+              maxWidth: 400,
               alignItems: "center",
             }}
           >

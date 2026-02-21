@@ -20,9 +20,10 @@ export function AIProcessingConsentModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View className="flex-1 bg-black/50 justify-end">
+      <View className="flex-1 bg-black/50 justify-end items-center">
         <View
           className={`rounded-t-3xl p-6 ${isDark ? "bg-dark-surface" : "bg-white"}`}
+          style={{ maxWidth: 500, width: "100%" }}
         >
           {/* Shield icon */}
           <View className="items-center mb-4">

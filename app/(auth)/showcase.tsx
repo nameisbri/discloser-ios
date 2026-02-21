@@ -94,7 +94,7 @@ export default function Showcase() {
     }, [])
   );
 
-  const cardWidth = width - 80;
+  const cardWidth = Math.min(width - 80, 420);
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -132,14 +132,14 @@ export default function Showcase() {
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ paddingTop: 80, paddingBottom: 48, paddingHorizontal: 32 }}
+              style={{ paddingTop: 80, paddingBottom: 48, paddingHorizontal: 32, alignItems: "center" }}
             >
               {/* Decorative circles */}
               <View className={`absolute top-10 right-10 w-32 h-32 rounded-full ${isDark ? "bg-dark-accent/10" : "bg-white/5"}`} />
               <View className={`absolute top-32 left-5 w-20 h-20 rounded-full ${isDark ? "bg-dark-lavender/10" : "bg-white/5"}`} />
               <View className={`absolute bottom-20 right-5 w-16 h-16 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-accent/20"}`} />
 
-              <Animated.View style={{ opacity: heroAnim.opacity, transform: [{ translateY: heroAnim.translateY }] }}>
+              <Animated.View style={{ opacity: heroAnim.opacity, transform: [{ translateY: heroAnim.translateY }], maxWidth: 500, width: "100%" }}>
                 <Image
                   source={require("../../assets/logomark.png")}
                   style={{ width: 56, height: 56, marginBottom: 24 }}
@@ -253,6 +253,9 @@ export default function Showcase() {
                 transform: [{ translateY: featuresAnim.translateY }],
                 paddingHorizontal: 32,
                 paddingTop: 32,
+                maxWidth: 500,
+                width: "100%",
+                alignSelf: "center",
               }}
             >
               <Text className={`text-lg font-inter-bold mb-4 ${isDark ? "text-dark-text" : "text-text"}`}>
@@ -303,6 +306,9 @@ export default function Showcase() {
                 paddingHorizontal: 32,
                 paddingTop: 24,
                 paddingBottom: 140,
+                maxWidth: 500,
+                width: "100%",
+                alignSelf: "center",
               }}
             >
               <View className={`flex-row items-center justify-center p-4 rounded-2xl ${isDark ? "bg-dark-surface" : "bg-gray-50"}`}>
@@ -323,7 +329,7 @@ export default function Showcase() {
         className={`absolute bottom-0 left-0 right-0 ${isDark ? "bg-dark-bg" : "bg-background"}`}
         style={{ borderTopWidth: 1, borderTopColor: isDark ? "#2D2438" : "#E5E7EB" }}
       >
-        <View className="px-8 pt-4 pb-2">
+        <View className="px-8 pt-4 pb-2" style={{ maxWidth: 500, width: "100%", alignSelf: "center" }}>
           <Pressable
             onPress={handleGetStarted}
             className={`py-4 rounded-2xl items-center ${isDark ? "bg-dark-accent active:bg-dark-accent/80" : "bg-primary active:bg-primary-dark"}`}

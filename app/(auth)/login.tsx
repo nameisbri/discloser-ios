@@ -26,14 +26,14 @@ export default function Login() {
         colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ flex: 1, paddingTop: 80, paddingBottom: 40, paddingHorizontal: 32 }}
+        style={{ flex: 1, paddingTop: 80, paddingBottom: 40, paddingHorizontal: 32, alignItems: "center" }}
       >
         {/* Decorative circles */}
         <View className={`absolute top-10 right-10 w-32 h-32 rounded-full ${isDark ? "bg-dark-accent/10" : "bg-white/5"}`} />
         <View className={`absolute top-32 left-5 w-20 h-20 rounded-full ${isDark ? "bg-dark-lavender/10" : "bg-white/5"}`} />
         <View className={`absolute bottom-40 right-5 w-16 h-16 rounded-full ${isDark ? "bg-dark-mint/20" : "bg-accent/20"}`} />
 
-        <View className="flex-1 justify-center">
+        <View className="flex-1 justify-center" style={{ maxWidth: 500, width: "100%" }}>
           {/* Logo mark */}
           <Image
             source={require("../../assets/logomark.png")}
@@ -61,7 +61,8 @@ export default function Login() {
       </LinearGradient>
 
       {/* Bottom card with sign in */}
-      <View className={`px-8 py-10 rounded-t-[32px] -mt-8 ${isDark ? "bg-dark-surface" : "bg-background-card"}`}>
+      <View className={`px-8 py-10 rounded-t-[32px] -mt-8 ${isDark ? "bg-dark-surface" : "bg-background-card"}`} style={{ alignItems: "center" }}>
+        <View style={{ maxWidth: 500, width: "100%" }}>
         <Text className={`text-center font-inter-medium mb-6 ${isDark ? "text-dark-text-secondary" : "text-text-light"}`}>
           Your results. Your rules.
         </Text>
@@ -101,6 +102,7 @@ export default function Login() {
           Your data stays yours. Always encrypted.{"\n"}
           Share your status. Keep your name.
         </Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
