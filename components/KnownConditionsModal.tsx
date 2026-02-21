@@ -56,8 +56,8 @@ export function KnownConditionsModal({ visible, onClose, conditions, onAdd, onRe
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View className="flex-1 bg-black/50 justify-end">
-        <View className={`rounded-t-3xl p-6 max-h-[85%] ${isDark ? "bg-dark-surface" : "bg-white"}`}>
+      <View className="flex-1 bg-black/50 justify-end items-center">
+        <View className={`rounded-t-3xl p-6 max-h-[85%] ${isDark ? "bg-dark-surface" : "bg-white"}`} style={{ maxWidth: 500, width: "100%" }}>
           <View className="flex-row justify-between items-center mb-2">
             <Pressable onPress={onClose} className="p-2 -ml-2">
               <X size={24} color={isDark ? "#FFFFFF" : "#374151"} />
