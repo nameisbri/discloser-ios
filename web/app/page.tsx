@@ -29,9 +29,9 @@ import { scaleIn } from "./components/animations";
 
 export const metadata: Metadata = {
   title:
-    "Discloser: Share Your STI Status Anonymously | Privacy-First Sexual Health App",
+    "Discloser: Share your STI status anonymously | Sexual health app for iOS",
   description:
-    "Share STI test results through secure, anonymous links without exposing your name or personal information. Free privacy-first iOS app with time-limited sharing, end-to-end encryption, and CDC-based testing reminders. Join the waitlist.",
+    "Share your STI results through secure, anonymous links — no name, no personal info exposed. Free iOS app with expiring links, encryption, and testing reminders. Join the waitlist.",
   alternates: {
     canonical: "https://discloser.app",
   },
@@ -41,17 +41,17 @@ const faqItems = [
   {
     question: "How does Discloser protect my identity?",
     answer:
-      "When you share your test results through Discloser, recipients only see your testing status and date. Never your name, date of birth, health card number, or any other personally identifiable information. Your full lab documents stay private on your device.",
+      "When you share your test results through Discloser, recipients only see your testing status and date. Never your name, date of birth, or health card number. Your full lab documents stay on your device.",
   },
   {
     question: "Is Discloser free?",
     answer:
-      "Yes. Discloser is completely free at launch. Core features like uploading results, sharing secure links, and setting testing reminders will always be free. Optional premium features are planned for the future, but privacy will never have a price tag.",
+      "Yes. Discloser is completely free at launch. Uploading results, sharing secure links, and setting testing reminders will always be free. We may add optional premium features later, but the basics stay free.",
   },
   {
     question: "How does document verification work?",
     answer:
-      "Discloser runs each document through 7 verification checks: recognized lab, health card number, accession ID, name match, date validity, document structure, and cross-signal agreement. The results are scored from 0 to 100 and assigned a confidence level (Verified with high confidence, Verified, or Unverified). You and recipients can see exactly which checks passed and why.",
+      "Discloser runs each document through 7 verification checks: recognized lab, health card number, accession ID, name match, date validity, document structure, and cross-signal agreement. The results are scored from 0 to 100 and assigned a confidence level (Verified with high confidence, Verified, or Unverified). Both you and the person you share with can see exactly which checks passed and why.",
   },
   {
     question: "How do expiring links work?",
@@ -61,7 +61,7 @@ const faqItems = [
   {
     question: "Is my health data sold to third parties?",
     answer:
-      "Absolutely not. Discloser will never sell, share, or monetize your health data. Your test results are encrypted and stored securely. We don't run ads, and we don't have data-sharing partnerships. Your data is yours. Period.",
+      "No. We don't sell your data, we don't run ads, and we don't have data-sharing partnerships. Your results are encrypted and stored securely.",
   },
   {
     question: "What STIs does Discloser support?",
@@ -92,7 +92,7 @@ export default function Home() {
             "@type": "MobileApplication",
             name: "Discloser",
             description:
-              "Privacy-first iOS app for sharing STI test results anonymously through secure, time-limited links. Upload results, set expiry and view limits, and share without revealing your identity.",
+              "iOS app for sharing STI test results anonymously through secure, expiring links. Upload results, set time and view limits, and share without revealing your identity.",
             url: "https://discloser.app",
             applicationCategory: "HealthApplication",
             operatingSystem: "iOS",
@@ -184,7 +184,7 @@ export default function Home() {
               <p className="text-sm text-text-secondary max-w-lg mb-8 animate-fade-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
                 Upload your lab documents, set expiry and view limits, and
                 share a secure link. Recipients see your status, not your
-                name or any personally identifiable information.
+                name, birthday, or health card number.
               </p>
               <div className="max-w-md animate-fade-up" style={{ animationDelay: "0.3s" }}>
                 <WaitlistForm variant="hero" />
@@ -214,7 +214,7 @@ export default function Home() {
               id="problem-heading"
               className="text-2xl sm:text-4xl font-bold font-display mb-3 leading-tight"
             >
-              The Problem With Sharing STI Test Results
+              The problem with sharing STI test results
             </h2>
             <p className="text-text-secondary-dark">
               Right now, proving you&apos;re negative means...
@@ -290,20 +290,20 @@ export default function Home() {
                 id="privacy-heading"
                 className="text-2xl sm:text-3xl font-bold font-display mb-4"
               >
-                Your Privacy. Non-Negotiable.
+                We don&apos;t touch your data
               </h2>
               <p className="text-text-secondary-dark mb-8 leading-relaxed">
-                No data selling. No social features. No traces. Your health
-                data is yours — period.
+                No ads, no social features, no data partnerships. What&apos;s on
+                your device stays on your device.
               </p>
 
               <div className="space-y-5">
                 {[
-                  { icon: <Lock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Your data stays yours — encrypted at rest, in transit, and on-device" },
+                  { icon: <Lock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Encrypted at rest, in transit, and on your device" },
                   { icon: <Clock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Links auto-expire on your schedule (1 hour to 30 days)" },
-                  { icon: <Eye className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Set view limits — revoke access anytime" },
-                  { icon: <Trash2 className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Delete your data permanently, whenever you want" },
-                  { icon: <Bell className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "CDC-based testing reminders — personalised, no judgement" },
+                  { icon: <Eye className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Set view limits and revoke access anytime" },
+                  { icon: <Trash2 className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Delete everything permanently, whenever you want" },
+                  { icon: <Bell className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Testing reminders based on CDC guidelines, personalised to you" },
                 ].map((item) => (
                   <div key={item.text} className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-surface-light flex items-center justify-center shrink-0 mt-0.5">
@@ -356,10 +356,10 @@ export default function Home() {
             id="how-it-works-heading"
             className="text-2xl sm:text-3xl font-bold font-display mb-3 text-center"
           >
-            How Anonymous STI Sharing Works
+            How anonymous sharing works
           </h2>
           <p className="text-text-secondary text-center mb-16">
-            Three taps. Total control.
+            Three steps. You decide who sees what, and for how long.
           </p>
 
           {/* Numbered steps */}
@@ -430,16 +430,16 @@ export default function Home() {
             id="faq-heading"
             className="text-2xl sm:text-3xl font-bold font-display mb-8 text-center"
           >
-            Frequently Asked Questions
+            Frequently asked questions
           </h2>
           <FAQSection items={faqItems} />
 
           {/* CTA */}
           <div className="mt-20 text-center">
             <h2 className="text-3xl sm:text-4xl font-bold font-display mb-4">
-              Get Early Access
+              Get early access
             </h2>
-            <p className="text-text-secondary mb-6">Be first in line.</p>
+            <p className="text-text-secondary mb-6">Launching soon on iOS.</p>
             <div className="max-w-md mx-auto mb-6">
               <WaitlistForm variant="cta" />
             </div>
@@ -448,7 +448,7 @@ export default function Home() {
               Take the 2-min survey →
             </SurveyButton>
             <p className="text-xs text-text-tertiary mt-3">
-              Your answers = your influence on v1
+              Your feedback shapes what we build first
             </p>
           </div>
         </AnimatedSection>
