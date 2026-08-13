@@ -164,7 +164,7 @@ export default function WaitlistForm({ variant = "hero" }: WaitlistFormProps) {
         <>
           <div className="text-center">
             <p className="text-xs text-text-secondary mb-3">
-              No spam, ever. Just launch updates you can unsubscribe from anytime.
+              We&apos;ll only email you about the launch, and you can unsubscribe anytime.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 mb-3">
               <span className="flex items-center gap-1.5 text-xs text-text-tertiary">

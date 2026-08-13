@@ -10,7 +10,6 @@ import {
   Camera,
   ShieldCheck,
   Shield,
-  Bell,
 } from "lucide-react";
 
 import ShareCardMockup from "./components/ShareCardMockup";
@@ -299,11 +298,10 @@ export default function Home() {
 
               <div className="space-y-5">
                 {[
-                  { icon: <Lock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Encrypted at rest, in transit, and on your device" },
+                  { icon: <Lock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Encrypted at rest and in transit" },
                   { icon: <Clock className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Links auto-expire on your schedule (1 hour to 30 days)" },
                   { icon: <Eye className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Set view limits and revoke access anytime" },
                   { icon: <Trash2 className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Delete everything permanently, whenever you want" },
-                  { icon: <Bell className="w-5 h-5 text-burgundy-light" aria-hidden="true" />, text: "Testing reminders based on CDC guidelines, personalised to you" },
                 ].map((item) => (
                   <div key={item.text} className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-surface-light flex items-center justify-center shrink-0 mt-0.5">
@@ -448,7 +446,7 @@ export default function Home() {
               Take the 2-min survey →
             </SurveyButton>
             <p className="text-xs text-text-tertiary mt-3">
-              Your feedback shapes what we build first
+              Your answers decide which features ship first
             </p>
           </div>
         </AnimatedSection>
